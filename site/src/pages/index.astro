@@ -1,0 +1,506 @@
+---
+import Base from '../layouts/Base.astro';
+import CodeSnippet from '../components/CodeSnippet.astro';
+import FinishPicker from '../components/FinishPicker.astro';
+import { find } from '../lib/gallery';
+import { getLatest, REPO_URL, formatDate, formatSize } from '../lib/releases';
+import demoUrl from '../../../docs/demo.svg?url';
+
+const latest = await getLatest();
+const version = latest?.tag.replace(/^v/, '');
+
+const progress = find('github-light', 'progress');
+const styles = find('github-light', 'sgr-styles');
+const cjk = find('catppuccin-mocha', 'cjk-emoji');
+const anim = find('dracula', 'typing-anim');
+
+const PLATFORMS: [RegExp, string][] = [
+  [/darwin-arm64/, 'macOS — Apple silicon'],
+  [/darwin-amd64/, 'macOS — Intel'],
+  [/linux-arm64/, 'Linux — arm64'],
+  [/linux-amd64/, 'Linux — x86_64'],
+  [/windows-amd64/, 'Windows — x86_64'],
+];
+
+const binaries = (latest?.assets ?? [])
+  .filter((a) => !/\.sha256$|\.txt$/i.test(a.name))
+  .map((a) => {
+    const platform = PLATFORMS.find(([re]) => re.test(a.name))?.[1];
+    return platform ? { ...a, platform } : null;
+  })
+  .filter((a) => a !== null);
+---
+
+<Base
+  title="terminal-svg — Your terminal. Rendered beautifully."
+  description="terminal-svg captures real terminal output — colors, cursor and all — as pixel-perfect, self-contained SVG. It records animated replays, too. One Rust binary, seven themes."
+>
+  <!-- hero -->
+  <section class="section section--black hero">
+    <div class="wrap">
+      <p class="eyebrow gradient-text" data-reveal>terminal‑svg</p>
+      <h1 class="headline" data-reveal>
+        Your terminal.<br />Rendered beautifully.
+      </h1>
+      <p class="subhead narrow" data-reveal>
+        Pixel-perfect SVG screenshots and animated recordings of your terminal.
+        From one small Rust binary.
+      </p>
+      <div class="cta" data-reveal>
+        <a class="btn" href="#get">Install</a>
+        <a class="link-more" href="/gallery/">View the gallery</a>
+      </div>
+      <div class="hero-shot" data-reveal>
+        <img
+          class="product"
+          src={demoUrl}
+          alt="An animated terminal-svg recording of a shell session, replayed as an SVG"
+          width="700"
+          height="480"
+          loading="eager"
+          fetchpriority="high"
+        />
+        <p class="fineprint">
+          This isn't a video. It's a 44 KB SVG, recorded with <code>terminal‑svg rec</code>.
+        </p>
+      </div>
+      <div class="stats" data-reveal>
+        <div><strong>1</strong><span>self‑contained binary</span></div>
+        <div><strong>7</strong><span>built‑in themes</span></div>
+        <div><strong>0</strong><span>runtime dependencies</span></div>
+        <div><strong>MIT</strong><span>open source</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- emulation -->
+  <section class="section section--gray">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>True to every character.</h2>
+      <p class="subhead narrow" data-reveal>
+        Other tools strip escape codes and hope. terminal‑svg runs your output through a real
+        virtual terminal — the same state machine behind asciinema — so progress bars,
+        carriage returns and cursor tricks land exactly where they should.
+      </p>
+      {
+        progress && (
+          <div class="feature-shot" data-reveal>
+            <img
+              class="product"
+              src={progress.url}
+              alt="A progress bar and step output rendered faithfully in the GitHub Light theme"
+              width={progress.width}
+              height={progress.height}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- fonts -->
+  <section class="section section--white">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>Your fonts fly first class.</h2>
+      <p class="subhead narrow" data-reveal>
+        Every SVG embeds a JetBrains Mono Nerd Font, subsetted to just the glyphs you used
+        and compressed as WOFF2. Send it anywhere. It renders identically — no fonts
+        installed, no fallbacks, no surprises.
+      </p>
+      {
+        styles && (
+          <div class="feature-shot" data-reveal>
+            <img
+              class="product"
+              src={styles.url}
+              alt="Bold, italic, underline and other text styles rendered in the GitHub Light theme"
+              width={styles.width}
+              height={styles.height}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- recording -->
+  <section class="section section--black">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>Record. Replay.<br /><span class="gradient-text">Relive.</span></h2>
+      <p class="subhead narrow" data-reveal>
+        <code class="inlinecode">terminal‑svg rec</code> captures a live session and replays
+        it as an animated SVG. GIF‑quality demos at a fraction of the size. Asciicast v2 in
+        and out, so your old asciinema recordings play too.
+      </p>
+      {
+        anim && (
+          <div class="feature-shot" data-reveal>
+            <img
+              class="product"
+              src={anim.url}
+              alt="An animated typing session recorded and replayed by terminal-svg in the Dracula theme"
+              width={anim.width}
+              height={anim.height}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )
+      }
+      <div class="snippet-stack" data-reveal>
+        <CodeSnippet code={'terminal-svg rec -o demo.svg'} label="Record a session" />
+        <CodeSnippet
+          code={'terminal-svg demo.cast -t nord -o replay.svg'}
+          label="Re-theme any asciicast"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- finishes -->
+  <section class="section section--gray">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>Seven stunning finishes.</h2>
+      <p class="subhead narrow" data-reveal>
+        Dracula to Solarized, with Catppuccin, Nord, Tokyo Night and both GitHubs in between.
+        Or bring your own — any TOML file with sixteen colors works.
+      </p>
+      <div class="picker-wrap" data-reveal>
+        <FinishPicker />
+      </div>
+    </div>
+  </section>
+
+  <!-- i18n -->
+  <section class="section section--white">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>Speaks fluent emoji.<br />And 漢字.</h2>
+      <p class="subhead narrow" data-reveal>
+        Double-width characters are measured and placed correctly. Emoji render through
+        native color fonts. Your terminal is international — your screenshots are too.
+      </p>
+      {
+        cjk && (
+          <div class="feature-shot" data-reveal>
+            <img
+              class="product"
+              src={cjk.url}
+              alt="CJK text and emoji rendered correctly in the Catppuccin Mocha theme"
+              width={cjk.width}
+              height={cjk.height}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- works your way -->
+  <section class="section section--black">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>Works the way you work.</h2>
+      <p class="subhead narrow" data-reveal>
+        Run a command. Pipe some output. Render a file. However it arrives, one SVG comes out.
+      </p>
+      <div class="snippet-stack" data-reveal>
+        <CodeSnippet code={'terminal-svg -- lsd -la'} label="Run a command in a PTY" />
+        <CodeSnippet code={'ls --color=always | terminal-svg -o ls.svg'} label="Pipe ANSI straight in" />
+        <CodeSnippet code={'terminal-svg dump.ansi -t nord -o dump.svg'} label="Render a saved dump" />
+      </div>
+      <p class="center-link" data-reveal>
+        <a class="link-more" href="/gallery/">See every fixture in every theme</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- get it -->
+  <section class="section section--gray" id="get">
+    <div class="wrap center">
+      <h2 class="headline" data-reveal>Get terminal‑svg.</h2>
+      {
+        latest && (
+          <p class="subhead" data-reveal>
+            Version {version} — released {formatDate(latest.publishedAt)}.{' '}
+            <a href="/releases/">See what's new</a>
+          </p>
+        )
+      }
+      <div class="buy" data-reveal>
+        <div class="option">
+          <div class="meta">
+            <h3>Homebrew</h3>
+            <p>macOS and Linux. The tap updates itself with every release.</p>
+          </div>
+          <div class="how">
+            <CodeSnippet code="brew install russmckendrick/tap/terminal-svg" label="Terminal" />
+          </div>
+        </div>
+        <div class="option">
+          <div class="meta">
+            <h3>Prebuilt binaries</h3>
+            <p>With SHA256 checksums, straight from the release.</p>
+          </div>
+          <div class="how">
+            {
+              binaries.length > 0 ? (
+                <ul class="downloads">
+                  {binaries.map((b) => (
+                    <li>
+                      <a href={b.url} rel="noopener">
+                        <span>{b.platform}</span>
+                        <span class="right">
+                          <span class="size">{formatSize(b.size)}</span>
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 8v7" />
+                            <path d="m9 12.5 3 3 3-3" />
+                          </svg>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="gh-fallback">
+                  <a href={`${REPO_URL}/releases/latest`} rel="noopener">
+                    Download from GitHub ›
+                  </a>
+                </p>
+              )
+            }
+          </div>
+        </div>
+        <div class="option">
+          <div class="meta">
+            <h3>Build from source</h3>
+            <p>Rust 1.85 or later. Fonts are bundled in the repo.</p>
+          </div>
+          <div class="how">
+            <CodeSnippet
+              code={'git clone https://github.com/russmckendrick/terminal-svg && cd terminal-svg && cargo build --release'}
+              label="Terminal"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</Base>
+
+<style>
+  .hero {
+    padding-top: 90px;
+  }
+
+  .cta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 28px;
+    margin-top: 34px;
+  }
+
+  .hero-shot {
+    margin-top: 76px;
+  }
+
+  .hero-shot .product {
+    max-width: 760px;
+    width: 100%;
+  }
+
+  .fineprint {
+    text-align: center;
+    margin-top: 26px;
+    font-size: 13px;
+    color: var(--text-light-2);
+  }
+
+  .fineprint code {
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    max-width: 780px;
+    margin: 96px auto 0;
+    text-align: center;
+  }
+
+  .stats div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stats strong {
+    font-size: clamp(30px, 3.6vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(96deg, #50fa7b, #8be9fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .stats span {
+    font-size: 14px;
+    color: var(--text-light-2);
+  }
+
+  .center {
+    text-align: center;
+  }
+
+  .feature-shot {
+    margin-top: 66px;
+  }
+
+  .feature-shot .product {
+    max-width: 720px;
+    width: 100%;
+  }
+
+  .inlinecode {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    color: inherit;
+  }
+
+  .snippet-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 660px;
+    margin: 66px auto 0;
+    text-align: left;
+  }
+
+  .center-link {
+    margin-top: 48px;
+  }
+
+  .picker-wrap {
+    margin-top: 70px;
+  }
+
+  .buy {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 880px;
+    margin: 64px auto 0;
+    text-align: left;
+  }
+
+  .option {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 30px 34px;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 34px;
+    align-items: center;
+  }
+
+  .option h3 {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.017em;
+  }
+
+  .option .meta p {
+    color: var(--text-dark-2);
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .downloads {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .downloads li {
+    border-bottom: 1px solid #f0f0f5;
+  }
+
+  .downloads li:last-child {
+    border-bottom: none;
+  }
+
+  .downloads a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 2px;
+    font-size: 14px;
+    color: var(--text-dark);
+    border-radius: 8px;
+    transition: background 0.15s ease;
+  }
+
+  .downloads a:hover {
+    text-decoration: none;
+    background: #f5f5f7;
+  }
+
+  .downloads a:hover span:first-child {
+    color: var(--link-on-light);
+  }
+
+  .downloads .right {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .downloads .size {
+    color: var(--text-dark-2);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .downloads svg {
+    width: 18px;
+    height: 18px;
+    color: var(--blue);
+    flex-shrink: 0;
+  }
+
+  .gh-fallback {
+    font-size: 15px;
+  }
+
+  @media (max-width: 860px) {
+    .option {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+      padding: 26px 24px;
+    }
+
+    .stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 34px 20px;
+    }
+  }
+</style>

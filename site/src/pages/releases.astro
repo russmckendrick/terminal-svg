@@ -1,0 +1,64 @@
+---
+import Base from '../layouts/Base.astro';
+import CodeSnippet from '../components/CodeSnippet.astro';
+import ReleaseEntry from '../components/ReleaseEntry.astro';
+import { getReleases, REPO_URL } from '../lib/releases';
+
+const releases = await getReleases();
+---
+
+<Base
+  title="Releases — terminal-svg"
+  description="Release notes and downloads for every terminal-svg version, with prebuilt binaries for macOS, Linux and Windows."
+>
+  <section class="section section--gray">
+    <div class="wrap">
+      <h1 class="headline" data-reveal>New with every release.</h1>
+      <p class="subhead narrow" data-reveal>
+        Every version ships prebuilt binaries with SHA256 checksums, and the Homebrew tap
+        updates itself.
+      </p>
+      <div class="install" data-reveal>
+        <CodeSnippet code="brew install russmckendrick/tap/terminal-svg" label="Terminal" />
+      </div>
+      {
+        releases.length > 0 ? (
+          <div class="timeline">
+            {releases.map((r, i) => (
+              <div data-reveal>
+                <ReleaseEntry release={r} latest={i === 0} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="fallback" data-reveal>
+            Release data wasn't available when this page was built. See the{' '}
+            <a href={`${REPO_URL}/releases`} rel="noopener">
+              releases on GitHub ›
+            </a>
+          </p>
+        )
+      }
+    </div>
+  </section>
+</Base>
+
+<style>
+  .install {
+    max-width: 560px;
+    margin: 44px auto 72px;
+  }
+
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  .fallback {
+    text-align: center;
+    color: var(--text-dark-2);
+  }
+</style>

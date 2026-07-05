@@ -1,0 +1,33 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="404 — terminal-svg" description="Page not found.">
+  <section class="section section--gray notfound">
+    <div class="wrap">
+      <h1 class="headline">This page took<br />a wrong turn.</h1>
+      <p class="subhead">
+        The page you're looking for doesn't exist.
+      </p>
+      <p class="links">
+        <a class="btn" href="/">Go home</a>
+        <a class="link-more" href="/gallery/">Visit the gallery</a>
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .notfound {
+    min-height: 60vh;
+    text-align: center;
+  }
+
+  .links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 28px;
+    margin-top: 36px;
+  }
+</style>
