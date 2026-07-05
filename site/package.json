@@ -15,5 +15,6 @@
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "astro": "^7.0.6",
     "marked": "^18.0.5"
-  }
+  },
+  "packageManager": "pnpm@11.10.0"
 }
