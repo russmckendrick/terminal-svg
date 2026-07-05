@@ -74,6 +74,15 @@ optional chrome overrides) — see the [theme format reference](docs/themes.md):
 terminal-svg -t my-theme.toml -- htop
 ```
 
+## Installing
+
+```sh
+brew install russmckendrick/tap/terminal-svg
+```
+
+Or grab a binary for macOS/Linux/Windows from the
+[releases page](https://github.com/russmckendrick/terminal-svg/releases).
+
 ## Building
 
 ```sh

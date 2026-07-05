@@ -1,0 +1,4 @@
+# Golden tests byte-compare these; CRLF conversion on Windows checkouts
+# would break them.
+*.ansi -text
+tests/golden/*.svg -text
