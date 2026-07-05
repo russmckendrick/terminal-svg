@@ -1,0 +1,220 @@
+pub mod screen;
+
+use crate::theme::{Rgb, Theme};
+use screen::{Screen, StyledRun};
+
+const SCROLLBACK_LIMIT: usize = 100_000;
+
+/// Feed captured bytes through a virtual terminal and return the resolved
+/// final screen (scrollback + visible view), ready for rendering.
+pub fn interpret(bytes: &[u8], cols: usize, rows: usize, theme: &Theme) -> Screen {
+    let mut vt = avt::Vt::builder()
+        .size(cols, rows)
+        .scrollback_limit(SCROLLBACK_LIMIT)
+        .build();
+    vt.feed_str(&normalize_newlines(&String::from_utf8_lossy(bytes)));
+
+    let mut out: Vec<Vec<StyledRun>> = vt.lines().map(|line| runs_for_line(line, theme)).collect();
+    while out.last().is_some_and(|row| row.is_empty()) {
+        out.pop();
+    }
+    Screen { cols, rows: out }
+}
+
+/// A VT treats LF strictly as "move down" — the tty driver's ONLCR is what
+/// turns program `\n` into `\r\n` on a real terminal. PTY captures already
+/// contain `\r\n`; piped/file input has bare `\n`, so emulate the line
+/// discipline. Idempotent for input that is already normalized.
+fn normalize_newlines(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut prev = '\0';
+    for c in s.chars() {
+        if c == '\n' && prev != '\r' {
+            out.push('\r');
+        }
+        out.push(c);
+        prev = c;
+    }
+    out
+}
+
+/// Resolved visual attributes of a cell: inverse swapped, faint blended,
+/// colors mapped to concrete RGB. Blink is rendered static.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Attrs {
+    fg: Rgb,
+    bg: Option<Rgb>,
+    bold: bool,
+    italic: bool,
+    underline: bool,
+    strikethrough: bool,
+}
+
+fn resolve(pen: &avt::Pen, theme: &Theme) -> Attrs {
+    let mut fg = pen
+        .foreground()
+        .map_or(theme.foreground, |c| theme.resolve(c));
+    let mut bg = pen.background().map(|c| theme.resolve(c));
+
+    if pen.is_inverse() {
+        let new_bg = fg;
+        fg = bg.unwrap_or(theme.background);
+        bg = Some(new_bg);
+    }
+    if pen.is_faint() {
+        fg = fg.blend(bg.unwrap_or(theme.background), 0.5);
+    }
+
+    Attrs {
+        fg,
+        bg,
+        bold: pen.is_bold(),
+        italic: pen.is_italic(),
+        underline: pen.is_underline(),
+        strikethrough: pen.is_strikethrough(),
+    }
+}
+
+fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
+    let mut runs: Vec<StyledRun> = Vec::new();
+    let mut col = 0usize;
+
+    for cell in line.cells() {
+        let cell_width = cell.width() as usize;
+        if cell_width == 0 {
+            // Continuation cell of a wide character; already accounted for.
+            continue;
+        }
+        let attrs = resolve(cell.pen(), theme);
+        let wide = cell_width == 2;
+
+        let mergeable = !wide
+            && runs.last().is_some_and(|run| {
+                !run.wide
+                    && run.col + run.width == col
+                    && (
+                        run.fg,
+                        run.bg,
+                        run.bold,
+                        run.italic,
+                        run.underline,
+                        run.strikethrough,
+                    ) == (
+                        attrs.fg,
+                        attrs.bg,
+                        attrs.bold,
+                        attrs.italic,
+                        attrs.underline,
+                        attrs.strikethrough,
+                    )
+            });
+
+        if mergeable {
+            let run = runs.last_mut().expect("checked above");
+            run.text.push(cell.char());
+            run.width += 1;
+        } else {
+            runs.push(StyledRun {
+                col,
+                width: cell_width,
+                text: cell.char().to_string(),
+                fg: attrs.fg,
+                bg: attrs.bg,
+                bold: attrs.bold,
+                italic: attrs.italic,
+                underline: attrs.underline,
+                strikethrough: attrs.strikethrough,
+                wide,
+            });
+        }
+        col += cell_width;
+    }
+
+    // Trailing blank cells share the text's default pen and merge into the
+    // last run — trim them when nothing (bg/decoration) makes them visible.
+    if let Some(run) = runs.last_mut()
+        && run.bg.is_none()
+        && !run.underline
+        && !run.strikethrough
+    {
+        let trimmed = run.text.trim_end_matches(' ');
+        run.width -= run.text.len() - trimmed.len();
+        run.text.truncate(trimmed.len());
+    }
+
+    // Drop invisible runs: all-space runs with default bg and no decorations
+    // contribute nothing (runs carry absolute columns).
+    runs.retain(|run| !run.is_blank());
+    runs
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::theme::builtin;
+
+    fn screen(input: &str) -> Screen {
+        let theme = builtin::load("dracula").unwrap();
+        interpret(input.as_bytes(), 80, 24, &theme)
+    }
+
+    #[test]
+    fn plain_text_is_one_run() {
+        let s = screen("hello");
+        assert_eq!(s.rows.len(), 1);
+        assert_eq!(s.rows[0].len(), 1);
+        assert_eq!(s.rows[0][0].text, "hello");
+        assert_eq!(s.rows[0][0].col, 0);
+    }
+
+    #[test]
+    fn sgr_color_splits_runs() {
+        let s = screen("a\x1b[31mred\x1b[0mb");
+        let row = &s.rows[0];
+        assert_eq!(row.len(), 3);
+        assert_eq!(row[1].text, "red");
+        assert_eq!(row[1].fg, Rgb::new(0xff, 0x55, 0x55)); // dracula red
+        assert_eq!(row[2].col, 4);
+    }
+
+    #[test]
+    fn carriage_return_overwrites() {
+        let s = screen("00%\r50%\r99%");
+        assert_eq!(s.rows[0][0].text, "99%");
+        assert_eq!(s.rows.len(), 1);
+    }
+
+    #[test]
+    fn inverse_swaps_colors() {
+        let s = screen("\x1b[7mX\x1b[0m");
+        let run = &s.rows[0][0];
+        let theme = builtin::load("dracula").unwrap();
+        assert_eq!(run.fg, theme.background);
+        assert_eq!(run.bg, Some(theme.foreground));
+    }
+
+    #[test]
+    fn wide_chars_get_own_runs() {
+        let s = screen("a漢b");
+        let row = &s.rows[0];
+        assert_eq!(row.len(), 3);
+        assert_eq!(row[1].text, "漢");
+        assert!(row[1].wide);
+        assert_eq!(row[1].width, 2);
+        assert_eq!(row[2].col, 3);
+    }
+
+    #[test]
+    fn trailing_blank_lines_trimmed() {
+        let s = screen("one\n\n\n");
+        assert_eq!(s.rows.len(), 1);
+    }
+
+    #[test]
+    fn cursor_up_redraw_resolves() {
+        // draw two lines, move up, overwrite the first
+        let s = screen("aaa\nbbb\x1b[1A\rccc\x1b[1B\n");
+        assert_eq!(s.rows[0][0].text, "ccc");
+        assert_eq!(s.rows[1][0].text, "bbb");
+    }
+}

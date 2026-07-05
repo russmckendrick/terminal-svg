@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="158" viewBox="0 0 752 158" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
+<style>.b{font-weight:700}.i{font-style:italic}</style>
+<defs><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-opacity="0.35"/></filter></defs>
+<rect x="24" y="24" width="704" height="110" rx="10" fill="#282a36" filter="url(#shadow)"/>
+<circle cx="44" cy="46" r="6.5" fill="#ff5f57"/><circle cx="64" cy="46" r="6.5" fill="#febc2e"/><circle cx="84" cy="46" r="6.5" fill="#28c840"/>
+<text x="376" y="46" text-anchor="middle" dominant-baseline="central" font-size="12.6" fill="#6272a4">colors256</text>
+
+<rect x="40" y="101" width="42" height="17" fill="#00005f"/><rect x="82" y="101" width="42" height="17" fill="#005f00"/><rect x="124" y="101" width="42" height="17" fill="#5f0000"/><rect x="166" y="101" width="42" height="17" fill="#870000"/><rect x="208" y="101" width="42" height="17" fill="#af0000"/><rect x="250" y="101" width="42" height="17" fill="#d70000"/><rect x="292" y="101" width="42" height="17" fill="#121212"/><rect x="334" y="101" width="42" height="17" fill="#8a8a8a"/><rect x="376" y="101" width="42" height="17" fill="#e4e4e4"/>
+<g font-size="14">
+<text x="40" y="97.54" fill="#000000">016</text><text x="73.6" y="97.54" fill="#0000ff">021</text><text x="107.2" y="97.54" fill="#00ff00">046</text><text x="140.8" y="97.54" fill="#5fff00">082</text><text x="174.4" y="97.54" fill="#87ff00">118</text><text x="208" y="97.54" fill="#afff00">154</text><text x="241.6" y="97.54" fill="#d7ff00">190</text><text x="275.2" y="97.54" fill="#ff0000">196</text><text x="308.8" y="97.54" fill="#ff5f00">202</text><text x="342.4" y="97.54" fill="#ff8700">208</text><text x="376" y="97.54" fill="#ffaf00">214</text><text x="409.6" y="97.54" fill="#ffd700">220</text><text x="443.2" y="97.54" fill="#ffff00">226</text><text x="476.8" y="97.54" fill="#080808">232</text><text x="510.4" y="97.54" fill="#585858">240</text><text x="544" y="97.54" fill="#a8a8a8">248</text><text x="577.6" y="97.54" fill="#eeeeee">255</text>
+<text x="48.4" y="114.54" fill="#f8f8f2">017</text><text x="90.4" y="114.54" fill="#f8f8f2">022</text><text x="132.4" y="114.54" fill="#f8f8f2">052</text><text x="174.4" y="114.54" fill="#f8f8f2">088</text><text x="216.4" y="114.54" fill="#f8f8f2">124</text><text x="258.4" y="114.54" fill="#f8f8f2">160</text><text x="300.4" y="114.54" fill="#f8f8f2">233</text><text x="342.4" y="114.54" fill="#f8f8f2">245</text><text x="384.4" y="114.54" fill="#f8f8f2">254</text>
+</g>
+</svg>

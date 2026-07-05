@@ -1,0 +1,3 @@
+[48;5;24;97m  main [0m[38;5;24;48;5;238m[0m[48;5;238;93m 🦀 v1.95.0 [0m[38;5;238m[0m [1;32m❯[0m cargo build
+[2m   Compiling[0m terminal-svg v0.1.0
+[1;32m    Finished[0m dev profile in 7.5s

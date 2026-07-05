@@ -1,0 +1,30 @@
+[package]
+name = "terminal-svg"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Render terminal output as a pixel-perfect SVG screenshot with window chrome and themes"
+license = "MIT"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = "s"
+strip = "symbols"
+panic = "abort"
+
+[dependencies]
+allsorts = { version = "0.17.0", default-features = false, features = ["flate2_rust"] }
+anyhow = "1.0.103"
+avt = "0.18.0"
+base64 = "0.22.1"
+clap = { version = "4.6.1", features = ["derive"] }
+flate2 = { version = "1.1.9", default-features = false, features = ["rust_backend"] }
+portable-pty = "0.9.0"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "1.1.2"
+ttf-parser = "0.25.1"
+ttf2woff2 = { version = "0.13.1", default-features = false }
+
+[build-dependencies]
+flate2 = { version = "1.1.9", default-features = false, features = ["rust_backend"] }
