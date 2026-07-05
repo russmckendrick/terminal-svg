@@ -10,10 +10,10 @@
 
 
 <g font-size="14">
-<text x="40" y="97.54" fill="#f8f8f2">┏━━</text><text x="73.6" y="97.54" fill="#f8f8f2">heavy</text><text x="124" y="97.54" fill="#f8f8f2">━━┓</text>
-<text x="40" y="114.54" fill="#f8f8f2">┃</text><text x="56.8" y="114.54" fill="#f8f8f2">╭─</text><text x="82" y="114.54" fill="#f8f8f2">light</text><text x="132.4" y="114.54" fill="#f8f8f2">─╮</text><text x="157.6" y="114.54" fill="#f8f8f2">┃</text>
-<text x="40" y="131.54" fill="#f8f8f2">┃</text><text x="56.8" y="131.54" fill="#f8f8f2">╰───────╯</text><text x="140.8" y="131.54" fill="#f8f8f2">┃</text>
-<text x="40" y="148.54" fill="#f8f8f2">┗━━━━━━━━━━━━┛</text>
+<text x="40" y="97.54" fill="#f8f8f2">┏━━</text><text x="73.6" y="97.54" fill="#f8f8f2">heavy</text><text x="124" y="97.54" fill="#f8f8f2">━━━━━┓</text>
+<text x="40" y="114.54" fill="#f8f8f2">┃</text><text x="56.8" y="114.54" fill="#f8f8f2">╭─</text><text x="82" y="114.54" fill="#f8f8f2">light</text><text x="132.4" y="114.54" fill="#f8f8f2">─╮</text><text x="166" y="114.54" fill="#f8f8f2">┃</text>
+<text x="40" y="131.54" fill="#f8f8f2">┃</text><text x="56.8" y="131.54" fill="#f8f8f2">╰─────────╯</text><text x="166" y="131.54" fill="#f8f8f2">┃</text>
+<text x="40" y="148.54" fill="#f8f8f2">┗━━━━━━━━━━━━━━┛</text>
 <text x="40" y="165.54" fill="#f8f8f2">░▒▓█</text><text x="82" y="165.54" fill="#f8f8f2">blocks</text><text x="140.8" y="165.54" fill="#f8f8f2">█▓▒░</text>
 </g>
 </svg>
