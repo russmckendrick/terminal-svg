@@ -1,0 +1,236 @@
+@import '@fontsource-variable/jetbrains-mono';
+
+:root {
+  /* the terminal */
+  --bg: #191a21;
+  --bg-raise: #21222c;
+  --rule: #2f3140;
+
+  --fg: #f8f8f2;
+  --dim: #8a8ea8;
+  --faint: #565b73;
+
+  /* dracula, used semantically — green: commands, cyan: links,
+     yellow: strings/tags, purple: flags, pink: emphasis, red: errors */
+  --green: #50fa7b;
+  --cyan: #8be9fd;
+  --yellow: #f1fa8c;
+  --purple: #bd93f9;
+  --pink: #ff79c6;
+  --red: #ff5555;
+  --orange: #ffb86c;
+
+  --mono: 'JetBrains Mono Variable', ui-monospace, Menlo, Consolas, monospace;
+
+  --chrome-h: 44px;
+  --status-h: 38px;
+  --col: 88ch;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--green);
+  color: #191a21;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: var(--cyan);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+figure,
+pre {
+  margin: 0;
+}
+
+/* the session column — hard left inside a centered measure */
+main {
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: calc(var(--chrome-h) + 56px) 3ch calc(var(--status-h) + 72px);
+}
+
+section {
+  margin-bottom: 84px;
+}
+
+/* comments — narrative copy */
+.comment {
+  color: var(--dim);
+}
+
+.comment::before {
+  content: '# ';
+  color: var(--faint);
+}
+
+/* program output */
+.out {
+  color: var(--dim);
+}
+
+/* inverse-video action link: [ browse gallery ] */
+.action {
+  display: inline-block;
+  color: var(--green);
+  text-decoration: none;
+  padding: 1px 1ch;
+  border: 1px solid color-mix(in srgb, var(--green) 45%, transparent);
+}
+
+.action::before {
+  content: '';
+}
+
+.action:hover {
+  background: var(--green);
+  color: #191a21;
+  text-decoration: none;
+}
+
+/* blinking block cursor */
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  margin-left: 0.1em;
+  background: var(--green);
+  vertical-align: text-bottom;
+  animation: blink 1.1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rise-1 { animation-delay: 0.04s; }
+.rise-2 { animation-delay: 0.14s; }
+.rise-3 { animation-delay: 0.26s; }
+.rise-4 { animation-delay: 0.38s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .cursor {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* release-note markdown bodies */
+.prose {
+  color: var(--dim);
+  overflow-wrap: anywhere;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  color: var(--fg);
+  font-size: 14px;
+  margin: 20px 0 6px;
+}
+
+.prose h1::before,
+.prose h2::before,
+.prose h3::before {
+  content: '## ';
+  color: var(--faint);
+}
+
+.prose p {
+  margin: 10px 0;
+}
+
+.prose ul {
+  list-style: none;
+  padding-left: 2ch;
+  margin: 10px 0;
+}
+
+.prose li {
+  margin: 4px 0;
+}
+
+.prose li::before {
+  content: '- ';
+  color: var(--green);
+}
+
+.prose strong {
+  color: var(--fg);
+}
+
+.prose code {
+  color: var(--yellow);
+}
+
+.prose pre {
+  border-left: 2px solid var(--rule);
+  padding: 4px 0 4px 2ch;
+  margin: 12px 0;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  color: var(--fg);
+}
+
+.prose img {
+  display: block;
+  margin: 16px 0;
+}

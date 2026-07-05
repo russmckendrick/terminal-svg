@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+import Cmd from '../components/Cmd.astro';
+---
+
+<Base
+  title="404 — terminal-svg"
+  description="Page not found."
+  chromeTitle="russ@mckendrick — ~/terminal-svg — 404"
+>
+  <section class="notfound">
+    <Cmd cmd="cat ./this-page" />
+    <p class="out"><span class="err">cat: ./this-page: No such file or directory</span></p>
+    <p class="comment">
+      try <a href="/">cd ~</a> or <a href="/gallery/">ls gallery/</a>
+    </p>
+  </section>
+</Base>
+
+<style>
+  .notfound {
+    min-height: 45vh;
+  }
+
+  .err {
+    color: var(--red);
+  }
+
+  .comment {
+    margin-top: 20px;
+  }
+</style>

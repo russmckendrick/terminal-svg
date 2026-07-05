@@ -1,0 +1,159 @@
+---
+import Base from '../layouts/Base.astro';
+import Cmd from '../components/Cmd.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+import { items, themes, fixtures } from '../lib/gallery';
+---
+
+<Base
+  title="Gallery — terminal-svg"
+  description="Every terminal-svg test fixture rendered in all seven built-in themes: Dracula, Catppuccin Mocha, Nord, Tokyo Night, GitHub dark & light, and Solarized."
+  chromeTitle="russ@mckendrick — ~/terminal-svg/gallery"
+>
+  <section>
+    <Cmd
+      cmd="./examples/gallery.sh"
+      comment={`${fixtures.length} fixtures × ${themes.length} themes = ${items.length} SVGs, straight from the repo — zoom in, select the text, view source`}
+    />
+    <p class="filter-line" aria-hidden="true">
+      <span class="prompt">$ </span>ls gallery/ <span class="flag">--theme</span>=<span
+        class="val"
+        data-echo="theme">all</span> <span class="flag">--fixture</span>=<span
+        class="val"
+        data-echo="fixture">all</span>
+    </p>
+
+    <div class="filters">
+      <div class="group" data-filter-group="theme" role="group" aria-label="Filter by theme">
+        <button class="chip active" data-value="">all</button>
+        {themes.map((t) => <button class="chip" data-value={t}>{t}</button>)}
+      </div>
+      <div class="group" data-filter-group="fixture" role="group" aria-label="Filter by fixture">
+        <button class="chip active" data-value="">all</button>
+        {fixtures.map((f) => <button class="chip" data-value={f}>{f}</button>)}
+      </div>
+    </div>
+
+    <GalleryGrid items={items} />
+
+    <p class="empty out" data-empty hidden>
+      <span class="err">zsh: no matches found</span> — try a different combination
+    </p>
+  </section>
+</Base>
+
+<style>
+  .filter-line {
+    margin: 34px 0 10px;
+    font-weight: 600;
+  }
+
+  .prompt {
+    color: var(--green);
+  }
+
+  .flag {
+    color: var(--purple);
+  }
+
+  .val {
+    color: var(--yellow);
+  }
+
+  .filters {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 44px;
+    padding-left: 2ch;
+  }
+
+  .group {
+    display: flex;
+    align-items: baseline;
+    gap: 1ch;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    background: none;
+    border: none;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--dim);
+    cursor: pointer;
+    padding: 0 0.5ch;
+  }
+
+  .chip:hover {
+    color: var(--fg);
+  }
+
+  .chip.active {
+    background: var(--green);
+    color: #191a21;
+    font-weight: 600;
+  }
+
+  .empty {
+    margin-top: 40px;
+  }
+
+  .err {
+    color: var(--red);
+  }
+</style>
+
+<script>
+  const state: Record<string, string> = { theme: '', fixture: '' };
+  const cards = document.querySelectorAll<HTMLElement>('[data-theme][data-fixture]');
+  const empty = document.querySelector<HTMLElement>('[data-empty]');
+
+  function apply() {
+    let visible = 0;
+    for (const card of cards) {
+      const show =
+        (!state.theme || card.dataset.theme === state.theme) &&
+        (!state.fixture || card.dataset.fixture === state.fixture);
+      card.hidden = !show;
+      if (show) visible++;
+    }
+    if (empty) empty.hidden = visible > 0;
+    // echo the selection into the fake command line
+    for (const el of document.querySelectorAll<HTMLElement>('[data-echo]')) {
+      el.textContent = state[el.dataset.echo!] || 'all';
+    }
+    const params = new URLSearchParams();
+    if (state.theme) params.set('theme', state.theme);
+    if (state.fixture) params.set('fixture', state.fixture);
+    const qs = params.toString();
+    history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+  }
+
+  for (const group of document.querySelectorAll<HTMLElement>('[data-filter-group]')) {
+    const key = group.dataset.filterGroup!;
+    group.addEventListener('click', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip');
+      if (!chip) return;
+      state[key] = chip.dataset.value ?? '';
+      for (const c of group.querySelectorAll('.chip')) c.classList.toggle('active', c === chip);
+      apply();
+    });
+  }
+
+  // deep links: /gallery/?theme=nord&fixture=starship
+  const params = new URLSearchParams(location.search);
+  for (const key of ['theme', 'fixture'] as const) {
+    const value = params.get(key);
+    if (!value) continue;
+    const chip = document.querySelector<HTMLElement>(
+      `[data-filter-group="${key}"] .chip[data-value="${CSS.escape(value)}"]`
+    );
+    if (chip) {
+      state[key] = value;
+      const group = chip.closest('[data-filter-group]')!;
+      for (const c of group.querySelectorAll('.chip')) c.classList.toggle('active', c === chip);
+    }
+  }
+  apply();
+</script>

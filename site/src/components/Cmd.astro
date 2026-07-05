@@ -1,0 +1,64 @@
+---
+// A typed command line: optional dim comment above, `$` prompt, the command,
+// and an optional copy affordance. Long commands wrap with a hanging indent,
+// exactly like a real terminal.
+interface Props {
+  cmd: string;
+  comment?: string;
+  copy?: boolean;
+}
+
+const { cmd, comment, copy = false } = Astro.props;
+---
+
+<div class="cmd">
+  {comment && <p class="comment">{comment}</p>}
+  <p class="line">
+    <span class="prompt" aria-hidden="true">$ </span><span class="text">{cmd}</span>
+    {copy && <button class="copy" data-copy={cmd} aria-label={`Copy command: ${cmd}`}>copy</button>}
+  </p>
+</div>
+
+<style>
+  .cmd {
+    margin: 0 0 14px;
+  }
+
+  .line {
+    padding-left: 2ch;
+    text-indent: -2ch;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-weight: 600;
+  }
+
+  .prompt {
+    color: var(--green);
+    user-select: none;
+  }
+
+  .copy {
+    background: none;
+    border: none;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--faint);
+    cursor: pointer;
+    padding: 0;
+    margin-left: 2ch;
+    text-indent: 0;
+  }
+
+  .copy::before {
+    content: '⧉ ';
+  }
+
+  .copy:hover {
+    color: var(--fg);
+  }
+
+  .copy:global(.copied) {
+    color: var(--green);
+  }
+</style>

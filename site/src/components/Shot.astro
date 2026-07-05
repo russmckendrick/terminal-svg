@@ -1,0 +1,44 @@
+---
+// SVG output of a command. The SVGs carry their own window chrome and shadow,
+// so no frame here — just the image and a dim ls-style caption.
+interface Props {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  caption?: string;
+  eager?: boolean;
+}
+
+const { src, alt, width, height, caption, eager = false } = Astro.props;
+---
+
+<figure class="shot">
+  <img
+    src={src}
+    alt={alt}
+    width={width}
+    height={height}
+    loading={eager ? 'eager' : 'lazy'}
+    decoding={eager ? 'auto' : 'async'}
+    fetchpriority={eager ? 'high' : 'auto'}
+  />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .shot {
+    margin: 18px 0 0;
+  }
+
+  img {
+    display: block;
+    filter: drop-shadow(0 16px 40px rgba(0, 0, 0, 0.45));
+  }
+
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--faint);
+  }
+</style>

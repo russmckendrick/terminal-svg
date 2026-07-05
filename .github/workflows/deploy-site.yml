@@ -1,0 +1,49 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'gallery/**'
+      - 'docs/**'
+      - '.github/workflows/deploy-site.yml'
+  # rebuild when a release is published so version/release notes stay fresh
+  release:
+    types: [published]
+  # weekly safety net (note: GitHub disables cron on repos inactive for 60 days;
+  # the release trigger covers the case that matters)
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: withastro/action@v6
+        with:
+          path: ./site
+        env:
+          # feeds the build-time GitHub releases fetch in src/lib/releases.ts
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

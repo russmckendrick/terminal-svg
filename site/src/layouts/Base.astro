@@ -1,0 +1,93 @@
+---
+import '../styles/global.css';
+import Chrome from '../components/Chrome.astro';
+import StatusBar from '../components/StatusBar.astro';
+import Cmd from '../components/Cmd.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  chromeTitle?: string;
+}
+
+const { title, description, chromeTitle = 'russ@mckendrick — ~/terminal-svg' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="terminal-svg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="theme-color" content="#21222c" />
+  </head>
+  <body>
+    <Chrome title={chromeTitle} />
+    <main>
+      <slot />
+      <section class="logout">
+        <Cmd cmd="exit" />
+        <p class="out">Saving session... [Process completed]</p>
+        <p class="comment">
+          MIT licensed · built in Rust by <a href="https://github.com/russmckendrick" rel="noopener">Russ McKendrick</a>
+          · every screenshot on this site was rendered by terminal-svg itself — select the text in one
+        </p>
+      </section>
+    </main>
+    <StatusBar />
+    <script>
+      // one delegated handler serves every [data-copy] affordance
+      document.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
+        if (!btn) return;
+        const text = btn.dataset.copy ?? '';
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        } catch {
+          // clipboard API unavailable — legacy fallback
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand('copy');
+          ta.remove();
+        }
+        if (!ok) return;
+        const label = btn.textContent;
+        btn.textContent = 'copied';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = label;
+          btn.classList.remove('copied');
+        }, 1400);
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .logout {
+    margin-bottom: 0;
+    border-top: 1px solid var(--rule);
+    padding-top: 40px;
+  }
+
+  .logout .comment {
+    margin-top: 20px;
+    font-size: 12.5px;
+  }
+</style>

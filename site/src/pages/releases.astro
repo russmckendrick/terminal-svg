@@ -1,0 +1,52 @@
+---
+import Base from '../layouts/Base.astro';
+import Cmd from '../components/Cmd.astro';
+import ReleaseEntry from '../components/ReleaseEntry.astro';
+import { getReleases, REPO_URL } from '../lib/releases';
+
+const releases = await getReleases();
+---
+
+<Base
+  title="Releases — terminal-svg"
+  description="Release notes and downloads for every terminal-svg version, with prebuilt binaries for macOS, Linux and Windows."
+  chromeTitle="russ@mckendrick — ~/terminal-svg/releases"
+>
+  <section>
+    <Cmd
+      cmd="git log --tags --simplify-by-decoration"
+      comment="every tag ships prebuilt binaries + SHA256 checksums, and the Homebrew tap updates itself"
+    />
+    <div class="install">
+      <Cmd cmd="brew install russmckendrick/tap/terminal-svg" copy />
+    </div>
+    {
+      releases.length > 0 ? (
+        <div class="log">
+          {releases.map((r, i) => (
+            <ReleaseEntry release={r} latest={i === 0} />
+          ))}
+        </div>
+      ) : (
+        <p class="out">
+          <span class="err">fatal:</span> release data wasn't available when this page was
+          built — see <a href={`${REPO_URL}/releases`} rel="noopener">releases on GitHub</a>
+        </p>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .install {
+    margin: 30px 0 48px;
+  }
+
+  .log {
+    margin-top: 8px;
+  }
+
+  .err {
+    color: var(--red);
+  }
+</style>

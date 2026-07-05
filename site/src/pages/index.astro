@@ -1,0 +1,378 @@
+---
+import Base from '../layouts/Base.astro';
+import Cmd from '../components/Cmd.astro';
+import Shot from '../components/Shot.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+import ReleaseEntry from '../components/ReleaseEntry.astro';
+import { find } from '../lib/gallery';
+import { getLatest } from '../lib/releases';
+import demoUrl from '../../../docs/demo.svg?url';
+
+const latest = await getLatest();
+const version = latest ? latest.tag.replace(/^v/, '') : null;
+
+const starship = find('dracula', 'starship');
+
+const teaser = [
+  find('catppuccin-mocha', 'colors256'),
+  find('nord', 'boxdrawing'),
+  find('tokyo-night', 'sgr-styles'),
+  find('github-light', 'progress'),
+].filter((i) => i !== undefined);
+
+// canonical accent colours per theme, for --list-themes swatches
+const themeList = [
+  { name: 'dracula', note: '(default)', c: ['#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9'] },
+  { name: 'catppuccin-mocha', note: '', c: ['#f38ba8', '#a6e3a1', '#f9e2af', '#cba6f7'] },
+  { name: 'nord', note: '', c: ['#bf616a', '#a3be8c', '#ebcb8b', '#b48ead'] },
+  { name: 'tokyo-night', note: '', c: ['#f7768e', '#9ece6a', '#e0af68', '#bb9af7'] },
+  { name: 'github-dark', note: '', c: ['#ff7b72', '#3fb950', '#d29922', '#bc8cff'] },
+  { name: 'github-light', note: '', c: ['#cf222e', '#116329', '#9a6700', '#8250df'] },
+  { name: 'solarized-dark', note: '', c: ['#dc322f', '#859900', '#b58900', '#6c71c4'] },
+];
+
+const options = [
+  ['-o, --output <FILE>', 'where to write the SVG, `-` for stdout'],
+  ['-t, --theme <NAME>', 'built-in name or path to your own .toml'],
+  ['--title <TEXT>', 'title bar text (defaults to the command)'],
+  ['-c, --cols / -r, --rows', 'PTY size — 80×24 unless you say otherwise'],
+  ['--no-window', 'bare rounded panel, no chrome'],
+  ['--no-font-embed', 'reference system fonts instead of embedding'],
+  ['--timeout <SECS>', 'kill the PTY command after N seconds'],
+];
+
+const recOptions = [
+  ['--idle-time-limit <SECS>', 'cap pauses between events (default 2)'],
+  ['--speed <N>', 'playback speed multiplier'],
+  ['--no-loop', 'play once and hold the last frame'],
+  ['--static', 'render only the final screen'],
+];
+---
+
+<Base
+  title="terminal-svg — pixel-perfect SVG screenshots of your terminal"
+  description="A Rust CLI that renders terminal output as crisp, self-contained SVG screenshots — real VT emulation, embedded fonts, seven themes, and animated session recordings."
+>
+  <section class="hero">
+    <div class="rise rise-1">
+      <Cmd cmd="terminal-svg --version" />
+      {version && <p class="out">terminal-svg {version}</p>}
+    </div>
+    <h1 class="rise rise-2">
+      Your terminal,<br />rendered as<br /><em>pixel&#8209;perfect SVG</em><span
+        class="cursor"
+        aria-hidden="true"></span>
+    </h1>
+    <div class="manifesto rise rise-3">
+      <p class="comment">one Rust binary — no runtime, no browser, no fuss</p>
+      <p class="comment">a real VT emulator, so progress bars and cursor tricks come out right</p>
+      <p class="comment">fonts subsetted and embedded — renders identically everywhere</p>
+      <p class="comment">records interactive sessions as animated SVGs</p>
+    </div>
+    <div class="rise rise-4">
+      <Cmd cmd="brew install russmckendrick/tap/terminal-svg" copy />
+    </div>
+  </section>
+
+  <section>
+    <Cmd
+      cmd="terminal-svg rec -o demo.svg"
+      comment="record a session, exit the shell, get an animated SVG — this one:"
+    />
+    <Shot
+      src={demoUrl}
+      alt="Animated terminal-svg recording of a shell session, replayed as an SVG"
+      width={700}
+      height={480}
+      eager={true}
+      caption="demo.svg — 44 KB, loops forever, plays anywhere <img> works, text still selectable"
+    />
+  </section>
+
+  <section>
+    <Cmd cmd="man terminal-svg" />
+    <div class="man">
+      <h2>NAME</h2>
+      <p class="ind">terminal-svg — render terminal output as a pixel-perfect SVG screenshot</p>
+      <h2>WHY ANOTHER ONE</h2>
+      <dl class="ind">
+        <dt>It emulates, it doesn't guess.</dt>
+        <dd>
+          Output runs through the avt virtual terminal — the same state machine behind
+          asciinema. Carriage returns, cursor movement and progress bars land exactly where a
+          real terminal would put them, instead of being regex-stripped into soup.
+        </dd>
+        <dt>The file stands alone.</dt>
+        <dd>
+          Each SVG embeds a JetBrains Mono Nerd Font subsetted to just the glyphs you used,
+          compressed as WOFF2. Send it anywhere; it renders the same with no fonts installed.
+        </dd>
+        <dt>Emoji and CJK don't break it.</dt>
+        <dd>
+          Double-width characters are measured and placed correctly, and emoji render through
+          native color fonts. 漢字もOK 🎉
+        </dd>
+        <dt>It does motion.</dt>
+        <dd>
+          <code>rec</code> captures live sessions and replays them as animated SVGs —
+          GIF-quality demos at a fraction of the size. Asciicast v2 in and out, so your old
+          asciinema recordings render too.
+        </dd>
+      </dl>
+    </div>
+  </section>
+
+  <section>
+    <Cmd cmd="terminal-svg -- lsd -la" comment="run any command in a PTY and screenshot it" copy />
+    <Cmd cmd="ls --color=always | terminal-svg -o ls.svg" comment="or pipe ANSI straight in" copy />
+    <Cmd
+      cmd="terminal-svg starship.ansi -t dracula -o prompt.svg"
+      comment="or render a saved dump with a theme — this command made this file:"
+      copy
+    />
+    {
+      starship && (
+        <Shot
+          src={starship.url}
+          alt="A starship prompt rendered by terminal-svg in the Dracula theme"
+          width={starship.width}
+          height={starship.height}
+          caption="prompt.svg — window chrome, shadow and fonts included"
+        />
+      )
+    }
+    <div class="aftercmd">
+      <Cmd
+        cmd="terminal-svg demo.cast -t github-dark -o replay.svg"
+        comment="re-theme any asciicast recording without re-recording it"
+        copy
+      />
+    </div>
+  </section>
+
+  <section>
+    <Cmd cmd="terminal-svg --list-themes" />
+    <ul class="themes">
+      {
+        themeList.map((t) => (
+          <li>
+            <span class="swatch" aria-hidden="true">
+              {t.c.map((c) => (
+                <i style={`background:${c}`} />
+              ))}
+            </span>
+            <a href={`/gallery/?theme=${t.name}`}>{t.name}</a>
+            {t.note && <span class="note">{t.note}</span>}
+          </li>
+        ))
+      }
+    </ul>
+    <p class="comment themes-note">or bring your own — any TOML file with 16 colors works: --theme path/to/mine.toml</p>
+  </section>
+
+  <section>
+    <Cmd cmd="ls gallery/ | shuf -n 4" comment="9 test fixtures × 7 themes, rendered by the repo's own gallery script" />
+    <div class="teaser">
+      <GalleryGrid items={teaser} />
+    </div>
+    <p class="after"><a class="action" href="/gallery/">browse all 63 →</a></p>
+  </section>
+
+  <section>
+    <Cmd cmd="terminal-svg --help" />
+    <div class="help">
+      <p class="out usage-line">usage: terminal-svg [OPTIONS] [INPUT] [-- COMMAND...]</p>
+      <dl>
+        {
+          options.map(([flag, desc]) => (
+            <>
+              <dt>{flag}</dt>
+              <dd>{desc}</dd>
+            </>
+          ))
+        }
+      </dl>
+      <p class="out usage-line">animation (for rec and .cast input):</p>
+      <dl>
+        {
+          recOptions.map(([flag, desc]) => (
+            <>
+              <dt>{flag}</dt>
+              <dd>{desc}</dd>
+            </>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  {
+    latest && (
+      <section>
+        <Cmd cmd="git log --tags -1" comment="fresh from the changelog" />
+        <div class="log">
+          <ReleaseEntry release={latest} latest={true} />
+        </div>
+        <p class="after">
+          <a class="action" href="/releases/">full release history →</a>
+        </p>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .hero {
+    margin-bottom: 96px;
+  }
+
+  h1 {
+    font-size: clamp(30px, 5.4vw, 56px);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    margin: 36px 0;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--green);
+  }
+
+  .manifesto {
+    margin-bottom: 36px;
+  }
+
+  .man h2 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 26px 0 10px;
+  }
+
+  .man h2:first-child {
+    margin-top: 18px;
+  }
+
+  .ind {
+    padding-left: 4ch;
+  }
+
+  .man dt {
+    font-weight: 700;
+    margin-top: 18px;
+  }
+
+  .man dd {
+    margin: 4px 0 0;
+    color: var(--dim);
+    max-width: 72ch;
+  }
+
+  .man code {
+    color: var(--yellow);
+  }
+
+  .aftercmd {
+    margin-top: 28px;
+  }
+
+  .themes {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0 0;
+  }
+
+  .themes li {
+    display: flex;
+    align-items: baseline;
+    gap: 2ch;
+    padding: 3px 0;
+  }
+
+  .swatch {
+    display: inline-flex;
+    gap: 4px;
+    align-self: center;
+  }
+
+  .swatch i {
+    width: 10px;
+    height: 10px;
+  }
+
+  .themes a {
+    text-decoration: none;
+    color: var(--fg);
+  }
+
+  .themes a:hover {
+    color: var(--green);
+  }
+
+  .themes .note {
+    color: var(--faint);
+    font-size: 12.5px;
+  }
+
+  .themes-note {
+    margin-top: 14px;
+    font-size: 13px;
+  }
+
+  .teaser {
+    margin-top: 22px;
+  }
+
+  .after {
+    margin-top: 26px;
+  }
+
+  .help dl {
+    display: grid;
+    grid-template-columns: minmax(24ch, max-content) minmax(0, 1fr);
+    column-gap: 3ch;
+    row-gap: 4px;
+    padding-left: 2ch;
+    margin: 10px 0 18px;
+  }
+
+  .help dt {
+    color: var(--purple);
+    white-space: nowrap;
+  }
+
+  .help dd {
+    margin: 0;
+    color: var(--dim);
+  }
+
+  .usage-line {
+    margin-top: 14px;
+  }
+
+  .log {
+    margin-top: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .help dl {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 2px;
+      padding-left: 1ch;
+    }
+
+    .help dd {
+      padding-left: 2ch;
+      margin-bottom: 8px;
+    }
+
+    .help dt {
+      white-space: normal;
+    }
+
+    .ind {
+      padding-left: 2ch;
+    }
+  }
+</style>

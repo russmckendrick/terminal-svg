@@ -1,0 +1,66 @@
+---
+// The viewport IS the terminal window — this is its title bar.
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="chrome">
+  <span class="lights" aria-hidden="true">
+    <i class="r"></i><i class="y"></i><i class="g"></i>
+  </span>
+  <span class="title">{title}</span>
+</div>
+
+<style>
+  .chrome {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    height: var(--chrome-h);
+    display: flex;
+    align-items: center;
+    background: color-mix(in srgb, var(--bg-raise) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 16px;
+  }
+
+  .lights {
+    display: flex;
+    gap: 8px;
+    position: absolute;
+  }
+
+  .lights i {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .r { background: #ff5f57; }
+  .y { background: #febc2e; }
+  .g { background: #28c840; }
+
+  .title {
+    flex: 1;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 70px;
+  }
+
+  @media (max-width: 560px) {
+    .title {
+      text-align: right;
+      padding: 0 0 0 70px;
+    }
+  }
+</style>

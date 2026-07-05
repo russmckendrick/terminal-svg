@@ -1,0 +1,90 @@
+---
+// tmux-style status line, doubling as site navigation.
+import { getLatest, REPO_URL } from '../lib/releases';
+
+const latest = await getLatest();
+const path = Astro.url.pathname;
+
+const windows = [
+  { n: 0, name: 'home', href: '/' },
+  { n: 1, name: 'gallery', href: '/gallery/' },
+  { n: 2, name: 'releases', href: '/releases/' },
+];
+
+function active(href: string) {
+  return href === '/' ? path === '/' : path.startsWith(href);
+}
+---
+
+<nav class="status" aria-label="Site">
+  <span class="session" aria-hidden="true">[tsvg]</span>
+  {
+    windows.map((w) => (
+      <a href={w.href} class:list={{ on: active(w.href) }}>
+        {w.n}:{w.name}
+        {active(w.href) ? '*' : ''}
+      </a>
+    ))
+  }
+  <span class="spacer"></span>
+  <a class="gh" href={REPO_URL} rel="noopener">github</a>
+  {latest && <span class="ver">{latest.tag}</span>}
+</nav>
+
+<style>
+  .status {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    height: var(--status-h);
+    display: flex;
+    align-items: center;
+    gap: 2ch;
+    background: var(--bg-raise);
+    border-top: 1px solid var(--rule);
+    padding: 0 16px;
+    font-size: 12.5px;
+  }
+
+  .session {
+    color: var(--green);
+  }
+
+  .status a {
+    color: var(--dim);
+    text-decoration: none;
+  }
+
+  .status a:hover {
+    color: var(--fg);
+  }
+
+  .status a.on {
+    color: #191a21;
+    background: var(--green);
+    padding: 1px 1ch;
+    font-weight: 600;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .ver {
+    color: var(--yellow);
+  }
+
+  @media (max-width: 560px) {
+    .status {
+      gap: 1.5ch;
+      font-size: 11.5px;
+      padding: 0 12px;
+    }
+
+    .session {
+      display: none;
+    }
+  }
+</style>

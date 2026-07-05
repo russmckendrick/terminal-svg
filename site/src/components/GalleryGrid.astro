@@ -1,0 +1,62 @@
+---
+// The SVGs float directly on the terminal background — they bring their own
+// window chrome and shadows. Captions read like paths in ls output.
+import type { GalleryItem } from '../lib/gallery';
+
+interface Props {
+  items: GalleryItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="grid">
+  {
+    items.map((item) => (
+      <figure data-theme={item.theme} data-fixture={item.fixture}>
+        <img
+          src={item.url}
+          alt={`${item.fixture} rendered in the ${item.theme} theme`}
+          width={item.width}
+          height={item.height}
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption>
+          <span class="path">{item.theme}/{item.fixture}.svg</span>
+          {item.animated && <span class="anim">·anim</span>}
+        </figcaption>
+      </figure>
+    ))
+  }
+</div>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: 40px 32px;
+    align-items: end;
+  }
+
+  figure {
+    margin: 0;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.4));
+  }
+
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--faint);
+  }
+
+  .anim {
+    color: var(--pink);
+  }
+</style>
