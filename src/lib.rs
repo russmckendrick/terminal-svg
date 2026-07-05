@@ -1,4 +1,6 @@
+pub mod anim;
 pub mod capture;
+pub mod cast;
 pub mod cli;
 pub mod font;
 pub mod render;

@@ -1,5 +1,6 @@
 pub mod input;
 pub mod pty;
+pub mod record;
 
 use anyhow::Result;
 use std::path::PathBuf;

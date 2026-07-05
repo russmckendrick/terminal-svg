@@ -43,6 +43,35 @@ ls --color=always | terminal-svg -o ls.svg
 terminal-svg dump.ansi -t nord -o dump.svg
 ```
 
+## Recording animated SVGs
+
+`terminal-svg rec` drops you into your shell, records everything, and renders
+an **animated SVG** replaying the session when you exit — a GIF-quality demo
+at a fraction of the size, with real selectable text, that plays anywhere an
+`<img>` tag does (GitHub READMEs included, no JavaScript).
+
+```sh
+# Record an interactive session ($SHELL); exit the shell to finish
+terminal-svg rec -o demo.svg
+
+# Record a single command instead of a shell
+terminal-svg rec -o build.svg -- cargo build
+
+# Tweak the replay without re-recording: rec keeps an asciicast next to
+# the SVG (demo.cast above), and .cast files render directly
+terminal-svg demo.cast -t github-dark -o demo-dark.svg
+terminal-svg demo.cast --speed 2 --no-loop -o demo-fast.svg
+```
+
+Recordings are standard [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/)
+files — `asciinema play demo.cast` works, and existing asciinema recordings
+render with plain `terminal-svg session.cast`. Long pauses are capped at 2s
+(`--idle-time-limit`), bursts are coalesced to ≤30fps, identical frames are
+deduplicated, and repeated rows are shared across frames via `<defs>`/`<use>`,
+so even minute-long sessions stay compact. The animation loops with a 1.5s
+hold on the last frame; `--no-loop` plays once and freezes, and `--static`
+renders just the final screen.
+
 ### Options
 
 | Flag | Default | |
@@ -58,6 +87,17 @@ terminal-svg dump.ansi -t nord -o dump.svg
 | `--no-font-embed` | | reference system fonts instead |
 | `--timeout <secs>` | | kill the PTY command after N seconds |
 | `--list-themes` | | |
+
+Animation options (for `rec` and `.cast` input):
+
+| Flag | Default | |
+|---|---|---|
+| `--idle-time-limit <secs>` | 2 | cap pauses between events |
+| `--speed <n>` | 1 | playback speed multiplier |
+| `--no-loop` | | play once and hold the last frame |
+| `--static` | | render only the final screen |
+| `--cast <path>` | output stem + `.cast` | where `rec` saves the recording |
+| `-c` / `-r` (rec) | current terminal size | recorded PTY size |
 
 ### Themes
 

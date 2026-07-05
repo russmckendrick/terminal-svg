@@ -8,12 +8,21 @@ use crate::theme::Theme;
 
 use super::{RenderConfig, chrome, metrics, text};
 
-/// Assemble the complete SVG document.
-pub fn render(screen: &Screen, theme: &Theme, config: &RenderConfig) -> Result<String> {
-    let m = metrics::from_font(assets::regular(), config.font_size, config.line_height)?;
+/// Document geometry shared by the static and animated renderers.
+pub(super) struct Layout {
+    pub m: metrics::Metrics,
+    pub win_w: f32,
+    pub win_h: f32,
+    pub total_w: f32,
+    pub total_h: f32,
+    /// Top-left of the text grid.
+    pub origin_x: f32,
+    pub origin_y: f32,
+}
 
-    let rows = screen.rows.len().max(1);
-    let content_w = screen.cols as f32 * m.cell_w + 2.0 * config.padding;
+pub(super) fn layout(cols: usize, rows: usize, config: &RenderConfig) -> Result<Layout> {
+    let m = metrics::from_font(assets::regular(), config.font_size, config.line_height)?;
+    let content_w = cols as f32 * m.cell_w + 2.0 * config.padding;
     let content_h = rows as f32 * m.line_h + 2.0 * config.padding;
     let title_bar_h = if config.window {
         chrome::TITLE_BAR_H
@@ -22,45 +31,46 @@ pub fn render(screen: &Screen, theme: &Theme, config: &RenderConfig) -> Result<S
     };
     let win_w = content_w;
     let win_h = title_bar_h + content_h;
-    let total_w = win_w + 2.0 * config.margin;
-    let total_h = win_h + 2.0 * config.margin;
-
-    let origin_x = config.margin + config.padding;
-    let origin_y = config.margin + title_bar_h + config.padding;
-
-    let mut out = String::with_capacity(16 * 1024);
-    let _ = write!(
-        out,
-        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" font-family="{ff}" xml:space="preserve">"#,
-        w = fmt(total_w),
-        h = fmt(total_h),
-        ff = xml_escape(&config.font_family),
-    );
-    out.push('\n');
-
-    style_block(&mut out, config);
-    if config.shadow {
-        chrome::shadow_filter(&mut out, theme.shadow_opacity);
-    }
-    chrome::window(
-        &mut out,
-        theme,
-        config,
-        config.margin,
-        config.margin,
+    Ok(Layout {
+        m,
         win_w,
         win_h,
-    );
+        total_w: win_w + 2.0 * config.margin,
+        total_h: win_h + 2.0 * config.margin,
+        origin_x: config.margin + config.padding,
+        origin_y: config.margin + title_bar_h + config.padding,
+    })
+}
 
-    text::background_rects(&mut out, screen, &m, origin_x, origin_y);
-    let _ = write!(out, r#"<g font-size="{}">"#, fmt(m.font_size));
+/// Assemble the complete SVG document.
+pub fn render(screen: &Screen, theme: &Theme, config: &RenderConfig) -> Result<String> {
+    let l = layout(screen.cols, screen.rows.len().max(1), config)?;
+
+    let mut out = String::with_capacity(16 * 1024);
+    open_document(&mut out, &l, config);
+    style_block(&mut out, config, "");
+    chrome_layer(&mut out, theme, config, &l);
+
+    text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+    let _ = write!(out, r#"<g font-size="{}">"#, fmt(l.m.font_size));
     out.push('\n');
-    text::text_runs(&mut out, screen, &m, origin_x, origin_y);
+    text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y);
     out.push_str("</g>\n</svg>\n");
     Ok(out)
 }
 
-fn style_block(out: &mut String, config: &RenderConfig) {
+pub(super) fn open_document(out: &mut String, l: &Layout, config: &RenderConfig) {
+    let _ = write!(
+        out,
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" font-family="{ff}" xml:space="preserve">"#,
+        w = fmt(l.total_w),
+        h = fmt(l.total_h),
+        ff = xml_escape(&config.font_family),
+    );
+    out.push('\n');
+}
+
+pub(super) fn style_block(out: &mut String, config: &RenderConfig, extra_css: &str) {
     out.push_str("<style>");
     if let Some(faces) = &config.font_faces {
         for (weight, data) in &faces.faces {
@@ -72,7 +82,24 @@ fn style_block(out: &mut String, config: &RenderConfig) {
         }
     }
     out.push_str(".b{font-weight:700}.i{font-style:italic}");
+    out.push_str(extra_css);
     out.push_str("</style>\n");
+}
+
+/// Shadow filter (when enabled) plus the window body and title bar.
+pub(super) fn chrome_layer(out: &mut String, theme: &Theme, config: &RenderConfig, l: &Layout) {
+    if config.shadow {
+        chrome::shadow_filter(out, theme.shadow_opacity);
+    }
+    chrome::window(
+        out,
+        theme,
+        config,
+        config.margin,
+        config.margin,
+        l.win_w,
+        l.win_h,
+    );
 }
 
 /// Format a length: at most 2 decimal places, no trailing zeros.

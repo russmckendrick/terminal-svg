@@ -1,8 +1,10 @@
+pub mod anim;
 pub mod chrome;
 pub mod metrics;
 pub mod svg;
 pub mod text;
 
+pub use anim::render_animated;
 pub use svg::render;
 
 #[derive(Debug, Clone)]

@@ -8,7 +8,7 @@
 use std::path::Path;
 
 use terminal_svg::render::{self, RenderConfig};
-use terminal_svg::{term, theme};
+use terminal_svg::{anim, cast, term, theme};
 
 const FIXTURES: &[&str] = &[
     "colors16",
@@ -21,23 +21,40 @@ const FIXTURES: &[&str] = &[
     "starship",
 ];
 
-fn render_fixture(name: &str) -> String {
-    let bytes = std::fs::read(format!("tests/fixtures/{name}.ansi"))
-        .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
-    let theme = theme::builtin::load("dracula").unwrap();
-    let screen = term::interpret(&bytes, 80, 24, &theme);
-    let config = RenderConfig {
+fn fixed_config(title: &str) -> RenderConfig {
+    RenderConfig {
         font_size: 14.0,
         line_height: 1.2,
         padding: 16.0,
         margin: 24.0,
         window: true,
         shadow: true,
-        title: Some(name.to_string()),
+        title: Some(title.to_string()),
         font_family: render::DEFAULT_FONT_STACK.to_string(),
         font_faces: None,
+    }
+}
+
+fn render_fixture(name: &str) -> String {
+    let bytes = std::fs::read(format!("tests/fixtures/{name}.ansi"))
+        .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
+    let theme = theme::builtin::load("dracula").unwrap();
+    let screen = term::interpret(&bytes, 80, 24, &theme);
+    render::render(&screen, &theme, &fixed_config(name)).unwrap()
+}
+
+/// Animated rendering is deterministic: the pipeline consumes only the
+/// cast's own timestamps, never the wall clock.
+fn render_animated_fixture(name: &str) -> String {
+    let (header, events) = cast::read(Path::new(&format!("tests/fixtures/{name}.cast")))
+        .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
+    let theme = theme::builtin::load("dracula").unwrap();
+    let opts = anim::AnimOptions {
+        idle_time_limit: None,
+        speed: 1.0,
     };
-    render::render(&screen, &theme, &config).unwrap()
+    let animation = anim::build_frames(&header, &events, &theme, &opts);
+    render::render_animated(&animation, &theme, &fixed_config(name), true).unwrap()
 }
 
 #[test]
@@ -45,8 +62,13 @@ fn golden() {
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
     let mut failures = Vec::new();
 
-    for name in FIXTURES {
-        let svg = render_fixture(name);
+    let animated = ("typing", render_animated_fixture("typing"));
+    let rendered = FIXTURES
+        .iter()
+        .map(|name| (*name, render_fixture(name)))
+        .chain([(animated.0, animated.1)]);
+
+    for (name, svg) in rendered {
         let golden_path = format!("tests/golden/{name}.svg");
 
         if update {

@@ -29,6 +29,14 @@ for theme in $("$BIN" --list-themes); do
     "$BIN" "$fixture" -t "$theme" --title "$name" -c 70 -o "$svg" 2>/dev/null
     echo "<img src=\"$svg\" alt=\"$theme $name\">" >> "$HTML"
   done
+  # Animated: replay the checked-in cast fixture (deterministic, no
+  # interactive step).
+  for fixture in tests/fixtures/*.cast; do
+    name=$(basename "$fixture" .cast)
+    svg="$OUT/$theme-$name-anim.svg"
+    "$BIN" "$fixture" -t "$theme" --title "$name" -o "$svg" 2>/dev/null
+    echo "<img src=\"$svg\" alt=\"$theme $name animated\">" >> "$HTML"
+  done
 done
 
 echo "wrote $HTML ($(ls "$OUT" | wc -l | tr -d ' ') SVGs)"

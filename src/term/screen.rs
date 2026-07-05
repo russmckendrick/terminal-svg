@@ -29,7 +29,7 @@ impl StyledRun {
 }
 
 /// Render-ready screen: attribute-resolved runs, one Vec per row.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Screen {
     pub cols: usize,
     pub rows: Vec<Vec<StyledRun>>,

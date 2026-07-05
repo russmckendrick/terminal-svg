@@ -21,6 +21,53 @@ pub fn interpret(bytes: &[u8], cols: usize, rows: usize, theme: &Theme) -> Scree
     Screen { cols, rows: out }
 }
 
+/// Incremental interpreter for animated replays: feed recorded output
+/// chunks one at a time and snapshot the visible screen between them.
+pub struct Interpreter {
+    vt: avt::Vt,
+}
+
+impl Interpreter {
+    pub fn new(cols: usize, rows: usize) -> Self {
+        // Replays render the viewport only, so no scrollback is kept.
+        let vt = avt::Vt::builder()
+            .size(cols, rows)
+            .scrollback_limit(0)
+            .build();
+        Self { vt }
+    }
+
+    /// Feed raw recorded output. Unlike `interpret`, newlines are not
+    /// normalized: asciicast data came off a PTY, where ONLCR already
+    /// produced `\r\n`.
+    pub fn feed(&mut self, data: &str) {
+        self.vt.feed_str(data);
+    }
+
+    pub fn resize(&mut self, cols: usize, rows: usize) {
+        self.vt.resize(cols, rows);
+    }
+
+    /// Snapshot the visible screen. Trailing blank rows are kept — an
+    /// animation canvas has a fixed height.
+    pub fn snapshot(&self, theme: &Theme) -> Screen {
+        Screen {
+            cols: self.vt.size().0,
+            rows: self
+                .vt
+                .view()
+                .map(|line| runs_for_line(line, theme))
+                .collect(),
+        }
+    }
+
+    /// Cursor grid position, when the cursor is visible.
+    pub fn cursor(&self) -> Option<(usize, usize)> {
+        let cursor = self.vt.cursor();
+        cursor.visible.then_some((cursor.col, cursor.row))
+    }
+}
+
 /// A VT treats LF strictly as "move down" — the tty driver's ONLCR is what
 /// turns program `\n` into `\r\n` on a real terminal. PTY captures already
 /// contain `\r\n`; piped/file input has bare `\n`, so emulate the line
