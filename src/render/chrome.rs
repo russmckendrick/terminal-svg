@@ -71,12 +71,22 @@ pub fn window(
     }
 }
 
-/// The single feDropShadow filter definition shared by the window body.
+/// Layered window shadow: a soft ambient pass under a tight contact pass,
+/// like a real macOS window. The spread (dy + 3·stdDeviation ≈ 23px) stays
+/// inside the default 24px margin so the shadow fades out naturally instead
+/// of clipping into a box at the SVG edge. The theme's shadow_opacity scales
+/// both passes.
 pub fn shadow_filter(out: &mut String, opacity: f32) {
     let _ = write!(
         out,
-        r#"<defs><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-opacity="{}"/></filter></defs>"#,
-        fmt(opacity),
+        concat!(
+            r#"<defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%">"#,
+            r#"<feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="{ambient}" result="s1"/>"#,
+            r#"<feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="{contact}"/>"#,
+            r#"</filter></defs>"#,
+        ),
+        ambient = fmt(opacity * 0.55),
+        contact = fmt(opacity * 0.8),
     );
     out.push('\n');
 }

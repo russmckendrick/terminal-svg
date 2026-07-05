@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="752" height="175" viewBox="0 0 752 175" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
 <style>.b{font-weight:700}.i{font-style:italic}</style>
-<defs><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-opacity="0.35"/></filter></defs>
+<defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
 <rect x="24" y="24" width="704" height="127" rx="10" fill="#282a36" filter="url(#shadow)"/>
 <circle cx="44" cy="46" r="6.5" fill="#ff5f57"/><circle cx="64" cy="46" r="6.5" fill="#febc2e"/><circle cx="84" cy="46" r="6.5" fill="#28c840"/>
 <text x="376" y="46" text-anchor="middle" dominant-baseline="central" font-size="12.6" fill="#6272a4">colors16</text>
