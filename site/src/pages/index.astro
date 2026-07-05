@@ -2,7 +2,6 @@
 import Base from '../layouts/Base.astro';
 import CodeSnippet from '../components/CodeSnippet.astro';
 import FinishPicker from '../components/FinishPicker.astro';
-import ReleaseEntry from '../components/ReleaseEntry.astro';
 import { find } from '../lib/gallery';
 import { getLatest, REPO_URL, formatDate, formatSize } from '../lib/releases';
 import demoUrl from '../../../docs/demo.svg?url';
@@ -275,22 +274,6 @@ const binaries = (latest?.assets ?? [])
     </div>
   </section>
 
-  <!-- latest release -->
-  {
-    latest && (
-      <section class="section section--gray latest">
-        <div class="wrap">
-          <h2 class="headline" data-reveal>New in {latest.tag}.</h2>
-          <div class="release" data-reveal>
-            <ReleaseEntry release={latest} latest={true} />
-          </div>
-          <p class="center-link" data-reveal>
-            <a class="link-more" href="/releases/">All release notes</a>
-          </p>
-        </div>
-      </section>
-    )
-  }
 </Base>
 
 <style>
@@ -453,15 +436,6 @@ const binaries = (latest?.assets ?? [])
     color: var(--text-dark-2);
     font-size: 12px;
     flex-shrink: 0;
-  }
-
-  .latest {
-    padding-top: 0;
-  }
-
-  .release {
-    max-width: 780px;
-    margin: 56px auto 0;
   }
 
   @media (max-width: 860px) {
