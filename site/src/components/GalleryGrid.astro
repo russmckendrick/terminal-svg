@@ -13,7 +13,7 @@ interface Props {
 const { items, lightbox = false } = Astro.props;
 ---
 
-<div class="masonry">
+<div class="grid">
   {
     items.map((item) => (
       <figure class="tile" data-theme={item.theme} data-fixture={item.fixture}>
@@ -64,9 +64,10 @@ const { items, lightbox = false } = Astro.props;
 </div>
 
 <style>
-  .masonry {
-    columns: 2 460px;
-    column-gap: 48px;
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(480px, 100%), 1fr));
+    gap: 64px 48px;
   }
 
   .tile[hidden] {
@@ -74,13 +75,16 @@ const { items, lightbox = false } = Astro.props;
   }
 
   .tile {
-    margin: 0 0 56px;
-    break-inside: avoid;
+    margin: 0;
   }
 
+  /* every slot shares one ratio, so rows align no matter which SVG is inside */
   .media {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
+    aspect-ratio: 2 / 1;
     padding: 0;
     background: none;
     border: none;
@@ -91,23 +95,26 @@ const { items, lightbox = false } = Astro.props;
   }
 
   .media img {
-    display: block;
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
+    object-fit: contain;
     filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.16));
     transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.35s ease;
   }
 
   .tile:hover .media img {
-    transform: translateY(-4px) scale(1.012);
+    transform: translateY(-4px) scale(1.015);
     filter: drop-shadow(0 28px 52px rgba(0, 0, 0, 0.22));
   }
 
   figcaption {
     display: flex;
+    justify-content: center;
     align-items: baseline;
     gap: 10px;
-    padding: 14px 6px 0;
+    padding: 18px 6px 0;
     font-size: 14px;
   }
 
@@ -123,7 +130,6 @@ const { items, lightbox = false } = Astro.props;
   }
 
   .anim {
-    margin-left: auto;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -138,8 +144,8 @@ const { items, lightbox = false } = Astro.props;
   }
 
   @media (max-width: 640px) {
-    .tile {
-      margin-bottom: 44px;
+    .grid {
+      gap: 44px;
     }
   }
 </style>
