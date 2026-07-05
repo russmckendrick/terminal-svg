@@ -1,7 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
-import { items, themes, fixtures } from '../lib/gallery';
+import { items, themes, fixtures, THEME_META, FIXTURE_META } from '../lib/gallery';
+
+const themeMeta = THEME_META.filter((t) => themes.includes(t.key));
+const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
 ---
 
 <Base
@@ -12,26 +15,64 @@ import { items, themes, fixtures } from '../lib/gallery';
     <div class="wrap">
       <h1 class="headline" data-reveal>Every theme.<br />Every fixture.</h1>
       <p class="subhead narrow" data-reveal>
-        {fixtures.length} test fixtures × {themes.length} themes — {items.length} SVGs,
-        rendered straight from the repo. Zoom right in — they're vectors.
+        {fixtures.length} test fixtures. {themes.length} themes. {items.length} SVGs, rendered
+        straight from the repo. Zoom right in — they're vectors.
       </p>
 
       <div class="filters" data-reveal>
-        <div class="seg" data-filter-group="theme" role="group" aria-label="Filter by theme">
-          <button class="on" data-value="">All themes</button>
-          {themes.map((t) => <button data-value={t}>{t}</button>)}
+        <div class="swatch-filter" data-filter-group="theme" role="group" aria-label="Filter by theme">
+          <button class="swatch all on" data-value="" aria-label="All themes" title="All themes"></button>
+          {
+            themeMeta.map((t) => (
+              <button
+                class="swatch"
+                data-value={t.key}
+                aria-label={t.label}
+                title={t.label}
+                style={`--a:${t.a};--b:${t.b}`}
+              />
+            ))
+          }
         </div>
+        <p class="theme-name" data-theme-name>All themes</p>
+
         <div class="seg" data-filter-group="fixture" role="group" aria-label="Filter by fixture">
-          <button class="on" data-value="">All fixtures</button>
-          {fixtures.map((f) => <button data-value={f}>{f}</button>)}
+          <button class="on" data-value="">All</button>
+          {fixtureMeta.map((f) => <button data-value={f.key}>{f.label}</button>)}
         </div>
       </div>
 
-      <GalleryGrid items={items} />
+      <p class="count" data-count aria-live="polite">Showing all {items.length}</p>
+    </div>
 
+    <div class="wide">
+      <GalleryGrid items={items} lightbox={true} />
       <p class="empty" data-empty hidden>Nothing matches that combination.</p>
     </div>
   </section>
+
+  <!-- lightbox -->
+  <div class="lightbox" data-lightbox-root hidden>
+    <button class="lb-close" data-lb-close aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="m6 6 12 12M18 6 6 18"></path>
+      </svg>
+    </button>
+    <button class="lb-arrow lb-prev" data-lb-prev aria-label="Previous">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 5l-7 7 7 7"></path>
+      </svg>
+    </button>
+    <figure>
+      <img data-lb-img src="" alt="" />
+      <figcaption data-lb-caption></figcaption>
+    </figure>
+    <button class="lb-arrow lb-next" data-lb-next aria-label="Next">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m9 5 7 7-7 7"></path>
+      </svg>
+    </button>
+  </div>
 </Base>
 
 <style>
@@ -39,8 +80,44 @@ import { items, themes, fixtures } from '../lib/gallery';
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    margin: 48px 0 56px;
+    margin: 52px 0 0;
+  }
+
+  .swatch-filter {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .swatch.all {
+    background: conic-gradient(#bd93f9, #f5c2e7, #88c0d0, #7aa2f7, #58a6ff, #b58900, #bd93f9);
+  }
+
+  .swatch:hover {
+    transform: scale(1.12);
+  }
+
+  .swatch.on {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+  }
+
+  .theme-name {
+    margin-top: 16px;
+    font-size: 15px;
+    color: var(--text-dark-2);
   }
 
   .seg {
@@ -49,8 +126,9 @@ import { items, themes, fixtures } from '../lib/gallery';
     justify-content: center;
     gap: 4px;
     background: #e8e8ed;
-    border-radius: 980px;
+    border-radius: 24px;
     padding: 4px;
+    margin-top: 30px;
   }
 
   .seg button {
@@ -64,6 +142,7 @@ import { items, themes, fixtures } from '../lib/gallery';
     padding: 6px 14px;
     cursor: pointer;
     transition: background 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
   }
 
   .seg button:hover {
@@ -76,34 +155,158 @@ import { items, themes, fixtures } from '../lib/gallery';
     font-weight: 600;
   }
 
+  .count {
+    text-align: center;
+    color: var(--text-dark-2);
+    font-size: 13px;
+    margin: 34px 0 44px;
+  }
+
+  .wide {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
   .empty {
     text-align: center;
     color: var(--text-dark-2);
     margin-top: 48px;
   }
 
+  /* lightbox */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 15, 17, 0.88);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .lightbox.open {
+    opacity: 1;
+  }
+
+  .lightbox[hidden] {
+    display: none;
+  }
+
+  .lightbox figure {
+    width: min(920px, calc(100vw - 140px));
+    text-align: center;
+    transform: scale(0.96);
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  .lightbox.open figure {
+    transform: none;
+  }
+
+  .lightbox img {
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 40px 80px rgba(0, 0, 0, 0.5));
+  }
+
+  .lightbox figcaption {
+    margin-top: 24px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 15px;
+    letter-spacing: -0.016em;
+  }
+
+  .lb-close,
+  .lb-arrow {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .lb-close:hover,
+  .lb-arrow:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .lb-close {
+    top: 22px;
+    right: 22px;
+  }
+
+  .lb-close svg,
+  .lb-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lb-prev {
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .lb-next {
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
   @media (max-width: 640px) {
-    .seg {
-      border-radius: 22px;
+    .lightbox figure {
+      max-width: calc(100vw - 32px);
+    }
+
+    .lb-prev,
+    .lb-next {
+      top: auto;
+      bottom: 22px;
+      transform: none;
+    }
+
+    .lb-prev {
+      left: calc(50% - 52px);
+    }
+
+    .lb-next {
+      right: calc(50% - 52px);
     }
   }
 </style>
 
 <script>
+  // ---- filtering ----
   const state: Record<string, string> = { theme: '', fixture: '' };
-  const cards = document.querySelectorAll<HTMLElement>('[data-theme][data-fixture]');
+  const tiles = document.querySelectorAll<HTMLElement>('.tile[data-theme][data-fixture]');
   const empty = document.querySelector<HTMLElement>('[data-empty]');
+  const count = document.querySelector<HTMLElement>('[data-count]');
+  const themeName = document.querySelector<HTMLElement>('[data-theme-name]');
+  const total = tiles.length;
 
   function apply() {
     let visible = 0;
-    for (const card of cards) {
+    for (const tile of tiles) {
       const show =
-        (!state.theme || card.dataset.theme === state.theme) &&
-        (!state.fixture || card.dataset.fixture === state.fixture);
-      card.hidden = !show;
+        (!state.theme || tile.dataset.theme === state.theme) &&
+        (!state.fixture || tile.dataset.fixture === state.fixture);
+      tile.hidden = !show;
       if (show) visible++;
     }
     if (empty) empty.hidden = visible > 0;
+    if (count) count.textContent = visible === total ? `Showing all ${total}` : `Showing ${visible} of ${total}`;
     const params = new URLSearchParams();
     if (state.theme) params.set('theme', state.theme);
     if (state.fixture) params.set('fixture', state.fixture);
@@ -111,13 +314,20 @@ import { items, themes, fixtures } from '../lib/gallery';
     history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
   }
 
-  for (const group of document.querySelectorAll<HTMLElement>('[data-filter-group]')) {
+  function activate(group: HTMLElement, btn: HTMLElement) {
     const key = group.dataset.filterGroup!;
+    state[key] = btn.dataset.value ?? '';
+    for (const b of group.querySelectorAll('button')) b.classList.toggle('on', b === btn);
+    if (key === 'theme' && themeName) {
+      themeName.textContent = btn.getAttribute('aria-label') ?? btn.textContent ?? 'All themes';
+    }
+  }
+
+  for (const group of document.querySelectorAll<HTMLElement>('[data-filter-group]')) {
     group.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('button');
       if (!btn) return;
-      state[key] = btn.dataset.value ?? '';
-      for (const b of group.querySelectorAll('button')) b.classList.toggle('on', b === btn);
+      activate(group, btn);
       apply();
     });
   }
@@ -130,11 +340,70 @@ import { items, themes, fixtures } from '../lib/gallery';
     const btn = document.querySelector<HTMLElement>(
       `[data-filter-group="${key}"] button[data-value="${CSS.escape(value)}"]`
     );
-    if (btn) {
-      state[key] = value;
-      const group = btn.closest('[data-filter-group]')!;
-      for (const b of group.querySelectorAll('button')) b.classList.toggle('on', b === btn);
-    }
+    if (btn) activate(btn.closest<HTMLElement>('[data-filter-group]')!, btn);
   }
   apply();
+
+  // ---- lightbox ----
+  const root = document.querySelector<HTMLElement>('[data-lightbox-root]')!;
+  const lbImg = root.querySelector<HTMLImageElement>('[data-lb-img]')!;
+  const lbCaption = root.querySelector<HTMLElement>('[data-lb-caption]')!;
+  let current = -1;
+
+  function visibleTriggers() {
+    return [...document.querySelectorAll<HTMLElement>('.tile:not([hidden]) [data-lightbox]')];
+  }
+
+  function show(index: number) {
+    const triggers = visibleTriggers();
+    if (!triggers.length) return;
+    current = (index + triggers.length) % triggers.length;
+    const t = triggers[current];
+    lbImg.src = t.dataset.url ?? '';
+    lbImg.alt = t.getAttribute('aria-label') ?? '';
+    lbCaption.textContent = t.dataset.caption ?? '';
+    // vectors scale losslessly — fill the stage, but never taller than the viewport
+    const tileImg = t.querySelector('img');
+    const ratio = tileImg ? tileImg.naturalWidth / tileImg.naturalHeight : 2;
+    const fig = lbImg.closest('figure') as HTMLElement;
+    const maxByHeight = (window.innerHeight - 220) * ratio;
+    fig.style.width = `min(920px, calc(100vw - 140px), ${Math.round(maxByHeight)}px)`;
+  }
+
+  function open(index: number) {
+    show(index);
+    root.hidden = false;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => root.classList.add('open'));
+  }
+
+  function close() {
+    root.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(() => {
+      root.hidden = true;
+      lbImg.src = '';
+    }, 300);
+  }
+
+  document.addEventListener('click', (e) => {
+    const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox]');
+    if (trigger) {
+      open(visibleTriggers().indexOf(trigger));
+      return;
+    }
+    if (!root.hidden) {
+      const el = e.target as HTMLElement;
+      if (el.closest('[data-lb-prev]')) return show(current - 1);
+      if (el.closest('[data-lb-next]')) return show(current + 1);
+      if (el.closest('[data-lb-close]') || !el.closest('figure')) close();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (root.hidden) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'ArrowLeft') show(current - 1);
+    if (e.key === 'ArrowRight') show(current + 1);
+  });
 </script>

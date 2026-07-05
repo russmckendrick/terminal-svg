@@ -3,20 +3,10 @@
 // The same fixture rendered in every theme; swatches swap the image with a
 // crossfade. All seven SVGs are in the DOM (they're ~10 KB each); JS only
 // toggles a class, so with JS off the default theme still shows.
-import { find } from '../lib/gallery';
-
-const FINISHES = [
-  { key: 'dracula', name: 'Dracula', a: '#bd93f9', b: '#282a36' },
-  { key: 'catppuccin-mocha', name: 'Catppuccin Mocha', a: '#f5c2e7', b: '#1e1e2e' },
-  { key: 'nord', name: 'Nord', a: '#88c0d0', b: '#2e3440' },
-  { key: 'tokyo-night', name: 'Tokyo Night', a: '#7aa2f7', b: '#1a1b26' },
-  { key: 'github-dark', name: 'GitHub Dark', a: '#58a6ff', b: '#0d1117' },
-  { key: 'github-light', name: 'GitHub Light', a: '#0969da', b: '#ffffff' },
-  { key: 'solarized-dark', name: 'Solarized Dark', a: '#b58900', b: '#002b36' },
-];
+import { find, THEME_META } from '../lib/gallery';
 
 const fixture = 'starship';
-const shots = FINISHES.map((f) => ({ ...f, item: find(f.key, fixture) })).filter(
+const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fixture) })).filter(
   (f) => f.item !== undefined
 );
 ---

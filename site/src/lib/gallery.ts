@@ -63,3 +63,34 @@ export const fixtures: string[] = [...new Set(items.map((i) => i.fixture))].sort
 export function find(theme: string, fixture: string): GalleryItem | undefined {
   return items.find((i) => i.theme === theme && i.fixture === fixture);
 }
+
+// display metadata shared by the gallery page and the finishes picker
+export const THEME_META = [
+  { key: 'dracula', label: 'Dracula', a: '#bd93f9', b: '#282a36' },
+  { key: 'catppuccin-mocha', label: 'Catppuccin Mocha', a: '#f5c2e7', b: '#1e1e2e' },
+  { key: 'nord', label: 'Nord', a: '#88c0d0', b: '#2e3440' },
+  { key: 'tokyo-night', label: 'Tokyo Night', a: '#7aa2f7', b: '#1a1b26' },
+  { key: 'github-dark', label: 'GitHub Dark', a: '#58a6ff', b: '#0d1117' },
+  { key: 'github-light', label: 'GitHub Light', a: '#0969da', b: '#ffffff' },
+  { key: 'solarized-dark', label: 'Solarized Dark', a: '#b58900', b: '#002b36' },
+] as const;
+
+export const FIXTURE_META = [
+  { key: 'boxdrawing', label: 'Box drawing' },
+  { key: 'cjk-emoji', label: 'CJK & emoji' },
+  { key: 'colors16', label: '16 colors' },
+  { key: 'colors256', label: '256 colors' },
+  { key: 'progress', label: 'Progress bars' },
+  { key: 'sgr-styles', label: 'Text styles' },
+  { key: 'starship', label: 'Starship prompt' },
+  { key: 'truecolor', label: 'True color' },
+  { key: 'typing-anim', label: 'Typing demo' },
+] as const;
+
+export function themeLabel(key: string): string {
+  return THEME_META.find((t) => t.key === key)?.label ?? key;
+}
+
+export function fixtureLabel(key: string): string {
+  return FIXTURE_META.find((f) => f.key === key)?.label ?? key;
+}
