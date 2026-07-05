@@ -1,16 +1,14 @@
 ---
 import '../styles/global.css';
-import Chrome from '../components/Chrome.astro';
-import StatusBar from '../components/StatusBar.astro';
-import Cmd from '../components/Cmd.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
 
 interface Props {
   title: string;
   description: string;
-  chromeTitle?: string;
 }
 
-const { title, description, chromeTitle = 'russ@mckendrick — ~/terminal-svg' } = Astro.props;
+const { title, description } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
@@ -29,24 +27,16 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="terminal-svg" />
     <meta name="twitter:card" content="summary" />
-    <meta name="theme-color" content="#21222c" />
+    <meta name="theme-color" content="#000000" />
   </head>
   <body>
-    <Chrome title={chromeTitle} />
+    <Nav />
     <main>
       <slot />
-      <section class="logout">
-        <Cmd cmd="exit" />
-        <p class="out">Saving session... [Process completed]</p>
-        <p class="comment">
-          MIT licensed · built in Rust by <a href="https://github.com/russmckendrick" rel="noopener">Russ McKendrick</a>
-          · every screenshot on this site was rendered by terminal-svg itself — select the text in one
-        </p>
-      </section>
     </main>
-    <StatusBar />
+    <Footer />
     <script>
-      // one delegated handler serves every [data-copy] affordance
+      // copy affordances — one delegated handler for every [data-copy]
       document.addEventListener('click', async (e) => {
         const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-copy]');
         if (!btn) return;
@@ -56,7 +46,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           await navigator.clipboard.writeText(text);
           ok = true;
         } catch {
-          // clipboard API unavailable — legacy fallback
           const ta = document.createElement('textarea');
           ta.value = text;
           ta.style.position = 'fixed';
@@ -68,26 +57,32 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         }
         if (!ok) return;
         const label = btn.textContent;
-        btn.textContent = 'copied';
+        btn.textContent = 'Copied';
         btn.classList.add('copied');
         setTimeout(() => {
           btn.textContent = label;
           btn.classList.remove('copied');
         }, 1400);
       });
+
+      // scroll reveals
+      const revealed = document.querySelectorAll('[data-reveal]');
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('in');
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { threshold: 0.18, rootMargin: '0px 0px -8% 0px' }
+        );
+        for (const el of revealed) io.observe(el);
+      } else {
+        for (const el of revealed) el.classList.add('in');
+      }
     </script>
   </body>
 </html>
-
-<style>
-  .logout {
-    margin-bottom: 0;
-    border-top: 1px solid var(--rule);
-    padding-top: 40px;
-  }
-
-  .logout .comment {
-    margin-top: 20px;
-    font-size: 12.5px;
-  }
-</style>

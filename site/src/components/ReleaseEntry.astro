@@ -1,6 +1,5 @@
 ---
-// One release, git-log style: yellow tag line, dim date, indented notes,
-// downloads as an ls -la listing inside a <details>.
+// One release as a clean white card: version, date, notes, downloads.
 import type { Release } from '../lib/releases';
 import { formatDate, formatSize } from '../lib/releases';
 
@@ -13,125 +12,118 @@ const { release, latest = false } = Astro.props;
 ---
 
 <article class="entry">
-  <p class="head">
-    <span class="tag">tag: <a href={release.htmlUrl} rel="noopener">{release.tag}</a></span>
-    {latest && <span class="latest">(HEAD)</span>}
-    <span class="date">{formatDate(release.publishedAt)}</span>
-  </p>
-  {release.name !== release.tag && <p class="name">{release.name}</p>}
-  <div class="body">
-    {release.bodyHtml && <div class="prose" set:html={release.bodyHtml} />}
-    {
-      release.assets.length > 0 && (
-        <details>
-          <summary>{release.assets.length} release assets</summary>
-          <ul>
-            {release.assets.map((a) => (
-              <li>
-                <span class="mode" aria-hidden="true">-rw-r--r--</span>
-                <a href={a.url} rel="noopener">
-                  {a.name}
-                </a>
-                <span class="size">{formatSize(a.size)}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      )
-    }
-  </div>
+  <header>
+    <h3>
+      <a href={release.htmlUrl} rel="noopener">{release.name}</a>
+      {latest && <span class="badge">Latest</span>}
+    </h3>
+    <time datetime={release.publishedAt}>{formatDate(release.publishedAt)}</time>
+  </header>
+  {release.bodyHtml && <div class="prose" set:html={release.bodyHtml} />}
+  {
+    release.assets.length > 0 && (
+      <details>
+        <summary>Downloads ({release.assets.length})</summary>
+        <ul>
+          {release.assets.map((a) => (
+            <li>
+              <a href={a.url} rel="noopener">
+                {a.name}
+              </a>
+              <span class="size">{formatSize(a.size)}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    )
+  }
 </article>
 
 <style>
   .entry {
-    margin-bottom: 56px;
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 34px 38px;
   }
 
-  .head {
+  header {
     display: flex;
     align-items: baseline;
-    gap: 1.5ch;
+    justify-content: space-between;
+    gap: 16px;
     flex-wrap: wrap;
+    margin-bottom: 8px;
   }
 
-  .tag {
-    color: var(--yellow);
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 22px;
     font-weight: 600;
+    letter-spacing: -0.017em;
   }
 
-  .tag a {
-    color: var(--yellow);
+  h3 a {
+    color: var(--text-dark);
+  }
+
+  h3 a:hover {
+    color: var(--link-on-light);
     text-decoration: none;
   }
 
-  .tag a:hover {
-    text-decoration: underline;
+  .badge {
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--blue);
+    border-radius: 980px;
+    padding: 2px 10px;
   }
 
-  .latest {
-    color: var(--pink);
-  }
-
-  .date {
-    margin-left: auto;
-    color: var(--faint);
-    font-size: 12.5px;
-  }
-
-  .name {
-    font-weight: 600;
-    margin-top: 6px;
-  }
-
-  .body {
-    border-left: 1px solid var(--rule);
-    padding-left: 3ch;
-    margin-top: 14px;
+  time {
+    color: var(--text-dark-2);
+    font-size: 14px;
   }
 
   details {
-    margin-top: 16px;
+    margin-top: 22px;
+    border-top: 1px solid #e8e8ed;
+    padding-top: 16px;
   }
 
   summary {
     cursor: pointer;
-    color: var(--dim);
-    font-size: 13px;
-  }
-
-  summary:hover {
-    color: var(--fg);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--link-on-light);
   }
 
   ul {
     list-style: none;
     padding: 0;
-    margin: 10px 0 0;
+    margin: 14px 0 0;
   }
 
   li {
     display: flex;
-    gap: 2ch;
+    justify-content: space-between;
     align-items: baseline;
-    padding: 3px 0;
-    font-size: 12.5px;
+    gap: 14px;
+    padding: 7px 0;
+    font-size: 13px;
     overflow-wrap: anywhere;
+    border-bottom: 1px solid #f0f0f5;
   }
 
-  .mode {
-    color: var(--faint);
-    flex-shrink: 0;
+  li:last-child {
+    border-bottom: none;
   }
 
   .size {
-    margin-left: auto;
-    color: var(--faint);
+    color: var(--text-dark-2);
     flex-shrink: 0;
-  }
-
-  @media (max-width: 560px) {
-    .mode {
-      display: none;
-    }
+    font-variant-numeric: tabular-nums;
   }
 </style>

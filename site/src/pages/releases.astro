@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import Cmd from '../components/Cmd.astro';
+import CodeSnippet from '../components/CodeSnippet.astro';
 import ReleaseEntry from '../components/ReleaseEntry.astro';
 import { getReleases, REPO_URL } from '../lib/releases';
 
@@ -10,43 +10,55 @@ const releases = await getReleases();
 <Base
   title="Releases — terminal-svg"
   description="Release notes and downloads for every terminal-svg version, with prebuilt binaries for macOS, Linux and Windows."
-  chromeTitle="russ@mckendrick — ~/terminal-svg/releases"
 >
-  <section>
-    <Cmd
-      cmd="git log --tags --simplify-by-decoration"
-      comment="every tag ships prebuilt binaries + SHA256 checksums, and the Homebrew tap updates itself"
-    />
-    <div class="install">
-      <Cmd cmd="brew install russmckendrick/tap/terminal-svg" copy />
+  <section class="section section--gray">
+    <div class="wrap">
+      <h1 class="headline" data-reveal>New with every release.</h1>
+      <p class="subhead narrow" data-reveal>
+        Every version ships prebuilt binaries with SHA256 checksums, and the Homebrew tap
+        updates itself.
+      </p>
+      <div class="install" data-reveal>
+        <CodeSnippet code="brew install russmckendrick/tap/terminal-svg" label="Terminal" />
+      </div>
+      {
+        releases.length > 0 ? (
+          <div class="timeline">
+            {releases.map((r, i) => (
+              <div data-reveal>
+                <ReleaseEntry release={r} latest={i === 0} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="fallback" data-reveal>
+            Release data wasn't available when this page was built. See the{' '}
+            <a href={`${REPO_URL}/releases`} rel="noopener">
+              releases on GitHub ›
+            </a>
+          </p>
+        )
+      }
     </div>
-    {
-      releases.length > 0 ? (
-        <div class="log">
-          {releases.map((r, i) => (
-            <ReleaseEntry release={r} latest={i === 0} />
-          ))}
-        </div>
-      ) : (
-        <p class="out">
-          <span class="err">fatal:</span> release data wasn't available when this page was
-          built — see <a href={`${REPO_URL}/releases`} rel="noopener">releases on GitHub</a>
-        </p>
-      )
-    }
   </section>
 </Base>
 
 <style>
   .install {
-    margin: 30px 0 48px;
+    max-width: 560px;
+    margin: 44px auto 72px;
   }
 
-  .log {
-    margin-top: 8px;
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 780px;
+    margin: 0 auto;
   }
 
-  .err {
-    color: var(--red);
+  .fallback {
+    text-align: center;
+    color: var(--text-dark-2);
   }
 </style>

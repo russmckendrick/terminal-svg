@@ -1,6 +1,5 @@
 ---
 import Base from '../layouts/Base.astro';
-import Cmd from '../components/Cmd.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
 import { items, themes, fixtures } from '../lib/gallery';
 ---
@@ -8,99 +7,85 @@ import { items, themes, fixtures } from '../lib/gallery';
 <Base
   title="Gallery — terminal-svg"
   description="Every terminal-svg test fixture rendered in all seven built-in themes: Dracula, Catppuccin Mocha, Nord, Tokyo Night, GitHub dark & light, and Solarized."
-  chromeTitle="russ@mckendrick — ~/terminal-svg/gallery"
 >
-  <section>
-    <Cmd
-      cmd="./examples/gallery.sh"
-      comment={`${fixtures.length} fixtures × ${themes.length} themes = ${items.length} SVGs, straight from the repo — zoom in, select the text, view source`}
-    />
-    <p class="filter-line" aria-hidden="true">
-      <span class="prompt">$ </span>ls gallery/ <span class="flag">--theme</span>=<span
-        class="val"
-        data-echo="theme">all</span> <span class="flag">--fixture</span>=<span
-        class="val"
-        data-echo="fixture">all</span>
-    </p>
+  <section class="section section--gray">
+    <div class="wrap">
+      <h1 class="headline" data-reveal>Every theme.<br />Every fixture.</h1>
+      <p class="subhead narrow" data-reveal>
+        {fixtures.length} test fixtures × {themes.length} themes — {items.length} SVGs,
+        rendered straight from the repo. Zoom in. Select the text. View source.
+      </p>
 
-    <div class="filters">
-      <div class="group" data-filter-group="theme" role="group" aria-label="Filter by theme">
-        <button class="chip active" data-value="">all</button>
-        {themes.map((t) => <button class="chip" data-value={t}>{t}</button>)}
+      <div class="filters" data-reveal>
+        <div class="seg" data-filter-group="theme" role="group" aria-label="Filter by theme">
+          <button class="on" data-value="">All themes</button>
+          {themes.map((t) => <button data-value={t}>{t}</button>)}
+        </div>
+        <div class="seg" data-filter-group="fixture" role="group" aria-label="Filter by fixture">
+          <button class="on" data-value="">All fixtures</button>
+          {fixtures.map((f) => <button data-value={f}>{f}</button>)}
+        </div>
       </div>
-      <div class="group" data-filter-group="fixture" role="group" aria-label="Filter by fixture">
-        <button class="chip active" data-value="">all</button>
-        {fixtures.map((f) => <button class="chip" data-value={f}>{f}</button>)}
-      </div>
+
+      <GalleryGrid items={items} />
+
+      <p class="empty" data-empty hidden>Nothing matches that combination.</p>
     </div>
-
-    <GalleryGrid items={items} />
-
-    <p class="empty out" data-empty hidden>
-      <span class="err">zsh: no matches found</span> — try a different combination
-    </p>
   </section>
 </Base>
 
 <style>
-  .filter-line {
-    margin: 34px 0 10px;
-    font-weight: 600;
-  }
-
-  .prompt {
-    color: var(--green);
-  }
-
-  .flag {
-    color: var(--purple);
-  }
-
-  .val {
-    color: var(--yellow);
-  }
-
   .filters {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 44px;
-    padding-left: 2ch;
+    align-items: center;
+    gap: 12px;
+    margin: 48px 0 56px;
   }
 
-  .group {
-    display: flex;
-    align-items: baseline;
-    gap: 1ch;
+  .seg {
+    display: inline-flex;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    background: #e8e8ed;
+    border-radius: 980px;
+    padding: 4px;
   }
 
-  .chip {
+  .seg button {
+    font-family: var(--sans);
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    color: var(--text-dark);
     background: none;
     border: none;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    color: var(--dim);
+    border-radius: 980px;
+    padding: 6px 14px;
     cursor: pointer;
-    padding: 0 0.5ch;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .chip:hover {
-    color: var(--fg);
+  .seg button:hover {
+    background: rgba(255, 255, 255, 0.6);
   }
 
-  .chip.active {
-    background: var(--green);
-    color: #191a21;
+  .seg button.on {
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
     font-weight: 600;
   }
 
   .empty {
-    margin-top: 40px;
+    text-align: center;
+    color: var(--text-dark-2);
+    margin-top: 48px;
   }
 
-  .err {
-    color: var(--red);
+  @media (max-width: 640px) {
+    .seg {
+      border-radius: 22px;
+    }
   }
 </style>
 
@@ -119,10 +104,6 @@ import { items, themes, fixtures } from '../lib/gallery';
       if (show) visible++;
     }
     if (empty) empty.hidden = visible > 0;
-    // echo the selection into the fake command line
-    for (const el of document.querySelectorAll<HTMLElement>('[data-echo]')) {
-      el.textContent = state[el.dataset.echo!] || 'all';
-    }
     const params = new URLSearchParams();
     if (state.theme) params.set('theme', state.theme);
     if (state.fixture) params.set('fixture', state.fixture);
@@ -133,10 +114,10 @@ import { items, themes, fixtures } from '../lib/gallery';
   for (const group of document.querySelectorAll<HTMLElement>('[data-filter-group]')) {
     const key = group.dataset.filterGroup!;
     group.addEventListener('click', (e) => {
-      const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip');
-      if (!chip) return;
-      state[key] = chip.dataset.value ?? '';
-      for (const c of group.querySelectorAll('.chip')) c.classList.toggle('active', c === chip);
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+      if (!btn) return;
+      state[key] = btn.dataset.value ?? '';
+      for (const b of group.querySelectorAll('button')) b.classList.toggle('on', b === btn);
       apply();
     });
   }
@@ -146,13 +127,13 @@ import { items, themes, fixtures } from '../lib/gallery';
   for (const key of ['theme', 'fixture'] as const) {
     const value = params.get(key);
     if (!value) continue;
-    const chip = document.querySelector<HTMLElement>(
-      `[data-filter-group="${key}"] .chip[data-value="${CSS.escape(value)}"]`
+    const btn = document.querySelector<HTMLElement>(
+      `[data-filter-group="${key}"] button[data-value="${CSS.escape(value)}"]`
     );
-    if (chip) {
+    if (btn) {
       state[key] = value;
-      const group = chip.closest('[data-filter-group]')!;
-      for (const c of group.querySelectorAll('.chip')) c.classList.toggle('active', c === chip);
+      const group = btn.closest('[data-filter-group]')!;
+      for (const b of group.querySelectorAll('button')) b.classList.toggle('on', b === btn);
     }
   }
   apply();

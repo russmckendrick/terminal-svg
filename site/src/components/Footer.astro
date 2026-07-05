@@ -1,0 +1,83 @@
+---
+import { getLatest, REPO_URL } from '../lib/releases';
+
+const latest = await getLatest();
+---
+
+<footer>
+  <div class="inner">
+    <p class="legal">
+      Every terminal screenshot on this site is a genuine SVG rendered by terminal‑svg itself.
+      The text in them is selectable. Obviously.
+    </p>
+    <p class="legal">
+      terminal‑svg is open source under the MIT license. Bundled JetBrains Mono Nerd Font
+      faces are licensed under the SIL OFL. Built in Rust by
+      <a href="https://github.com/russmckendrick" rel="noopener">Russ McKendrick</a>.
+    </p>
+    <div class="row">
+      <span>Copyright © 2026 Russ McKendrick.</span>
+      <span class="links">
+        <a href={REPO_URL} rel="noopener">Source</a>
+        <a href={`${REPO_URL}/issues`} rel="noopener">Issues</a>
+        <a href="/releases/">Release Notes</a>
+        {latest && <span class="ver">{latest.tag}</span>}
+      </span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  footer {
+    background: var(--gray);
+    border-top: 1px solid #d2d2d7;
+  }
+
+  .inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+  }
+
+  .legal {
+    color: var(--text-dark-2);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 10px;
+    max-width: 72ch;
+  }
+
+  .legal a {
+    color: var(--text-dark);
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-top: 1px solid #d2d2d7;
+    margin-top: 18px;
+    padding-top: 16px;
+    font-size: 12px;
+    color: var(--text-dark-2);
+  }
+
+  .links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .links a {
+    color: var(--text-dark-2);
+  }
+
+  .links a:hover {
+    color: var(--text-dark);
+  }
+
+  .ver {
+    color: #a1a1a6;
+  }
+</style>

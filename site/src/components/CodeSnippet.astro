@@ -1,0 +1,73 @@
+---
+// Apple developer-docs style code block: dark rounded panel, small header
+// with a label and a Copy control.
+interface Props {
+  code: string;
+  label?: string;
+}
+
+const { code, label = 'Terminal' } = Astro.props;
+---
+
+<div class="snippet">
+  <div class="head">
+    <span class="label">{label}</span>
+    <button class="copy" data-copy={code}>Copy</button>
+  </div>
+  <pre><code>{code}</code></pre>
+</div>
+
+<style>
+  .snippet {
+    background: #1d1d1f;
+    border-radius: 14px;
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .label {
+    color: #86868b;
+    font-size: 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .copy {
+    background: none;
+    border: none;
+    color: #2997ff;
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .copy:hover {
+    text-decoration: underline;
+  }
+
+  .copy:global(.copied) {
+    color: #30d158;
+  }
+
+  pre {
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: #f5f5f7;
+    white-space: pre;
+  }
+</style>
