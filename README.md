@@ -50,6 +50,12 @@ an **animated SVG** replaying the session when you exit — a GIF-quality demo
 at a fraction of the size, with real selectable text, that plays anywhere an
 `<img>` tag does (GitHub READMEs included, no JavaScript).
 
+![animated demo: typing a deploy command, spinner, progress bar, and a boxed result panel](docs/demo.svg)
+
+*The image above is a 42 KB animated SVG ([docs/demo.cast](docs/demo.cast)
+rendered by terminal-svg itself) — typing, a spinner, and a carriage-return
+progress bar all replayed from real timing data, with the font embedded.*
+
 ```sh
 # Record an interactive session ($SHELL); exit the shell to finish
 terminal-svg rec -o demo.svg
