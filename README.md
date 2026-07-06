@@ -80,6 +80,9 @@ renders just the final screen.
 
 ### Options
 
+The highlights below; every flag, with behaviour notes and recipes, is in
+the [CLI reference](docs/usage.md).
+
 | Flag | Default | |
 |---|---|---|
 | `-o, --output` | `terminal.svg` | `-` writes to stdout |
@@ -145,12 +148,42 @@ terminal-svg -t my-theme.toml -- htop
 
 ## Installing
 
+It's a single self-contained binary — no runtime dependencies. The full
+walkthrough (checksums, PATH setup, ARM builds) is in the
+[installation guide](docs/install.md); the short version:
+
+**Homebrew** (macOS and Linux):
+
 ```sh
 brew install russmckendrick/tap/terminal-svg
 ```
 
-Or grab a binary for macOS/Linux/Windows from the
-[releases page](https://github.com/russmckendrick/terminal-svg/releases).
+**Prebuilt binaries** — every [release](https://github.com/russmckendrick/terminal-svg/releases)
+ships binaries with stable names, so `releases/latest/download/` always
+grabs the newest:
+
+```sh
+# Linux (swap amd64 for arm64 on ARM)
+curl -LO https://github.com/russmckendrick/terminal-svg/releases/latest/download/terminal-svg-linux-amd64
+chmod +x terminal-svg-linux-amd64 && sudo mv terminal-svg-linux-amd64 /usr/local/bin/terminal-svg
+
+# macOS (darwin-arm64 for Apple Silicon, darwin-amd64 for Intel)
+curl -LO https://github.com/russmckendrick/terminal-svg/releases/latest/download/terminal-svg-darwin-arm64
+chmod +x terminal-svg-darwin-arm64 && sudo mv terminal-svg-darwin-arm64 /usr/local/bin/terminal-svg
+```
+
+On Windows, download
+[terminal-svg-windows-amd64.exe](https://github.com/russmckendrick/terminal-svg/releases/latest/download/terminal-svg-windows-amd64.exe),
+rename it `terminal-svg.exe`, and put it somewhere on your `PATH` —
+[step-by-step PowerShell instructions](docs/install.md#windows) in the guide.
+Every binary has a `.sha256` next to it on the release page if you want to
+[verify the download](docs/install.md#verifying-checksums).
+
+**From source** (Rust 1.85+):
+
+```sh
+cargo install --git https://github.com/russmckendrick/terminal-svg
+```
 
 ## Building
 
@@ -191,6 +224,17 @@ renderer-compatibility rules that keep columns aligned everywhere) is in
    browsers reject fonts without one), encode to WOFF2
    ([ttf2woff2](https://crates.io/crates/ttf2woff2), pure Rust), and inline
    as a base64 `@font-face`.
+
+## Documentation
+
+- [Installation guide](docs/install.md) — Homebrew, release binaries for
+  macOS/Linux/Windows, checksum verification, building from source
+- [CLI reference](docs/usage.md) — every flag, the `rec` subcommand, and
+  recipes
+- [Themes](docs/themes.md) — the built-ins and the custom TOML format
+- [Architecture](docs/architecture.md) — the full pipeline walkthrough
+- [terminal-svg.dev](https://terminal-svg.dev) — theme gallery, built from
+  [site/](site/)
 
 ## License
 

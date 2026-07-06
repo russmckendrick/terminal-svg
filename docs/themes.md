@@ -1,4 +1,25 @@
-# Theme format
+# Themes
+
+## Built-in themes
+
+| Name | |
+|---|---|
+| `dracula` | the default |
+| `catppuccin-mocha` | |
+| `nord` | |
+| `tokyo-night` | |
+| `github-dark` | matches GitHub's dark UI — pair with `--theme-light github-light` for READMEs |
+| `github-light` | |
+| `solarized-dark` | |
+| `powershell` | the classic conhost navy with the Campbell palette; pairs with `--chrome windows` |
+| `ubuntu` | aubergine + Tango; pairs with `--chrome ubuntu` |
+
+`terminal-svg --list-themes` prints the list your binary actually has. The
+palettes live in [themes/](../themes/), sourced from each scheme's official
+palette documentation. There's a rendered gallery of all of them at
+[terminal-svg.dev](https://terminal-svg.dev).
+
+## Theme format
 
 A theme is a single TOML file. Pass it with `-t`:
 
@@ -7,7 +28,7 @@ terminal-svg -t path/to/my-theme.toml -- htop
 ```
 
 Anything with a `/` in it or ending in `.toml` is treated as a file path;
-otherwise the name is looked up in the built-ins (`terminal-svg --list-themes`).
+otherwise the name is looked up in the built-ins.
 
 ## Full reference
 
