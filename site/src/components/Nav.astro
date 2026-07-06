@@ -9,7 +9,10 @@ const onHome = path === '/';
 
 <nav class="nav">
   <div class="inner">
-    <a class="brand" href="/">terminal‑svg</a>
+    <a class="brand" href="/">
+      <img src="/favicon.svg" alt="" width="19" height="19" />
+      <span>terminal‑svg</span>
+    </a>
     <div class="links">
       <a href="/" class:list={{ on: onHome }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -72,10 +75,17 @@ const onHome = path === '/';
   }
 
   .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
     color: #f5f5f7;
     font-size: 17px;
     font-weight: 600;
     letter-spacing: -0.022em;
+  }
+
+  .brand img {
+    display: block;
   }
 
   .brand:hover {
@@ -146,8 +156,14 @@ const onHome = path === '/';
       height: 18px;
     }
 
-    .brand {
-      font-size: 15px;
+    /* the mark alone carries the brand on small screens */
+    .brand span {
+      display: none;
+    }
+
+    .brand img {
+      width: 22px;
+      height: 22px;
     }
   }
 </style>

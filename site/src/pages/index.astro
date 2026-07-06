@@ -38,10 +38,12 @@ const binaries = (latest?.assets ?? [])
   <!-- hero -->
   <section class="section section--black hero">
     <div class="wrap">
-      <p class="eyebrow gradient-text" data-reveal>terminal‑svg</p>
-      <h1 class="headline" data-reveal>
-        Your terminal.<br />Rendered beautifully.
-      </h1>
+      <div class="hero-lockup" data-reveal>
+        <img class="hero-mark" src="/favicon.svg" alt="" width="104" height="104" />
+        <h1 class="headline">
+          Your terminal.<br />Rendered beautifully.
+        </h1>
+      </div>
       <p class="subhead narrow" data-reveal>
         Pixel-perfect SVG screenshots and animated recordings of your terminal.
         From one small Rust binary.
@@ -300,6 +302,36 @@ const binaries = (latest?.assets ?? [])
 <style>
   .hero {
     padding-top: 90px;
+  }
+
+  .hero-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(20px, 3vw, 34px);
+  }
+
+  .hero-lockup .headline {
+    text-align: left;
+  }
+
+  .hero-mark {
+    display: block;
+    /* track the headline's clamp so the lockup scales as one unit */
+    width: clamp(58px, 8.6vw, 104px);
+    height: auto;
+    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55));
+  }
+
+  @media (max-width: 640px) {
+    .hero-lockup {
+      flex-direction: column;
+      gap: 26px;
+    }
+
+    .hero-lockup .headline {
+      text-align: center;
+    }
   }
 
   .cta {

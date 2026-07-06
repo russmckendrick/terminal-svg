@@ -1,7 +1,7 @@
 # Scripts
 
 Development helpers — nothing here is needed to build or use terminal-svg.
-All three are run from the repo root and write their output into it.
+All of them are run from the repo root and write their output into it.
 
 ## gallery.sh
 
@@ -34,6 +34,23 @@ actual recording session) showing off char-by-char typing, a braille
 spinner, a carriage-return progress bar, colours, box drawing, and emoji
 fallback — edit the script and rerun rather than re-recording. Plain
 Python, no dependencies.
+
+## make-logo-cast.py
+
+```sh
+python3 scripts/make-logo-cast.py
+cargo run --release -- docs/assets/logo.cast -o docs/assets/logo.svg \
+    --no-background --font-size 28 --idle-time-limit 3 \
+    --theme-light github-light --theme-dark github-dark
+```
+
+Generates `docs/assets/logo.cast`, the recording behind the animated
+wordmark in the README — the logo is terminal-svg's own output. A green
+prompt chevron types "terminal-svg", then the block cursor blinks twice
+(real DECTCEM hide/show events) before the loop restarts. The dual-theme
+render follows GitHub's light/dark colour scheme. The static app-icon
+mark next to it lives at `docs/assets/logo-mark.svg` and is the same file
+as the site's `site/public/favicon.svg` — edit one, copy to the other.
 
 ## make-fixtures.sh
 

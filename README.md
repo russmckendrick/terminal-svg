@@ -1,6 +1,13 @@
-# terminal-svg
+<p align="center">
+  <img src="docs/assets/logo-mark.svg" width="96" alt="terminal-svg — a prompt chevron and blinking cursor in a macOS app icon">
+</p>
+<h1 align="center">
+  <img src="docs/assets/logo.svg" width="290" alt="terminal-svg">
+</h1>
 
-Pixel-perfect SVG screenshots of terminal output, from a single self-contained binary.
+<p align="center">Pixel-perfect SVG screenshots of terminal output, from a single self-contained binary.</p>
+
+<p align="center"><sub>The wordmark isn't a GIF — it's terminal-svg output, replayed from <a href="docs/assets/logo.cast">logo.cast</a> with the font subset embedded.</sub></p>
 
 ![terminal-svg rendering a starship prompt and cargo build output](docs/assets/hero.svg)
 
