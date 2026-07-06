@@ -5,7 +5,7 @@
 - Tests: `cargo test` (unit + golden + PTY integration)
 - Golden SVGs: after an intentional rendering change, regenerate with `UPDATE_GOLDEN=1 cargo test --test golden` and review the diff — a bare `cargo test` failure in `golden` usually means you changed output, not that you broke something
 - Lint bar: `cargo clippy --all-targets -- -D warnings && cargo fmt --check`
-- Visual sweep: `./examples/gallery.sh && open gallery.html` (all fixtures × themes)
+- Visual sweep: `./scripts/gallery.sh && open gallery.html` (all fixtures × themes)
 
 ## Non-Obvious Rules
 

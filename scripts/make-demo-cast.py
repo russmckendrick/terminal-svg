@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Generate docs/demo.cast — the README demo recording for terminal-svg.
+"""Generate docs/assets/demo.cast — the README demo recording for terminal-svg.
 
 Hand-authored timeline showing off: char-by-char typing, a braille spinner,
 a carriage-return progress bar, ANSI colours/bold/underline, box drawing,
 and an emoji fallback run. Fully deterministic. Regenerate the README image
 with:
 
-    python3 examples/make-demo-cast.py
-    cargo run --release -- docs/demo.cast -o docs/demo.svg
+    python3 scripts/make-demo-cast.py
+    cargo run --release -- docs/assets/demo.cast -o docs/assets/demo.svg
 """
 import json
 import pathlib
@@ -71,7 +71,7 @@ out(0.60, f"\r\n{PROMPT}")
 
 header = {"version": 2, "width": 58, "height": 13, "title": "terminal-svg rec"}
 
-dest = pathlib.Path(__file__).resolve().parent.parent / "docs" / "demo.cast"
+dest = pathlib.Path(__file__).resolve().parent.parent / "docs" / "assets" / "demo.cast"
 with open(dest, "w") as f:
     f.write(json.dumps(header) + "\n")
     for time, code, data in events:

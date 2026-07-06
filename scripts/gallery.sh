@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Renders every fixture in every built-in theme into gallery.html for a
-# quick visual sweep: ./examples/gallery.sh && open gallery.html
+# quick visual sweep: ./scripts/gallery.sh && open gallery.html
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

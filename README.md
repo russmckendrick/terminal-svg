@@ -2,7 +2,7 @@
 
 Pixel-perfect SVG screenshots of terminal output, from a single self-contained binary.
 
-![terminal-svg rendering a starship prompt and cargo build output](docs/hero.svg)
+![terminal-svg rendering a starship prompt and cargo build output](docs/assets/hero.svg)
 
 Point it at a command, a file, or a pipe and it produces an SVG with window
 chrome (macOS, Windows 11, or Ubuntu style), your favourite colour scheme, and — the part that makes it
@@ -50,9 +50,9 @@ an **animated SVG** replaying the session when you exit — a GIF-quality demo
 at a fraction of the size, with real selectable text, that plays anywhere an
 `<img>` tag does (GitHub READMEs included, no JavaScript).
 
-![animated demo: typing a deploy command, spinner, progress bar, and a boxed result panel](docs/demo.svg)
+![animated demo: typing a deploy command, spinner, progress bar, and a boxed result panel](docs/assets/demo.svg)
 
-*The image above is a 42 KB animated SVG ([docs/demo.cast](docs/demo.cast)
+*The image above is a 42 KB animated SVG ([docs/assets/demo.cast](docs/assets/demo.cast)
 rendered by terminal-svg itself) — typing, a spinner, and a carriage-return
 progress bar all replayed from real timing data, with the font embedded.*
 
@@ -114,8 +114,8 @@ terminal-svg --chrome windows -t powershell -- pwsh -c 'Get-ChildItem'
 terminal-svg --chrome ubuntu -t ubuntu -- lsd -la
 ```
 
-![Windows PowerShell chrome](docs/chrome-windows.svg)
-![Ubuntu GNOME Terminal chrome](docs/chrome-ubuntu.svg)
+![Windows PowerShell chrome](docs/assets/chrome-windows.svg)
+![Ubuntu GNOME Terminal chrome](docs/assets/chrome-ubuntu.svg)
 
 Animation options (for `rec` and `.cast` input):
 
@@ -136,8 +136,8 @@ Animation options (for `rec` and `.cast` input):
 with the Campbell palette) and `ubuntu` (aubergine + Tango) to pair with the
 matching chrome styles.
 
-![SGR styles in catppuccin-mocha](docs/styles-catppuccin.svg)
-![box drawing in github-light](docs/boxes-light.svg)
+![SGR styles in catppuccin-mocha](docs/assets/styles-catppuccin.svg)
+![box drawing in github-light](docs/assets/boxes-light.svg)
 
 Custom themes are a small TOML file (16 ANSI colours + foreground/background,
 optional chrome overrides) — see the [theme format reference](docs/themes.md):
@@ -200,7 +200,7 @@ Development loop:
 ```sh
 cargo test                      # unit + golden + PTY integration tests
 UPDATE_GOLDEN=1 cargo test      # refresh golden SVGs after rendering changes
-./examples/gallery.sh           # render all fixtures × themes → gallery.html
+./scripts/gallery.sh            # render all fixtures × themes → gallery.html
 ```
 
 ## How it works
@@ -233,6 +233,7 @@ renderer-compatibility rules that keep columns aligned everywhere) is in
   recipes
 - [Themes](docs/themes.md) — the built-ins and the custom TOML format
 - [Architecture](docs/architecture.md) — the full pipeline walkthrough
+- [Scripts](scripts/README.md) — the development helpers in [scripts/](scripts/)
 - [terminal-svg.dev](https://terminal-svg.dev) — theme gallery, built from
   [site/](site/)
 

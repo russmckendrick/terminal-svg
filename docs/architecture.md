@@ -101,6 +101,6 @@ Two constraints discovered the hard way:
   `UPDATE_GOLDEN=1 cargo test --test golden`.
 - **PTY integration tests** (`tests/pty.rs`) spawn real commands and assert
   on captured colour and timeout enforcement.
-- **Visual sweep**: `./examples/gallery.sh` renders all fixtures × themes
+- **Visual sweep**: `./scripts/gallery.sh` renders all fixtures × themes
   into `gallery.html`. For spot checks use headless Chrome — Quick Look
   does not load embedded WOFF2.

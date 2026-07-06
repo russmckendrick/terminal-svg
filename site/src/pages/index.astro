@@ -4,7 +4,7 @@ import CodeSnippet from '../components/CodeSnippet.astro';
 import FinishPicker from '../components/FinishPicker.astro';
 import { find } from '../lib/gallery';
 import { getLatest, REPO_URL, formatDate, formatSize } from '../lib/releases';
-import demoUrl from '../../../docs/demo.svg?url';
+import demoUrl from '../../../docs/assets/demo.svg?url';
 
 const latest = await getLatest();
 const version = latest?.tag.replace(/^v/, '');
