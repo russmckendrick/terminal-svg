@@ -1,4 +1,4 @@
-name: Deploy site
+name: "🌐 Deploy Site"
 
 on:
   push:
@@ -8,11 +8,15 @@ on:
       - 'gallery/**'
       - 'docs/**'
       - '.github/workflows/deploy-site.yml'
-  # rebuild when a release is published so version/release notes stay fresh
+  # called from ci.yml after a release is published — releases created with
+  # the workflow's GITHUB_TOKEN never fire the `release` trigger below, so
+  # the pipeline chains the deploy explicitly to pick up the new version
+  workflow_call:
+  # covers releases published by hand in the GitHub UI
   release:
     types: [published]
   # weekly safety net (note: GitHub disables cron on repos inactive for 60 days;
-  # the release trigger covers the case that matters)
+  # the workflow_call chain covers the case that matters)
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
@@ -28,10 +32,14 @@ concurrency:
 
 jobs:
   build:
+    name: "🏗️ Build Site"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: withastro/action@v6
+      - name: "📥 Check out repository"
+        uses: actions/checkout@v5
+
+      - name: "🚀 Build with Astro"
+        uses: withastro/action@v6
         with:
           path: ./site
         env:
@@ -39,11 +47,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
+    name: "🌍 Deploy to Pages"
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: "🌍 Publish to GitHub Pages"
+        id: deployment
         uses: actions/deploy-pages@v5
