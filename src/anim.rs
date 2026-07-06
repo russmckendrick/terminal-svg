@@ -1,7 +1,6 @@
 use crate::cast::{Event, EventData, Header};
 use crate::term::Interpreter;
 use crate::term::screen::Screen;
-use crate::theme::Theme;
 
 /// Bursts of output closer together than this collapse into one frame.
 const MAX_FPS: f64 = 30.0;
@@ -43,12 +42,8 @@ pub struct Animation {
 
 /// Replay cast events through a virtual terminal and collect deduplicated
 /// screen keyframes on the adjusted (idle-capped, speed-scaled) timeline.
-pub fn build_frames(
-    header: &Header,
-    events: &[Event],
-    theme: &Theme,
-    opts: &AnimOptions,
-) -> Animation {
+/// Screens keep colors symbolic, so one animation renders under any theme.
+pub fn build_frames(header: &Header, events: &[Event], opts: &AnimOptions) -> Animation {
     let idle_limit = opts
         .idle_time_limit
         .or(header.idle_time_limit)
@@ -83,7 +78,7 @@ pub fn build_frames(
     let events = &events[seed..];
     let mut frames: Vec<Frame> = Vec::new();
     let mut push_frame = |time: f64, vt: &Interpreter| {
-        let screen = vt.snapshot(theme);
+        let screen = vt.snapshot();
         let cursor = vt.cursor();
         // Two frames render identically when their visible content and
         // cursor match. Whole-Screen equality is too strict: a resize
@@ -158,7 +153,6 @@ fn visible_rows(screen: &Screen) -> &[Vec<crate::term::screen::StyledRun>] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::theme::builtin;
 
     fn header(width: usize, height: usize) -> Header {
         Header {
@@ -181,8 +175,7 @@ mod tests {
     }
 
     fn build(events: &[Event], opts: &AnimOptions) -> Animation {
-        let theme = builtin::load("dracula").unwrap();
-        build_frames(&header(20, 5), events, &theme, opts)
+        build_frames(&header(20, 5), events, opts)
     }
 
     fn default_opts() -> AnimOptions {

@@ -209,23 +209,26 @@ impl Theme {
 
     pub fn resolve(&self, color: avt::Color) -> Rgb {
         match color {
-            avt::Color::Indexed(i) => self.resolve_indexed(i),
+            avt::Color::Indexed(i) if i < 16 => self.palette[i as usize],
+            avt::Color::Indexed(i) => xterm_indexed(i),
             avt::Color::RGB(c) => Rgb::new(c.r, c.g, c.b),
         }
     }
+}
 
-    fn resolve_indexed(&self, i: u8) -> Rgb {
-        match i {
-            0..=15 => self.palette[i as usize],
-            16..=231 => {
-                let n = i - 16;
-                let level = |v: u8| if v == 0 { 0 } else { 55 + 40 * v };
-                Rgb::new(level(n / 36 % 6), level(n / 6 % 6), level(n % 6))
-            }
-            232..=255 => {
-                let v = 8 + 10 * (i - 232);
-                Rgb::new(v, v, v)
-            }
+/// xterm's standard 256-color cube (16–231) and grayscale ramp (232–255),
+/// identical in every theme.
+pub fn xterm_indexed(i: u8) -> Rgb {
+    debug_assert!(i >= 16);
+    match i {
+        0..=231 => {
+            let n = i - 16;
+            let level = |v: u8| if v == 0 { 0 } else { 55 + 40 * v };
+            Rgb::new(level(n / 36 % 6), level(n / 6 % 6), level(n % 6))
+        }
+        232..=255 => {
+            let v = 8 + 10 * (i - 232);
+            Rgb::new(v, v, v)
         }
     }
 }

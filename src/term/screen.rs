@@ -1,4 +1,31 @@
-use crate::theme::Rgb;
+use crate::theme::{Rgb, Theme};
+
+/// A cell color kept symbolic until render time, so one screen can render
+/// under any palette (dual light/dark documents share their frames).
+/// Colors that are the same in every theme — truecolor and the xterm
+/// 256-color cube/grayscale — collapse to concrete `Rgb` up front.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PenColor {
+    /// The theme's default foreground.
+    DefaultFg,
+    /// The theme's default background.
+    DefaultBg,
+    /// ANSI palette entry 0–15.
+    Indexed(u8),
+    /// A theme-independent color.
+    Rgb(Rgb),
+}
+
+impl PenColor {
+    pub fn resolve(self, theme: &Theme) -> Rgb {
+        match self {
+            PenColor::DefaultFg => theme.foreground,
+            PenColor::DefaultBg => theme.background,
+            PenColor::Indexed(i) => theme.palette[i as usize],
+            PenColor::Rgb(c) => c,
+        }
+    }
+}
 
 /// A horizontal run of cells sharing identical resolved attributes.
 #[derive(Debug, Clone, PartialEq)]
@@ -8,9 +35,11 @@ pub struct StyledRun {
     /// Number of terminal columns covered (wide chars count 2).
     pub width: usize,
     pub text: String,
-    pub fg: Rgb,
+    pub fg: PenColor,
     /// None means the theme's default background (the window body).
-    pub bg: Option<Rgb>,
+    pub bg: Option<PenColor>,
+    /// Rendered as the foreground dimmed toward the effective background.
+    pub faint: bool,
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,

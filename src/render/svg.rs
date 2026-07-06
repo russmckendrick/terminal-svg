@@ -6,7 +6,7 @@ use crate::font::assets;
 use crate::term::screen::Screen;
 use crate::theme::Theme;
 
-use super::{RenderConfig, chrome, metrics, text};
+use super::{FillMode, RenderConfig, chrome, metrics, text};
 
 /// Document geometry shared by the static and animated renderers.
 pub(super) struct Layout {
@@ -49,10 +49,11 @@ pub fn render(screen: &Screen, theme: &Theme, config: &RenderConfig) -> Result<S
     style_block(&mut out, config, "");
     chrome_layer(&mut out, theme, config, &l, "");
 
-    text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+    let mode = FillMode::Hex(theme);
+    text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y, &mode);
     let _ = write!(out, r#"<g font-size="{}">"#, fmt(l.m.font_size));
     out.push('\n');
-    text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+    text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y, &mode);
     out.push_str("</g>\n</svg>\n");
     Ok(out)
 }
@@ -83,13 +84,14 @@ pub fn render_dual(
         ("td", "-d", screen_d, theme_d),
     ];
     for (class, suffix, screen, theme) in variants {
+        let mode = FillMode::Hex(theme);
         let _ = write!(out, r#"<g class="{class}">"#);
         out.push('\n');
         chrome_layer(&mut out, theme, config, &l, suffix);
-        text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+        text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y, &mode);
         let _ = write!(out, r#"<g font-size="{}">"#, fmt(l.m.font_size));
         out.push('\n');
-        text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+        text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y, &mode);
         out.push_str("</g>\n</g>\n");
     }
     out.push_str("</svg>\n");

@@ -1,7 +1,7 @@
 #![cfg(unix)]
 
 use terminal_svg::term;
-use terminal_svg::theme;
+use terminal_svg::term::screen::PenColor;
 
 #[test]
 fn pty_capture_renders_color() {
@@ -12,14 +12,13 @@ fn pty_capture_renders_color() {
     ];
     let bytes = terminal_svg::capture::pty::run(&command, 80, 24, Some(10)).unwrap();
 
-    let theme = theme::builtin::load("dracula").unwrap();
-    let screen = term::interpret(&bytes, 80, 24, &theme);
+    let screen = term::interpret(&bytes, 80, 24);
 
     let red_run = screen.rows[0]
         .iter()
         .find(|run| run.text == "hi")
         .expect("red run captured through the pty");
-    assert_eq!(red_run.fg, theme.palette[1]);
+    assert_eq!(red_run.fg, PenColor::Indexed(1));
 }
 
 #[test]

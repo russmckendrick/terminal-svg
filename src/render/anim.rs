@@ -6,7 +6,7 @@ use anyhow::Result;
 use crate::anim::Animation;
 use crate::theme::Theme;
 
-use super::{CursorStyle, RenderConfig, svg, text};
+use super::{CursorStyle, FillMode, RenderConfig, svg, text};
 use svg::fmt;
 
 /// Assemble an animated SVG: one absolutely-positioned group per keyframe,
@@ -34,6 +34,7 @@ pub fn render_animated(
     // scrolling shifts), so each distinct row is defined once and frames
     // reference it by y offset — the difference between O(rows × frames)
     // and O(distinct rows) output.
+    let mode = FillMode::Hex(theme);
     let mut defs = String::new();
     let mut row_ids: HashMap<String, usize> = HashMap::new();
     let mut frame_bodies = Vec::with_capacity(anim.frames.len());
@@ -44,8 +45,8 @@ pub fn render_animated(
                 continue;
             }
             let mut markup = String::new();
-            text::row_background_rects(&mut markup, runs, &l.m, l.origin_x, 0.0);
-            text::row_text_runs(&mut markup, runs, &l.m, l.origin_x, l.m.baseline(0));
+            text::row_background_rects(&mut markup, runs, &l.m, l.origin_x, 0.0, &mode);
+            text::row_text_runs(&mut markup, runs, &l.m, l.origin_x, l.m.baseline(0), &mode);
             let id = match row_ids.get(&markup) {
                 Some(&id) => id,
                 None => {
@@ -215,7 +216,6 @@ mod tests {
         let anim = build_frames(
             &header,
             &events,
-            &theme,
             &AnimOptions {
                 idle_time_limit: None,
                 speed: 1.0,
@@ -281,7 +281,6 @@ mod tests {
         let anim = build_frames(
             &header,
             &events,
-            &theme,
             &AnimOptions {
                 idle_time_limit: None,
                 speed: 1.0,

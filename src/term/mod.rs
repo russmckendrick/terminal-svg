@@ -1,20 +1,20 @@
 pub mod screen;
 
-use crate::theme::{Rgb, Theme};
-use screen::{Screen, StyledRun};
+use crate::theme::{Rgb, xterm_indexed};
+use screen::{PenColor, Screen, StyledRun};
 
 const SCROLLBACK_LIMIT: usize = 100_000;
 
 /// Feed captured bytes through a virtual terminal and return the resolved
 /// final screen (scrollback + visible view), ready for rendering.
-pub fn interpret(bytes: &[u8], cols: usize, rows: usize, theme: &Theme) -> Screen {
+pub fn interpret(bytes: &[u8], cols: usize, rows: usize) -> Screen {
     let mut vt = avt::Vt::builder()
         .size(cols, rows)
         .scrollback_limit(SCROLLBACK_LIMIT)
         .build();
     vt.feed_str(&normalize_newlines(&String::from_utf8_lossy(bytes)));
 
-    let mut out: Vec<Vec<StyledRun>> = vt.lines().map(|line| runs_for_line(line, theme)).collect();
+    let mut out: Vec<Vec<StyledRun>> = vt.lines().map(runs_for_line).collect();
     while out.last().is_some_and(|row| row.is_empty()) {
         out.pop();
     }
@@ -74,14 +74,10 @@ impl Interpreter {
 
     /// Snapshot the visible screen. Trailing blank rows are kept — an
     /// animation canvas has a fixed height.
-    pub fn snapshot(&self, theme: &Theme) -> Screen {
+    pub fn snapshot(&self) -> Screen {
         Screen {
             cols: self.vt.size().0,
-            rows: self
-                .vt
-                .view()
-                .map(|line| runs_for_line(line, theme))
-                .collect(),
+            rows: self.vt.view().map(runs_for_line).collect(),
         }
     }
 
@@ -109,36 +105,41 @@ fn normalize_newlines(s: &str) -> String {
     out
 }
 
-/// Resolved visual attributes of a cell: inverse swapped, faint blended,
-/// colors mapped to concrete RGB. Blink is rendered static.
+/// Resolved visual attributes of a cell: inverse swapped, colors kept
+/// symbolic (faint dims at render time). Blink is rendered static.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Attrs {
-    fg: Rgb,
-    bg: Option<Rgb>,
+    fg: PenColor,
+    bg: Option<PenColor>,
+    faint: bool,
     bold: bool,
     italic: bool,
     underline: bool,
     strikethrough: bool,
 }
 
-fn resolve(pen: &avt::Pen, theme: &Theme) -> Attrs {
-    let mut fg = pen
-        .foreground()
-        .map_or(theme.foreground, |c| theme.resolve(c));
-    let mut bg = pen.background().map(|c| theme.resolve(c));
+fn symbolic(color: avt::Color) -> PenColor {
+    match color {
+        avt::Color::Indexed(i) if i < 16 => PenColor::Indexed(i),
+        avt::Color::Indexed(i) => PenColor::Rgb(xterm_indexed(i)),
+        avt::Color::RGB(c) => PenColor::Rgb(Rgb::new(c.r, c.g, c.b)),
+    }
+}
+
+fn resolve(pen: &avt::Pen) -> Attrs {
+    let mut fg = pen.foreground().map_or(PenColor::DefaultFg, symbolic);
+    let mut bg = pen.background().map(symbolic);
 
     if pen.is_inverse() {
         let new_bg = fg;
-        fg = bg.unwrap_or(theme.background);
+        fg = bg.unwrap_or(PenColor::DefaultBg);
         bg = Some(new_bg);
-    }
-    if pen.is_faint() {
-        fg = fg.blend(bg.unwrap_or(theme.background), 0.5);
     }
 
     Attrs {
         fg,
         bg,
+        faint: pen.is_faint(),
         bold: pen.is_bold(),
         italic: pen.is_italic(),
         underline: pen.is_underline(),
@@ -146,7 +147,7 @@ fn resolve(pen: &avt::Pen, theme: &Theme) -> Attrs {
     }
 }
 
-fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
+fn runs_for_line(line: &avt::Line) -> Vec<StyledRun> {
     let mut runs: Vec<StyledRun> = Vec::new();
     let mut col = 0usize;
 
@@ -156,7 +157,7 @@ fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
             // Continuation cell of a wide character; already accounted for.
             continue;
         }
-        let attrs = resolve(cell.pen(), theme);
+        let attrs = resolve(cell.pen());
         let wide = cell_width == 2;
 
         let mergeable = !wide
@@ -166,6 +167,7 @@ fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
                     && (
                         run.fg,
                         run.bg,
+                        run.faint,
                         run.bold,
                         run.italic,
                         run.underline,
@@ -173,6 +175,7 @@ fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
                     ) == (
                         attrs.fg,
                         attrs.bg,
+                        attrs.faint,
                         attrs.bold,
                         attrs.italic,
                         attrs.underline,
@@ -191,6 +194,7 @@ fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
                 text: cell.char().to_string(),
                 fg: attrs.fg,
                 bg: attrs.bg,
+                faint: attrs.faint,
                 bold: attrs.bold,
                 italic: attrs.italic,
                 underline: attrs.underline,
@@ -222,11 +226,9 @@ fn runs_for_line(line: &avt::Line, theme: &Theme) -> Vec<StyledRun> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::theme::builtin;
 
     fn screen(input: &str) -> Screen {
-        let theme = builtin::load("dracula").unwrap();
-        interpret(input.as_bytes(), 80, 24, &theme)
+        interpret(input.as_bytes(), 80, 24)
     }
 
     #[test]
@@ -244,8 +246,29 @@ mod tests {
         let row = &s.rows[0];
         assert_eq!(row.len(), 3);
         assert_eq!(row[1].text, "red");
-        assert_eq!(row[1].fg, Rgb::new(0xff, 0x55, 0x55)); // dracula red
+        assert_eq!(row[1].fg, PenColor::Indexed(1));
         assert_eq!(row[2].col, 4);
+    }
+
+    #[test]
+    fn color_resolution_stays_symbolic_where_it_matters() {
+        // Palette colors stay symbolic; the 256 cube, grayscale ramp, and
+        // truecolor are theme-independent and collapse to RGB up front.
+        let s = screen("\x1b[38;5;9ma\x1b[38;5;196mb\x1b[38;5;232mc\x1b[38;2;1;2;3md");
+        let row = &s.rows[0];
+        assert_eq!(row[0].fg, PenColor::Indexed(9));
+        assert_eq!(row[1].fg, PenColor::Rgb(Rgb::new(255, 0, 0)));
+        assert_eq!(row[2].fg, PenColor::Rgb(Rgb::new(8, 8, 8)));
+        assert_eq!(row[3].fg, PenColor::Rgb(Rgb::new(1, 2, 3)));
+    }
+
+    #[test]
+    fn faint_is_a_flag_not_a_blend() {
+        let s = screen("\x1b[2mdim\x1b[0m bright");
+        let row = &s.rows[0];
+        assert!(row[0].faint);
+        assert_eq!(row[0].fg, PenColor::DefaultFg);
+        assert!(!row[1].faint);
     }
 
     #[test]
@@ -259,9 +282,8 @@ mod tests {
     fn inverse_swaps_colors() {
         let s = screen("\x1b[7mX\x1b[0m");
         let run = &s.rows[0][0];
-        let theme = builtin::load("dracula").unwrap();
-        assert_eq!(run.fg, theme.background);
-        assert_eq!(run.bg, Some(theme.foreground));
+        assert_eq!(run.fg, PenColor::DefaultBg);
+        assert_eq!(run.bg, Some(PenColor::DefaultFg));
     }
 
     #[test]

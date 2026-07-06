@@ -8,6 +8,28 @@ pub use anim::render_animated;
 pub use chrome::ChromeStyle;
 pub use svg::{render, render_dual};
 
+/// How run colors become SVG attributes.
+pub(crate) enum FillMode<'a> {
+    /// Resolve to inline hex against one theme (static and single-theme
+    /// animated output).
+    Hex(&'a crate::theme::Theme),
+    /// Emit palette classes (`cf`/`cb`/`c0`–`c15`) so a CSS block can
+    /// switch the palette; theme-independent colors stay inline.
+    Class,
+}
+
+/// The CSS class for a palette-dependent color; None for colors that are
+/// the same in every theme.
+pub(crate) fn palette_class(color: crate::term::screen::PenColor) -> Option<String> {
+    use crate::term::screen::PenColor;
+    match color {
+        PenColor::DefaultFg => Some("cf".to_string()),
+        PenColor::DefaultBg => Some("cb".to_string()),
+        PenColor::Indexed(i) => Some(format!("c{i}")),
+        PenColor::Rgb(_) => None,
+    }
+}
+
 /// Cursor shape in animated output.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, clap::ValueEnum)]
 pub enum CursorStyle {

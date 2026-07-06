@@ -41,7 +41,7 @@ fn render_fixture(name: &str) -> String {
     let bytes = std::fs::read(format!("tests/fixtures/{name}.ansi"))
         .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
     let theme = theme::builtin::load("dracula").unwrap();
-    let screen = term::interpret(&bytes, 80, 24, &theme);
+    let screen = term::interpret(&bytes, 80, 24);
     render::render(&screen, &theme, &fixed_config(name)).unwrap()
 }
 
@@ -50,7 +50,7 @@ fn render_fixture(name: &str) -> String {
 fn render_chrome_fixture(chrome: render::ChromeStyle, golden_name: &str) -> String {
     let bytes = std::fs::read("tests/fixtures/colors16.ansi").unwrap();
     let theme = theme::builtin::load("dracula").unwrap();
-    let screen = term::interpret(&bytes, 80, 24, &theme);
+    let screen = term::interpret(&bytes, 80, 24);
     let config = RenderConfig {
         chrome,
         ..fixed_config(golden_name)
@@ -73,7 +73,7 @@ fn render_animated_fixture(name: &str, title: &str, opts: &anim::AnimOptions) ->
     let (header, events) = cast::read(Path::new(&format!("tests/fixtures/{name}.cast")))
         .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
     let theme = theme::builtin::load("dracula").unwrap();
-    let animation = anim::build_frames(&header, &events, &theme, opts);
+    let animation = anim::build_frames(&header, &events, opts);
     render::render_animated(&animation, &theme, &fixed_config(title), true).unwrap()
 }
 

@@ -161,26 +161,25 @@ fn render_static_bytes(
     if let Some((light_name, dark_name)) = style.dual_themes() {
         let light = load_theme(light_name, cast_theme)?;
         let dark = load_theme(dark_name, cast_theme)?;
-        let mut screen_l = term::interpret(bytes, cols, rows, &light);
-        let mut screen_d = term::interpret(bytes, cols, rows, &dark);
+        // Screens are theme-free, so both variants share one.
+        let mut screen = term::interpret(bytes, cols, rows);
 
         let (font_family, font_faces) = if style.no_font_embed {
             (referenced_family(style), None)
         } else {
             let covered = font::subset::coverage(font::assets::regular())?;
-            screen_l.split_uncovered(&covered);
-            screen_d.split_uncovered(&covered);
-            let faces = embedded_faces([&screen_l, &screen_d].into_iter())?;
+            screen.split_uncovered(&covered);
+            let faces = embedded_faces(std::iter::once(&screen))?;
             (font::EMBEDDED_FONT_STACK.to_string(), faces)
         };
 
         let config = render_config(style, title, font_family, font_faces);
-        let svg = render::render_dual((&screen_l, &light), (&screen_d, &dark), &config)?;
+        let svg = render::render_dual((&screen, &light), (&screen, &dark), &config)?;
         return write_output(&style.output, &svg);
     }
 
     let theme = load_theme(&style.theme, cast_theme)?;
-    let screen = term::interpret(bytes, cols, rows, &theme);
+    let screen = term::interpret(bytes, cols, rows);
     render_static(screen, title, &theme, style)
 }
 
@@ -278,7 +277,7 @@ fn render_cast(
         from: anim_args.from,
         to: anim_args.to,
     };
-    let mut animation = anim::build_frames(&header, events, &theme, &opts);
+    let mut animation = anim::build_frames(&header, events, &opts);
 
     let (font_family, font_faces) = if style.no_font_embed {
         (referenced_family(style), None)
