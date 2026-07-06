@@ -213,6 +213,17 @@ fn render_cast(
     style: &StyleArgs,
     anim_args: &AnimArgs,
 ) -> Result<()> {
+    if let Some(from) = anim_args.from
+        && from < 0.0
+    {
+        bail!("--from must be non-negative");
+    }
+    if let (Some(from), Some(to)) = (anim_args.from, anim_args.to)
+        && to <= from
+    {
+        bail!("--to must be greater than --from");
+    }
+
     if anim_args.is_static() {
         // A single point in time (--at, or the end): concatenate the
         // output and reuse the v1 path (scrollback included, trailing
@@ -264,6 +275,8 @@ fn render_cast(
     let opts = anim::AnimOptions {
         idle_time_limit: anim_args.idle_time_limit,
         speed: anim_args.speed,
+        from: anim_args.from,
+        to: anim_args.to,
     };
     let mut animation = anim::build_frames(&header, events, &theme, &opts);
 

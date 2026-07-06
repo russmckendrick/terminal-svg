@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="282" viewBox="0 0 416 282" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
+<style>.b{font-weight:700}.i{font-style:italic}.f{opacity:0;animation-duration:4.45s;animation-timing-function:step-end;animation-iteration-count:infinite}#f0{animation-name:k0}#f1{animation-name:k1}#f2{animation-name:k2}#f3{animation-name:k3}#f4{animation-name:k4}#f5{animation-name:k5}#f6{animation-name:k6}@keyframes k0{0%{opacity:1}8.9888%{opacity:0}}@keyframes k1{0%{opacity:0}8.9888%{opacity:1}10.1124%{opacity:0}}@keyframes k2{0%{opacity:0}10.1124%{opacity:1}55.0562%{opacity:0}}@keyframes k3{0%{opacity:0}55.0562%{opacity:1}57.3034%{opacity:0}}@keyframes k4{0%{opacity:0}57.3034%{opacity:1}61.7978%{opacity:0}}@keyframes k5{0%{opacity:0}61.7978%{opacity:1}66.2921%{opacity:0}}@keyframes k6{0%{opacity:0}66.2921%{opacity:1}}@media (prefers-reduced-motion:reduce){.f{animation:none}#f6{opacity:1}}</style>
+<defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
+<rect x="24" y="24" width="368" height="234" rx="10" fill="#282a36" filter="url(#shadow)"/>
+<circle cx="44" cy="40" r="6" fill="#ff5f57"/><circle cx="64" cy="40" r="6" fill="#febc2e"/><circle cx="84" cy="40" r="6" fill="#28c840"/>
+<text x="208" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">typing-trimmed</text>
+<defs>
+<g id="r0"><text x="40" y="13.54" fill="#f8f8f2">$</text><text x="56.8" y="13.54" fill="#f8f8f2">echo</text><text x="98.8" y="13.54" fill="#f8f8f2" class="b">hi</text></g>
+<g id="r1"><text x="40" y="13.54" fill="#50fa7b">hi</text></g>
+<g id="r2"><text x="40" y="13.54" fill="#f8f8f2">$</text><text x="56.8" y="13.54" fill="#f8f8f2">progress</text></g>
+<g id="r3"><text x="40" y="13.54" fill="#f8f8f2">$</text><text x="56.8" y="13.54" fill="#f8f8f2">progress</text><text x="132.4" y="13.54" fill="#f8f8f2">▓░░</text><text x="166" y="13.54" fill="#f8f8f2">33%</text></g>
+<g id="r4"><text x="40" y="13.54" fill="#f8f8f2">$</text><text x="56.8" y="13.54" fill="#f8f8f2">progress</text><text x="132.4" y="13.54" fill="#f8f8f2">▓▓░</text><text x="166" y="13.54" fill="#f8f8f2">66%</text></g>
+<g id="r5"><text x="40" y="13.54" fill="#f8f8f2">$</text><text x="56.8" y="13.54" fill="#f8f8f2">progress</text><text x="132.4" y="13.54" fill="#f8f8f2">▓▓▓</text><text x="166" y="13.54" fill="#f8f8f2">100%</text></g>
+</defs>
+<g font-size="14">
+<g class="f" id="f0"><use href="#r0" y="72"/><rect x="115.6" y="72" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+<g class="f" id="f1"><use href="#r0" y="72"/><rect x="40" y="89" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+<g class="f" id="f2"><use href="#r0" y="72"/><use href="#r1" y="89"/><rect x="40" y="106" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+<g class="f" id="f3"><use href="#r0" y="72"/><use href="#r1" y="89"/><use href="#r2" y="106"/><rect x="132.4" y="106" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+<g class="f" id="f4"><use href="#r0" y="72"/><use href="#r1" y="89"/><use href="#r3" y="106"/><rect x="191.2" y="106" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+<g class="f" id="f5"><use href="#r0" y="72"/><use href="#r1" y="89"/><use href="#r4" y="106"/><rect x="191.2" y="106" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+<g class="f" id="f6"><use href="#r0" y="72"/><use href="#r1" y="89"/><use href="#r5" y="106"/><rect x="199.6" y="106" width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/></g>
+</g>
+</svg>

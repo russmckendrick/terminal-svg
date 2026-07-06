@@ -138,6 +138,8 @@ These apply when the input is a `.cast` file or a `rec` session:
 | `--idle-time-limit <SECS>` | recording's own, or `2` | cap pauses between events |
 | `--speed <N>` | `1` | playback speed multiplier |
 | `--no-loop` | | play once and hold the last frame |
+| `--from <SECS>` | | start the animation here; the first frame shows the screen as of this moment |
+| `--to <SECS>` | | end the animation here |
 | `--cursor <STYLE>` | `block` | cursor shape: `block`, `bar`, `underline`, or `none` |
 | `--static` | | render only the final screen, no animation |
 | `--at <SECS>` | | render the screen at this point in the recording (implies `--static`) |
@@ -191,6 +193,13 @@ Freeze-frame a moment out of a recording:
 
 ```sh
 terminal-svg demo.cast --at 3.5 -o midpoint.svg
+```
+
+Animate just a slice of a recording — the first frame opens on the screen
+as of `--from`, so the lead-in isn't replayed:
+
+```sh
+terminal-svg demo.cast --from 12 --to 31 -o highlight.svg
 ```
 
 Pipe the SVG onward instead of writing a file:

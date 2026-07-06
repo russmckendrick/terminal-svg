@@ -219,6 +219,8 @@ mod tests {
             &AnimOptions {
                 idle_time_limit: None,
                 speed: 1.0,
+                from: None,
+                to: None,
             },
         );
         let config = RenderConfig {
@@ -283,6 +285,8 @@ mod tests {
             &AnimOptions {
                 idle_time_limit: None,
                 speed: 1.0,
+                from: None,
+                to: None,
             },
         );
         let config = |cursor| RenderConfig {

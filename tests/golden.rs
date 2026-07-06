@@ -58,17 +58,22 @@ fn render_chrome_fixture(chrome: render::ChromeStyle, golden_name: &str) -> Stri
     render::render(&screen, &theme, &config).unwrap()
 }
 
+fn default_anim_opts() -> anim::AnimOptions {
+    anim::AnimOptions {
+        idle_time_limit: None,
+        speed: 1.0,
+        from: None,
+        to: None,
+    }
+}
+
 /// Animated rendering is deterministic: the pipeline consumes only the
 /// cast's own timestamps, never the wall clock.
-fn render_animated_fixture(name: &str, title: &str) -> String {
+fn render_animated_fixture(name: &str, title: &str, opts: &anim::AnimOptions) -> String {
     let (header, events) = cast::read(Path::new(&format!("tests/fixtures/{name}.cast")))
         .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
     let theme = theme::builtin::load("dracula").unwrap();
-    let opts = anim::AnimOptions {
-        idle_time_limit: None,
-        speed: 1.0,
-    };
-    let animation = anim::build_frames(&header, &events, &theme, &opts);
+    let animation = anim::build_frames(&header, &events, &theme, opts);
     render::render_animated(&animation, &theme, &fixed_config(title), true).unwrap()
 }
 
@@ -77,20 +82,38 @@ fn golden() {
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
     let mut failures = Vec::new();
 
-    let animated = ("typing", render_animated_fixture("typing", "typing"));
+    let animated = (
+        "typing",
+        render_animated_fixture("typing", "typing", &default_anim_opts()),
+    );
     // typing-v3.cast is the same recording hand-converted to asciicast v3;
     // v3 support is pure input normalization, so the SVGs must match
     // byte-for-byte.
     assert_eq!(
-        render_animated_fixture("typing-v3", "typing"),
+        render_animated_fixture("typing-v3", "typing", &default_anim_opts()),
         animated.1,
         "typing-v3.cast must render identical to typing.cast"
+    );
+    // A --from/--to window into the same recording: seeds the typed prompt,
+    // animates the progress bar, cuts before the resize and final output.
+    let trimmed = (
+        "typing-trimmed",
+        render_animated_fixture(
+            "typing",
+            "typing-trimmed",
+            &anim::AnimOptions {
+                from: Some(1.0),
+                to: Some(6.5),
+                ..default_anim_opts()
+            },
+        ),
     );
     let rendered = FIXTURES
         .iter()
         .map(|name| (*name, render_fixture(name)))
         .chain([
             (animated.0, animated.1),
+            trimmed,
             (
                 "chrome-windows",
                 render_chrome_fixture(render::ChromeStyle::Windows, "chrome-windows"),

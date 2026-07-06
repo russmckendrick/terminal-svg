@@ -183,6 +183,15 @@ pub struct AnimArgs {
     #[arg(long, default_value_t = 1.0)]
     pub speed: f64,
 
+    /// Start the animation this many seconds into the recording; the
+    /// first frame shows the screen as of that moment
+    #[arg(long, value_name = "SECONDS", conflicts_with_all = ["static_", "at"])]
+    pub from: Option<f64>,
+
+    /// End the animation at this many seconds into the recording
+    #[arg(long, value_name = "SECONDS", conflicts_with_all = ["static_", "at"])]
+    pub to: Option<f64>,
+
     /// Render only the final frame as a static SVG
     #[arg(long = "static")]
     pub static_: bool,

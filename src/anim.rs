@@ -15,6 +15,10 @@ pub struct AnimOptions {
     /// CLI idle cap; falls back to the header's, then DEFAULT_IDLE_LIMIT.
     pub idle_time_limit: Option<f64>,
     pub speed: f64,
+    /// Trim window in raw recording seconds, applied before idle capping
+    /// and speed scaling.
+    pub from: Option<f64>,
+    pub to: Option<f64>,
 }
 
 #[derive(Debug)]
@@ -51,8 +55,16 @@ pub fn build_frames(
         .unwrap_or(DEFAULT_IDLE_LIMIT)
         .max(0.0);
     let speed = if opts.speed > 0.0 { opts.speed } else { 1.0 };
+    let from = opts.from.unwrap_or(0.0).max(0.0);
+    let to = opts.to.unwrap_or(f64::INFINITY);
 
-    // Canvas = the largest grid the recording ever uses.
+    // Trim window on the raw timeline: events before `from` seed the
+    // screen silently, events after `to` are cut.
+    let events = &events[..events.partition_point(|e| e.time <= to)];
+    let seed = events.partition_point(|e| e.time < from);
+
+    // Canvas = the largest grid the recording uses, seeds included (a
+    // resize before `from` sets the screen the animation opens on).
     let (mut cols, mut rows) = (header.width, header.height);
     for event in events {
         if let EventData::Resize { cols: c, rows: r } = event.data {
@@ -62,6 +74,13 @@ pub fn build_frames(
     }
 
     let mut vt = Interpreter::new(header.width, header.height);
+    for event in &events[..seed] {
+        match &event.data {
+            EventData::Output(data) => vt.feed(data),
+            EventData::Resize { cols, rows } => vt.resize(*cols, *rows),
+        }
+    }
+    let events = &events[seed..];
     let mut frames: Vec<Frame> = Vec::new();
     let mut push_frame = |time: f64, vt: &Interpreter| {
         let screen = vt.snapshot(theme);
@@ -83,12 +102,13 @@ pub fn build_frames(
         });
     };
 
-    // Frame 0: the empty terminal before any output.
+    // Frame 0: the screen at the start of the window — empty for a full
+    // render, the seeded state with --from.
     push_frame(0.0, &vt);
 
     let min_gap = 1.0 / MAX_FPS;
     let mut playback = 0.0f64; // adjusted time of the current event
-    let mut prev_raw = 0.0f64;
+    let mut prev_raw = from;
     let mut pending_since: Option<f64> = None; // unsnapshotted feeds started here
 
     for event in events {
@@ -169,6 +189,8 @@ mod tests {
         AnimOptions {
             idle_time_limit: None,
             speed: 1.0,
+            from: None,
+            to: None,
         }
     }
 
@@ -212,12 +234,100 @@ mod tests {
     #[test]
     fn speed_scales_the_timeline() {
         let opts = AnimOptions {
-            idle_time_limit: None,
             speed: 2.0,
+            ..default_opts()
         };
         let anim = build(&[out(1.0, "a"), out(2.0, "b")], &opts);
         assert_eq!(anim.frames[1].time, 0.5);
         assert_eq!(anim.frames[2].time, 1.0);
+    }
+
+    #[test]
+    fn from_seeds_the_first_frame() {
+        let opts = AnimOptions {
+            from: Some(1.0),
+            ..default_opts()
+        };
+        let anim = build(&[out(0.5, "a"), out(1.5, "b"), out(2.5, "c")], &opts);
+        // "a" lands before the window: frame 0 opens on it at t=0.
+        assert_eq!(anim.frames.len(), 3);
+        assert_eq!(anim.frames[0].time, 0.0);
+        assert_eq!(anim.frames[0].screen.rows[0][0].text, "a");
+        assert_eq!(anim.frames[1].time, 0.5);
+        assert_eq!(anim.frames[1].screen.rows[0][0].text, "ab");
+        assert_eq!(anim.frames[2].time, 1.5);
+    }
+
+    #[test]
+    fn to_cuts_the_tail() {
+        let opts = AnimOptions {
+            to: Some(2.0),
+            ..default_opts()
+        };
+        let anim = build(&[out(0.5, "a"), out(1.5, "b"), out(2.5, "c")], &opts);
+        assert_eq!(anim.frames.len(), 3); // empty + "a" + "ab"
+        assert_eq!(anim.frames[2].screen.rows[0][0].text, "ab");
+        assert_eq!(anim.duration, 1.5 + TRAILING_PAUSE);
+    }
+
+    #[test]
+    fn gap_after_from_is_idle_capped() {
+        let opts = AnimOptions {
+            from: Some(1.0),
+            ..default_opts()
+        };
+        let anim = build(&[out(0.5, "a"), out(60.0, "b")], &opts);
+        // 59s from the window start clamps to the 2s default limit.
+        assert_eq!(anim.frames[1].time, 2.0);
+    }
+
+    #[test]
+    fn from_composes_with_speed() {
+        let opts = AnimOptions {
+            from: Some(1.0),
+            speed: 2.0,
+            ..default_opts()
+        };
+        let anim = build(&[out(1.5, "a")], &opts);
+        assert_eq!(anim.frames[1].time, 0.25);
+    }
+
+    #[test]
+    fn degenerate_windows_still_yield_a_frame() {
+        // --from past the last event: one frame with the full seeded screen.
+        let opts = AnimOptions {
+            from: Some(10.0),
+            ..default_opts()
+        };
+        let anim = build(&[out(0.5, "a")], &opts);
+        assert_eq!(anim.frames.len(), 1);
+        assert_eq!(anim.frames[0].screen.rows[0][0].text, "a");
+
+        // --to before the first event: one empty frame.
+        let opts = AnimOptions {
+            to: Some(0.1),
+            ..default_opts()
+        };
+        let anim = build(&[out(0.5, "a")], &opts);
+        assert_eq!(anim.frames.len(), 1);
+        assert!(anim.frames[0].screen.rows.iter().all(|r| r.is_empty()));
+    }
+
+    #[test]
+    fn seed_resize_grows_the_canvas() {
+        let opts = AnimOptions {
+            from: Some(2.0),
+            ..default_opts()
+        };
+        let events = [
+            Event {
+                time: 1.0,
+                data: EventData::Resize { cols: 30, rows: 8 },
+            },
+            out(3.0, "b"),
+        ];
+        let anim = build(&events, &opts);
+        assert_eq!((anim.cols, anim.rows), (30, 8));
     }
 
     #[test]
