@@ -3,7 +3,7 @@
 <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
 <rect x="24" y="24" width="406.4" height="256" rx="10" fill="#282a36" filter="url(#shadow)"/>
 <circle cx="44" cy="40" r="6" fill="#ff5f57"/><circle cx="64" cy="40" r="6" fill="#febc2e"/><circle cx="84" cy="40" r="6" fill="#28c840"/>
-<text x="227.2" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">typing</text>
+<text x="227.2" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">typing-v3</text>
 <defs>
 <g id="r0"><text x="34" y="13.54" fill="#f8f8f2">$</text></g>
 <g id="r1"><text x="34" y="13.54" fill="#f8f8f2">$</text><text x="50.8" y="13.54" fill="#f8f8f2">ec</text></g>
