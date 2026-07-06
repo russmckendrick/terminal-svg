@@ -3,18 +3,31 @@ use std::path::PathBuf;
 
 use crate::render::{ChromeStyle, CursorStyle};
 
+const EXAMPLES: &str = "\
+Examples:
+  ls --color=always | terminal-svg -o ls.svg    pipe ANSI output through
+  terminal-svg -- lsd -la                       run a command in a PTY
+  terminal-svg dump.ansi -t nord                render a captured ANSI file
+  terminal-svg rec -o demo.svg                  record your shell, render on exit
+  terminal-svg demo.cast --speed 2              replay a recording as animated SVG
+  terminal-svg demo.cast --theme-light github-light --theme-dark github-dark
+
+Docs & recipes: https://github.com/russmckendrick/terminal-svg/tree/main/docs";
+
 /// Render terminal output as a pixel-perfect SVG screenshot.
 ///
-/// Reads ANSI from a file or stdin, or runs a command in a PTY:
-///   cmd | terminal-svg -o shot.svg
-///   terminal-svg dump.ansi
-///   terminal-svg -- lsd -la
-///
-/// A .cast input (asciicast v2 or v3, e.g. from `terminal-svg rec` or
-/// asciinema) renders as an animated SVG replaying the recording:
-///   terminal-svg demo.cast -o demo.svg
+/// Reads ANSI from a file or stdin, or runs a command in a PTY so
+/// programs see a real terminal and switch on color. An asciicast
+/// recording (v2 or v3, from `terminal-svg rec` or asciinema) renders as
+/// an animated SVG that plays anywhere an <img> tag does.
 #[derive(Debug, Parser)]
-#[command(name = "terminal-svg", version, about)]
+#[command(
+    name = "terminal-svg",
+    version,
+    about,
+    subcommand_value_name = "SUBCOMMAND",
+    after_help = EXAMPLES
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub sub: Option<Sub>,
@@ -31,15 +44,27 @@ pub struct Cli {
     pub style: StyleArgs,
 
     /// Terminal width in columns
-    #[arg(short, long, default_value_t = 80)]
+    #[arg(
+        short,
+        long,
+        value_name = "N",
+        default_value_t = 80,
+        help_heading = "Capture"
+    )]
     pub cols: usize,
 
     /// Terminal height in rows (PTY size; output height follows content)
-    #[arg(short, long, default_value_t = 24)]
+    #[arg(
+        short,
+        long,
+        value_name = "N",
+        default_value_t = 24,
+        help_heading = "Capture"
+    )]
     pub rows: usize,
 
     /// Kill the PTY command after this many seconds
-    #[arg(long)]
+    #[arg(long, value_name = "SECONDS", help_heading = "Capture")]
     pub timeout: Option<u64>,
 
     /// List built-in themes and exit
@@ -75,77 +100,116 @@ pub enum Sub {
 #[derive(Debug, Args)]
 pub struct StyleArgs {
     /// Output path ("-" writes the SVG to stdout)
-    #[arg(short, long, default_value = "terminal.svg")]
+    #[arg(
+        short,
+        long,
+        value_name = "PATH",
+        default_value = "terminal.svg",
+        help_heading = "Output & themes"
+    )]
     pub output: String,
 
     /// Theme name, path to a custom theme .toml, or "auto" to use the
     /// palette embedded in an asciicast v3 recording
-    #[arg(short, long, default_value = "dracula")]
+    #[arg(
+        short,
+        long,
+        value_name = "THEME",
+        default_value = "dracula",
+        help_heading = "Output & themes"
+    )]
     pub theme: String,
 
     /// Light theme for a dual light/dark SVG switched by
     /// prefers-color-scheme (requires --theme-dark)
-    #[arg(long, value_name = "THEME", requires = "theme_dark")]
+    #[arg(
+        long,
+        value_name = "THEME",
+        requires = "theme_dark",
+        help_heading = "Output & themes"
+    )]
     pub theme_light: Option<String>,
 
     /// Dark theme for a dual light/dark SVG switched by
     /// prefers-color-scheme (requires --theme-light)
-    #[arg(long, value_name = "THEME", requires = "theme_light")]
+    #[arg(
+        long,
+        value_name = "THEME",
+        requires = "theme_light",
+        help_heading = "Output & themes"
+    )]
     pub theme_dark: Option<String>,
 
     /// Window title (defaults to the recording's title for casts, or the
     /// command string for PTY captures)
-    #[arg(long)]
+    #[arg(long, value_name = "TITLE", help_heading = "Window")]
     pub title: Option<String>,
 
     /// Emoji shown before the title (default: 📁 when the title is a
     /// path; pass an empty string to disable)
-    #[arg(long, value_name = "EMOJI")]
+    #[arg(long, value_name = "EMOJI", help_heading = "Window")]
     pub title_emoji: Option<String>,
 
     /// Window chrome style; fixed-size like a real window, it does not
     /// scale with --font-size
-    #[arg(long, value_enum, default_value = "macos")]
+    #[arg(
+        long,
+        value_name = "STYLE",
+        value_enum,
+        default_value = "macos",
+        help_heading = "Window"
+    )]
     pub chrome: ChromeStyle,
 
-    /// Cursor shape in animated output
-    #[arg(long, value_enum, default_value = "block")]
-    pub cursor: CursorStyle,
-
-    /// Font size in px
-    #[arg(long, default_value_t = 14.0)]
-    pub font_size: f32,
-
-    /// Line height as a multiple of font size
-    #[arg(long, default_value_t = 1.2)]
-    pub line_height: f32,
-
-    /// Padding between window edge and text, in px
-    #[arg(long, default_value_t = 10.0)]
-    pub padding: f32,
-
-    /// Margin around the window, in px (default 24, or 0 with --no-shadow)
-    #[arg(long)]
-    pub margin: Option<f32>,
-
     /// Render a bare panel without a title bar (alias for --chrome none)
-    #[arg(long)]
+    #[arg(long, help_heading = "Window")]
     pub no_window: bool,
 
     /// Transparent background: no window body, chrome, or shadow
-    #[arg(long)]
+    #[arg(long, help_heading = "Window")]
     pub no_background: bool,
 
     /// Disable the drop shadow
-    #[arg(long)]
+    #[arg(long, help_heading = "Window")]
     pub no_shadow: bool,
 
+    /// Font size in px
+    #[arg(
+        long,
+        value_name = "PX",
+        default_value_t = 14.0,
+        help_heading = "Layout & fonts"
+    )]
+    pub font_size: f32,
+
+    /// Line height as a multiple of font size
+    #[arg(
+        long,
+        value_name = "N",
+        default_value_t = 1.2,
+        help_heading = "Layout & fonts"
+    )]
+    pub line_height: f32,
+
+    /// Padding between window edge and text, in px
+    #[arg(
+        long,
+        value_name = "PX",
+        default_value_t = 10.0,
+        help_heading = "Layout & fonts"
+    )]
+    pub padding: f32,
+
+    /// Margin around the window, in px (default 24, or 0 with --no-shadow)
+    #[arg(long, value_name = "PX", help_heading = "Layout & fonts")]
+    pub margin: Option<f32>,
+
     /// Reference system fonts instead of embedding a subsetted font
-    #[arg(long)]
+    #[arg(long, help_heading = "Layout & fonts")]
     pub no_font_embed: bool,
 
     /// Font family to reference with --no-font-embed
-    #[arg(long)]
+    #[arg(long, value_name = "NAME", help_heading = "Layout & fonts")]
     pub font_family: Option<String>,
 }
 
@@ -182,6 +246,7 @@ impl StyleArgs {
 /// Animation options; they apply when rendering an asciicast (a .cast input
 /// or a `rec` session).
 #[derive(Debug, Args)]
+#[command(next_help_heading = "Animation (cast inputs and rec)")]
 pub struct AnimArgs {
     /// Play the animation once and hold the last frame instead of looping
     #[arg(long)]
@@ -193,7 +258,7 @@ pub struct AnimArgs {
     pub idle_time_limit: Option<f64>,
 
     /// Playback speed multiplier (2 = twice as fast)
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, value_name = "N", default_value_t = 1.0)]
     pub speed: f64,
 
     /// Start the animation this many seconds into the recording; the
@@ -204,6 +269,10 @@ pub struct AnimArgs {
     /// End the animation at this many seconds into the recording
     #[arg(long, value_name = "SECONDS", conflicts_with_all = ["static_", "at"])]
     pub to: Option<f64>,
+
+    /// Cursor shape in animated output
+    #[arg(long, value_name = "STYLE", value_enum, default_value = "block")]
+    pub cursor: CursorStyle,
 
     /// Render only the final frame as a static SVG
     #[arg(long = "static")]
@@ -229,15 +298,15 @@ pub struct RecArgs {
 
     /// Where to save the asciicast recording
     /// (default: the output path with a .cast extension)
-    #[arg(long)]
+    #[arg(long, value_name = "PATH", help_heading = "Capture")]
     pub cast: Option<PathBuf>,
 
     /// Terminal width in columns (defaults to the current terminal's)
-    #[arg(short, long)]
+    #[arg(short, long, value_name = "N", help_heading = "Capture")]
     pub cols: Option<u16>,
 
     /// Terminal height in rows (defaults to the current terminal's)
-    #[arg(short, long)]
+    #[arg(short, long, value_name = "N", help_heading = "Capture")]
     pub rows: Option<u16>,
 
     #[command(flatten)]

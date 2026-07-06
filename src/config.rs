@@ -97,7 +97,7 @@ fn apply_style(
     overlay!(style.theme_light, "theme_light", c.theme_light);
     overlay!(style.theme_dark, "theme_dark", c.theme_dark);
     overlay!(style.chrome, "chrome", c.chrome);
-    overlay!(style.cursor, "cursor", c.cursor);
+    overlay!(anim.cursor, "cursor", c.cursor);
     overlay!(style.font_size, "font_size", c.font_size);
     overlay!(style.line_height, "line_height", c.line_height);
     overlay!(style.padding, "padding", c.padding);

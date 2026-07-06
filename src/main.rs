@@ -301,7 +301,8 @@ fn render_cast(
         (font::EMBEDDED_FONT_STACK.to_string(), faces)
     };
 
-    let config = render_config(style, title, font_family, font_faces);
+    let mut config = render_config(style, title, font_family, font_faces);
+    config.cursor = anim_args.cursor;
     let svg = if let Some((light_name, dark_name)) = style.dual_themes() {
         let light = load_theme(light_name, header.theme.as_ref())?;
         let dark = load_theme(dark_name, header.theme.as_ref())?;
@@ -337,7 +338,9 @@ fn render_config(
         title,
         font_family,
         font_faces,
-        cursor: style.cursor,
+        // Only the animated renderers draw a cursor; render_cast
+        // overrides this with --cursor.
+        cursor: render::CursorStyle::default(),
     }
 }
 
