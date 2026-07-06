@@ -6,7 +6,7 @@ use anyhow::Result;
 use crate::anim::Animation;
 use crate::theme::Theme;
 
-use super::{RenderConfig, svg, text};
+use super::{CursorStyle, RenderConfig, svg, text};
 use svg::fmt;
 
 /// Assemble an animated SVG: one absolutely-positioned group per keyframe,
@@ -62,17 +62,39 @@ pub fn render_animated(
                 fmt(l.origin_y + row as f32 * l.m.line_h),
             );
         }
-        if let Some((col, row)) = frame.cursor {
-            // Soft cursor block. A cursor in the pending-wrap state
-            // reports col == cols; keep the block on the grid.
+        if let Some((col, row)) = frame.cursor
+            && config.cursor != CursorStyle::None
+        {
+            // A cursor in the pending-wrap state reports col == cols; keep
+            // it on the grid.
             let col = col.min(anim.cols.saturating_sub(1));
+            let cell_x = l.origin_x + col as f32 * l.m.cell_w;
+            let cell_y = l.origin_y + row as f32 * l.m.line_h;
+            // A block is soft so the glyph under it stays legible; bar and
+            // underline don't cover the glyph, so they're solid, like the
+            // real shapes in a terminal.
+            let (x, y, w, h, opacity) = match config.cursor {
+                CursorStyle::Block => (cell_x, cell_y, l.m.cell_w, l.m.line_h, 0.55),
+                CursorStyle::Bar => (
+                    cell_x,
+                    cell_y,
+                    (0.15 * l.m.cell_w).max(1.5),
+                    l.m.line_h,
+                    1.0,
+                ),
+                CursorStyle::Underline => {
+                    let h = l.m.underline_thickness.max(2.0);
+                    (cell_x, cell_y + l.m.line_h - h, l.m.cell_w, h, 1.0)
+                }
+                CursorStyle::None => unreachable!(),
+            };
             let _ = write!(
                 body,
-                r#"<rect x="{}" y="{}" width="{}" height="{}" fill="{}" opacity="0.55"/>"#,
-                fmt(l.origin_x + col as f32 * l.m.cell_w),
-                fmt(l.origin_y + row as f32 * l.m.line_h),
-                fmt(l.m.cell_w),
-                fmt(l.m.line_h),
+                r#"<rect x="{}" y="{}" width="{}" height="{}" fill="{}" opacity="{opacity}"/>"#,
+                fmt(x),
+                fmt(y),
+                fmt(w),
+                fmt(h),
                 theme.foreground.hex(),
             );
         }
@@ -125,6 +147,14 @@ fn animation_css(anim: &Animation, looping: bool) -> String {
         }
         css.push('}');
     }
+    // Viewers who prefer reduced motion get a poster instead: the final
+    // frame, the recording's end state (frame 0 is usually an empty
+    // terminal).
+    let _ = write!(
+        css,
+        "@media (prefers-reduced-motion:reduce){{.f{{animation:none}}#f{}{{opacity:1}}}}",
+        anim.frames.len().saturating_sub(1),
+    );
     css
 }
 
@@ -202,6 +232,7 @@ mod tests {
             title: None,
             font_family: "monospace".into(),
             font_faces: None,
+            cursor: CursorStyle::Block,
         };
 
         let svg = render_animated(&anim, &theme, &config, true).unwrap();
@@ -216,9 +247,74 @@ mod tests {
         assert!(svg.contains(&format!("0%{{opacity:1}}{p1}%{{opacity:0}}")));
         // Cursor block present.
         assert!(svg.contains(r#" opacity="0.55"/>"#));
+        // Reduced motion shows the final frame as a poster.
+        assert!(
+            svg.contains(
+                "@media (prefers-reduced-motion:reduce){.f{animation:none}#f2{opacity:1}}"
+            )
+        );
 
         let once = render_animated(&anim, &theme, &config, false).unwrap();
         assert!(once.contains("animation-iteration-count:1"));
         assert!(once.contains("animation-fill-mode:forwards"));
+    }
+
+    #[test]
+    fn cursor_styles() {
+        let theme = builtin::load("dracula").unwrap();
+        let header = Header {
+            version: 2,
+            width: 10,
+            height: 3,
+            timestamp: None,
+            title: None,
+            env: None,
+            idle_time_limit: None,
+            theme: None,
+        };
+        let events = [Event {
+            time: 0.5,
+            data: EventData::Output("hi".into()),
+        }];
+        let anim = build_frames(
+            &header,
+            &events,
+            &theme,
+            &AnimOptions {
+                idle_time_limit: None,
+                speed: 1.0,
+            },
+        );
+        let config = |cursor| RenderConfig {
+            font_size: 14.0,
+            line_height: 1.2,
+            padding: 16.0,
+            margin: 24.0,
+            chrome: crate::render::ChromeStyle::Macos,
+            background: true,
+            shadow: true,
+            title: None,
+            font_family: "monospace".into(),
+            font_faces: None,
+            cursor,
+        };
+
+        // Metrics at 14px: cell_w = 8.4, line_h = 17.
+        let block = render_animated(&anim, &theme, &config(CursorStyle::Block), true).unwrap();
+        assert!(block.contains(r##"width="8.4" height="17" fill="#f8f8f2" opacity="0.55"/>"##));
+
+        // Bar: 15% of the cell but at least 1.5px, solid, full height.
+        let bar = render_animated(&anim, &theme, &config(CursorStyle::Bar), true).unwrap();
+        assert!(bar.contains(r##"width="1.5" height="17" fill="#f8f8f2" opacity="1"/>"##));
+
+        // Underline: at the cell bottom, at least 2px tall, solid.
+        let underline =
+            render_animated(&anim, &theme, &config(CursorStyle::Underline), true).unwrap();
+        assert!(underline.contains(r##"width="8.4" height="2" fill="#f8f8f2" opacity="1"/>"##));
+
+        // None: no cursor rect at all (the shadow rect has no opacity attr).
+        let none = render_animated(&anim, &theme, &config(CursorStyle::None), true).unwrap();
+        assert!(!none.contains(r#" opacity="0.55"/>"#));
+        assert!(!none.contains(r#" opacity="1"/>"#));
     }
 }

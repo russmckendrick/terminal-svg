@@ -1,7 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
-use crate::render::ChromeStyle;
+use crate::render::{ChromeStyle, CursorStyle};
 
 /// Render terminal output as a pixel-perfect SVG screenshot.
 ///
@@ -94,6 +94,10 @@ pub struct StyleArgs {
     /// scale with --font-size
     #[arg(long, value_enum, default_value = "macos")]
     pub chrome: ChromeStyle,
+
+    /// Cursor shape in animated output
+    #[arg(long, value_enum, default_value = "block")]
+    pub cursor: CursorStyle,
 
     /// Font size in px
     #[arg(long, default_value_t = 14.0)]

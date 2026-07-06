@@ -33,6 +33,7 @@ fn fixed_config(title: &str) -> RenderConfig {
         title: Some(title.to_string()),
         font_family: render::DEFAULT_FONT_STACK.to_string(),
         font_faces: None,
+        cursor: render::CursorStyle::Block,
     }
 }
 

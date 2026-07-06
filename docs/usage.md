@@ -138,8 +138,13 @@ These apply when the input is a `.cast` file or a `rec` session:
 | `--idle-time-limit <SECS>` | recording's own, or `2` | cap pauses between events |
 | `--speed <N>` | `1` | playback speed multiplier |
 | `--no-loop` | | play once and hold the last frame |
+| `--cursor <STYLE>` | `block` | cursor shape: `block`, `bar`, `underline`, or `none` |
 | `--static` | | render only the final screen, no animation |
 | `--at <SECS>` | | render the screen at this point in the recording (implies `--static`) |
+
+Animated SVGs respect the viewer's reduced-motion preference: with
+`prefers-reduced-motion: reduce` the animation is disabled and the final
+frame shows as a still poster.
 
 ## Title detection
 

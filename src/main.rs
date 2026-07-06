@@ -307,6 +307,7 @@ fn render_config(
         title,
         font_family,
         font_faces,
+        cursor: style.cursor,
     }
 }
 

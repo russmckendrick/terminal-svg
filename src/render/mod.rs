@@ -8,6 +8,16 @@ pub use anim::render_animated;
 pub use chrome::ChromeStyle;
 pub use svg::{render, render_dual};
 
+/// Cursor shape in animated output.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, clap::ValueEnum)]
+pub enum CursorStyle {
+    #[default]
+    Block,
+    Bar,
+    Underline,
+    None,
+}
+
 #[derive(Debug, Clone)]
 pub struct RenderConfig {
     pub font_size: f32,
@@ -27,6 +37,8 @@ pub struct RenderConfig {
     pub font_family: String,
     /// Base64 WOFF2 @font-face blocks (regular, bold), when embedding.
     pub font_faces: Option<FontFaces>,
+    /// Cursor shape in animated output.
+    pub cursor: CursorStyle,
 }
 
 #[derive(Debug, Clone)]

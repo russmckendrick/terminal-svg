@@ -78,7 +78,9 @@ of the terminal it was recorded in. Long pauses are capped at 2s
 deduplicated, and repeated rows are shared across frames via `<defs>`/`<use>`,
 so even minute-long sessions stay compact. The animation loops with a 1.5s
 hold on the last frame; `--no-loop` plays once and freezes, and `--static`
-renders just the final screen.
+renders just the final screen. Viewers with `prefers-reduced-motion` set
+see the final frame as a still poster instead of the animation, and
+`--cursor` picks the cursor shape (`block`, `bar`, `underline`, `none`).
 
 ### Options
 
