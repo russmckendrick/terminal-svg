@@ -121,6 +121,29 @@ terminal-svg --list-themes
 echo hello | terminal-svg -o hello.svg
 ```
 
+## Shell completions and man page
+
+The binary generates its own completions — pick your shell:
+
+```sh
+# zsh (any directory on your $fpath works)
+terminal-svg --completions zsh > ~/.zfunc/_terminal-svg
+
+# bash
+terminal-svg --completions bash > /usr/local/etc/bash_completion.d/terminal-svg
+
+# fish
+terminal-svg --completions fish > ~/.config/fish/completions/terminal-svg.fish
+```
+
+`elvish` and `powershell` are supported too. For a man page:
+
+```sh
+terminal-svg --man > /usr/local/share/man/man1/terminal-svg.1
+# or read it without installing
+terminal-svg --man | man -l -
+```
+
 ## Building from source
 
 You need a Rust toolchain (1.85 or newer — the crate uses the 2024 edition);
@@ -148,5 +171,6 @@ Both put `terminal-svg` in `~/.cargo/bin`. For a binary without installing,
   put it)
 - Cargo: `cargo uninstall terminal-svg`
 
-terminal-svg writes nothing outside the SVGs (and `.cast` files) you ask it
-for — no config directories or caches to clean up.
+terminal-svg writes nothing outside the SVGs (and `.cast` files) you ask
+it for — no caches to clean up. If you created a config file
+(`~/.config/terminal-svg/config.toml`), delete it too.

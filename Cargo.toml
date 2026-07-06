@@ -19,6 +19,8 @@ anyhow = "1.0.103"
 avt = "0.18.0"
 base64 = "0.22.1"
 clap = { version = "4.6.1", features = ["derive"] }
+clap_complete = "4"
+clap_mangen = "0.2"
 flate2 = { version = "1.1.9", default-features = false, features = ["rust_backend"] }
 portable-pty = "0.9.0"
 serde = { version = "1.0.228", features = ["derive"] }

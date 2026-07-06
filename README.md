@@ -90,7 +90,7 @@ the [CLI reference](docs/usage.md).
 | Flag | Default | |
 |---|---|---|
 | `-o, --output` | `terminal.svg` | `-` writes to stdout |
-| `-t, --theme` | `dracula` | built-in name or path to a `.toml` |
+| `-t, --theme` | `dracula` | built-in name, path to a `.toml`, or `auto` (asciicast v3's embedded palette) |
 | `--theme-light` / `--theme-dark` | | dual-theme SVG switched by `prefers-color-scheme`, static or animated |
 | `--chrome` | `macos` | window style: `macos`, `windows`, `ubuntu`, `none` |
 | `--title` | auto | falls back to the title the program set (OSC 0/2), then the command string |
@@ -108,6 +108,11 @@ the [CLI reference](docs/usage.md).
 Titles are auto-detected: `--title` wins, then the recording's own title,
 then the last directory the shell reported via OSC 0/2 (shown Ghostty-style
 as `📁 ~/Code/blog`), then the command string.
+
+Personal defaults go in `~/.config/terminal-svg/config.toml` (flags always
+win), and `terminal-svg --completions <shell>` generates shell completions
+— see [installation](docs/install.md) and the
+[CLI reference](docs/usage.md).
 
 ```sh
 # GitHub README demo that follows the viewer's light/dark mode — works

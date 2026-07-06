@@ -46,6 +46,19 @@ pub struct Cli {
     #[arg(long)]
     pub list_themes: bool,
 
+    /// Generate shell completions and exit
+    #[arg(long, value_name = "SHELL", value_enum)]
+    pub completions: Option<clap_complete::Shell>,
+
+    /// Write the man page (roff) to stdout and exit
+    #[arg(long, hide = true)]
+    pub man: bool,
+
+    /// Config file with default flag values
+    /// (default: ~/.config/terminal-svg/config.toml, when it exists)
+    #[arg(long, value_name = "PATH")]
+    pub config: Option<PathBuf>,
+
     #[command(flatten)]
     pub anim: AnimArgs,
 }
@@ -414,5 +427,26 @@ mod tests {
         let cli = parse(&["terminal-svg", "rec.cast"]);
         assert!(cli.sub.is_none());
         assert_eq!(cli.input.unwrap(), PathBuf::from("rec.cast"));
+    }
+
+    #[test]
+    fn completions_and_man_generate() {
+        use clap::CommandFactory;
+
+        let mut buf = Vec::new();
+        clap_complete::generate(
+            clap_complete::Shell::Zsh,
+            &mut Cli::command(),
+            "terminal-svg",
+            &mut buf,
+        );
+        assert!(String::from_utf8(buf).unwrap().contains("terminal-svg"));
+
+        let mut buf = Vec::new();
+        clap_mangen::Man::new(Cli::command())
+            .render(&mut buf)
+            .unwrap();
+        let man = String::from_utf8(buf).unwrap();
+        assert!(man.contains(".TH") && man.contains("terminal-svg"));
     }
 }

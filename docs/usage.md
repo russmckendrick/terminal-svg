@@ -148,6 +148,34 @@ Animated SVGs respect the viewer's reduced-motion preference: with
 `prefers-reduced-motion: reduce` the animation is disabled and the final
 frame shows as a still poster.
 
+## Configuration file
+
+Personal defaults live in `~/.config/terminal-svg/config.toml`
+(`$XDG_CONFIG_HOME` is respected; `--config <path>` points somewhere
+else). Keys mirror the long flag names; anything set on the command line
+still wins:
+
+```toml
+theme = "nord"
+chrome = "none"
+cursor = "bar"
+font-size = 16.0
+line-height = 1.3
+padding = 12.0
+# margin = 32.0
+# title-emoji = "🚀"
+# font-family = "Menlo,monospace"     # used with --no-font-embed
+# theme-light = "github-light"       # set both or neither
+# theme-dark = "github-dark"
+# speed = 1.5
+# idle-time-limit = 3.0
+# no-shadow = true
+```
+
+Unknown keys are an error (typos fail loudly rather than silently doing
+nothing). Without a config file, nothing changes — there is no file until
+you create one.
+
 ## Title detection
 
 The title bar text is picked in order:

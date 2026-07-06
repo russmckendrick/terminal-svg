@@ -2,6 +2,7 @@ pub mod anim;
 pub mod capture;
 pub mod cast;
 pub mod cli;
+pub mod config;
 pub mod font;
 pub mod render;
 pub mod term;

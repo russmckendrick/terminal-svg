@@ -1,12 +1,30 @@
 use anyhow::{Result, bail};
-use clap::Parser;
+use clap::{CommandFactory, FromArgMatches};
 
 use terminal_svg::cli::{AnimArgs, Cli, StyleArgs, Sub};
 use terminal_svg::term::screen::Screen;
-use terminal_svg::{anim, capture, cast, font, render, term, theme};
+use terminal_svg::{anim, capture, cast, config, font, render, term, theme};
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+    let matches = Cli::command().get_matches();
+    let mut cli = Cli::from_arg_matches(&matches)?;
+
+    if let Some(shell) = cli.completions {
+        clap_complete::generate(
+            shell,
+            &mut Cli::command(),
+            "terminal-svg",
+            &mut std::io::stdout(),
+        );
+        return Ok(());
+    }
+    if cli.man {
+        clap_mangen::Man::new(Cli::command()).render(&mut std::io::stdout())?;
+        return Ok(());
+    }
+
+    let file_config = config::load(cli.config.as_deref())?;
+    config::apply(&mut cli, &matches, &file_config)?;
 
     if let Some(Sub::Rec(rec)) = &cli.sub {
         return run_rec(rec);

@@ -8,7 +8,8 @@ use super::svg::{fmt, xml_escape};
 /// Window chrome style. Chrome geometry is fixed-size like a real window:
 /// it does not scale with the terminal font, so a large --font-size looks
 /// like a screenshot of a large-font terminal, not a blown-up window.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, clap::ValueEnum, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum ChromeStyle {
     /// macOS: traffic lights on the left, centered title
     #[default]
