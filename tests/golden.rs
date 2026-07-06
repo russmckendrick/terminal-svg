@@ -77,6 +77,17 @@ fn render_animated_fixture(name: &str, title: &str, opts: &anim::AnimOptions) ->
     render::render_animated(&animation, &theme, &fixed_config(title), true).unwrap()
 }
 
+/// The typing recording as a dual light/dark animated document, locking
+/// the shared-frames + palette-CSS markup.
+fn render_dual_animated_fixture() -> String {
+    let (header, events) = cast::read(Path::new("tests/fixtures/typing.cast")).unwrap();
+    let animation = anim::build_frames(&header, &events, &default_anim_opts());
+    let light = theme::builtin::load("github-light").unwrap();
+    let dark = theme::builtin::load("github-dark").unwrap();
+    render::render_animated_dual(&animation, &light, &dark, &fixed_config("dual-anim"), true)
+        .unwrap()
+}
+
 #[test]
 fn golden() {
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
@@ -114,6 +125,7 @@ fn golden() {
         .chain([
             (animated.0, animated.1),
             trimmed,
+            ("dual-anim", render_dual_animated_fixture()),
             (
                 "chrome-windows",
                 render_chrome_fixture(render::ChromeStyle::Windows, "chrome-windows"),

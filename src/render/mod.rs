@@ -4,7 +4,7 @@ pub mod metrics;
 pub mod svg;
 pub mod text;
 
-pub use anim::render_animated;
+pub use anim::{render_animated, render_animated_dual};
 pub use chrome::ChromeStyle;
 pub use svg::{render, render_dual};
 

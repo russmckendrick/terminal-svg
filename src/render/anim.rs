@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write;
 
 use anyhow::Result;
 
 use crate::anim::Animation;
+use crate::term::screen::PenColor;
 use crate::theme::Theme;
 
-use super::{CursorStyle, FillMode, RenderConfig, svg, text};
+use super::{CursorStyle, FillMode, RenderConfig, palette_class, svg, text};
 use svg::fmt;
 
 /// Assemble an animated SVG: one absolutely-positioned group per keyframe,
@@ -30,11 +31,57 @@ pub fn render_animated(
     svg::style_block(&mut out, config, &css);
     svg::chrome_layer(&mut out, theme, config, &l, "");
 
-    // Screens repeat almost every row from frame to frame (typing appends;
-    // scrolling shifts), so each distinct row is defined once and frames
-    // reference it by y offset — the difference between O(rows × frames)
-    // and O(distinct rows) output.
-    let mode = FillMode::Hex(theme);
+    let cursor_attr = format!(r#"fill="{}""#, theme.foreground.hex());
+    let (defs, frame_bodies) = frame_markup(anim, &l, config, &FillMode::Hex(theme), &cursor_attr);
+    write_frames(&mut out, &l, &defs, &frame_bodies);
+    out.push_str("</svg>\n");
+    Ok(out)
+}
+
+/// A dual light/dark animated SVG: one shared set of frames rendered with
+/// palette classes, two chrome layers, and a CSS palette switched by
+/// `prefers-color-scheme` — the same mechanism as the static `render_dual`,
+/// without duplicating the (much larger) frame markup.
+pub fn render_animated_dual(
+    anim: &Animation,
+    light: &Theme,
+    dark: &Theme,
+    config: &RenderConfig,
+    looping: bool,
+) -> Result<String> {
+    let l = svg::layout(anim.cols, anim.rows, config)?;
+    let mut css = animation_css(anim, looping);
+    css.push_str(&dual_palette_css(anim, config, light, dark));
+
+    let mut out = String::with_capacity(64 * 1024);
+    svg::open_document(&mut out, &l, config);
+    svg::style_block(&mut out, config, &css);
+    for (class, suffix, theme) in [("tl", "-l", light), ("td", "-d", dark)] {
+        let _ = write!(out, r#"<g class="{class}">"#);
+        out.push('\n');
+        svg::chrome_layer(&mut out, theme, config, &l, suffix);
+        out.push_str("</g>\n");
+    }
+
+    let (defs, frame_bodies) = frame_markup(anim, &l, config, &FillMode::Class, r#"class="cf""#);
+    write_frames(&mut out, &l, &defs, &frame_bodies);
+    out.push_str("</svg>\n");
+    Ok(out)
+}
+
+/// Frame markup shared by the single- and dual-theme renderers.
+///
+/// Screens repeat almost every row from frame to frame (typing appends;
+/// scrolling shifts), so each distinct row is defined once and frames
+/// reference it by y offset — the difference between O(rows × frames)
+/// and O(distinct rows) output.
+fn frame_markup(
+    anim: &Animation,
+    l: &svg::Layout,
+    config: &RenderConfig,
+    mode: &FillMode,
+    cursor_attr: &str,
+) -> (String, Vec<String>) {
     let mut defs = String::new();
     let mut row_ids: HashMap<String, usize> = HashMap::new();
     let mut frame_bodies = Vec::with_capacity(anim.frames.len());
@@ -45,8 +92,8 @@ pub fn render_animated(
                 continue;
             }
             let mut markup = String::new();
-            text::row_background_rects(&mut markup, runs, &l.m, l.origin_x, 0.0, &mode);
-            text::row_text_runs(&mut markup, runs, &l.m, l.origin_x, l.m.baseline(0), &mode);
+            text::row_background_rects(&mut markup, runs, &l.m, l.origin_x, 0.0, mode);
+            text::row_text_runs(&mut markup, runs, &l.m, l.origin_x, l.m.baseline(0), mode);
             let id = match row_ids.get(&markup) {
                 Some(&id) => id,
                 None => {
@@ -91,19 +138,21 @@ pub fn render_animated(
             };
             let _ = write!(
                 body,
-                r#"<rect x="{}" y="{}" width="{}" height="{}" fill="{}" opacity="{opacity}"/>"#,
+                r#"<rect x="{}" y="{}" width="{}" height="{}" {cursor_attr} opacity="{opacity}"/>"#,
                 fmt(x),
                 fmt(y),
                 fmt(w),
                 fmt(h),
-                theme.foreground.hex(),
             );
         }
         frame_bodies.push(body);
     }
+    (defs, frame_bodies)
+}
 
+fn write_frames(out: &mut String, l: &svg::Layout, defs: &str, frame_bodies: &[String]) {
     out.push_str("<defs>\n");
-    out.push_str(&defs);
+    out.push_str(defs);
     out.push_str("</defs>\n");
     let _ = write!(out, r#"<g font-size="{}">"#, fmt(l.m.font_size));
     out.push('\n');
@@ -111,8 +160,49 @@ pub fn render_animated(
         let _ = write!(out, r#"<g class="f" id="f{i}">{body}</g>"#);
         out.push('\n');
     }
-    out.push_str("</g>\n</svg>\n");
-    Ok(out)
+    out.push_str("</g>\n");
+}
+
+/// The palette CSS for dual documents: every class the frames actually
+/// use, resolved under the light theme by default and overridden inside
+/// the dark media query alongside the chrome-layer toggle. Decoration
+/// lines stroke rather than fill, hence the paired `line.` rules.
+fn dual_palette_css(
+    anim: &Animation,
+    config: &RenderConfig,
+    light: &Theme,
+    dark: &Theme,
+) -> String {
+    let mut used: BTreeMap<String, PenColor> = BTreeMap::new();
+    for run in anim
+        .frames
+        .iter()
+        .flat_map(|f| f.screen.rows.iter().flatten())
+    {
+        for color in [Some(run.fg), run.bg].into_iter().flatten() {
+            if let Some(class) = palette_class(color) {
+                used.insert(class, color);
+            }
+        }
+    }
+    if config.cursor != CursorStyle::None && anim.frames.iter().any(|f| f.cursor.is_some()) {
+        used.insert("cf".to_string(), PenColor::DefaultFg);
+    }
+
+    let rules = |css: &mut String, theme: &Theme| {
+        for (class, color) in &used {
+            let hex = color.resolve(theme).hex();
+            let _ = write!(css, ".{class}{{fill:{hex}}}line.{class}{{stroke:{hex}}}");
+        }
+    };
+    let mut css = String::new();
+    rules(&mut css, light);
+    css.push_str(
+        ".td{display:none}@media(prefers-color-scheme:dark){.tl{display:none}.td{display:inline}",
+    );
+    rules(&mut css, dark);
+    css.push('}');
+    css
 }
 
 fn animation_css(anim: &Animation, looping: bool) -> String {
@@ -259,6 +349,94 @@ mod tests {
         let once = render_animated(&anim, &theme, &config, false).unwrap();
         assert!(once.contains("animation-iteration-count:1"));
         assert!(once.contains("animation-fill-mode:forwards"));
+    }
+
+    #[test]
+    fn dual_animated_document_structure() {
+        let header = Header {
+            version: 2,
+            width: 20,
+            height: 3,
+            timestamp: None,
+            title: None,
+            env: None,
+            idle_time_limit: None,
+            theme: None,
+        };
+        let events = [
+            Event {
+                time: 0.5,
+                data: EventData::Output("\x1b[31mred\x1b[0m \x1b[4munder\x1b[0m".into()),
+            },
+            Event {
+                time: 1.5,
+                data: EventData::Output(" \x1b[38;2;1;2;3mtc\x1b[0m".into()),
+            },
+        ];
+        let anim = build_frames(
+            &header,
+            &events,
+            &AnimOptions {
+                idle_time_limit: None,
+                speed: 1.0,
+                from: None,
+                to: None,
+            },
+        );
+        let config = RenderConfig {
+            font_size: 14.0,
+            line_height: 1.2,
+            padding: 16.0,
+            margin: 24.0,
+            chrome: crate::render::ChromeStyle::Macos,
+            background: true,
+            shadow: true,
+            title: None,
+            font_family: "monospace".into(),
+            font_faces: None,
+            cursor: CursorStyle::Block,
+        };
+        let light = builtin::load("github-light").unwrap();
+        let dark = builtin::load("github-dark").unwrap();
+
+        let svg = render_animated_dual(&anim, &light, &dark, &config, true).unwrap();
+        // One shared set of row defs and frames, two chrome layers.
+        assert_eq!(svg.matches(r#"<g id="r0">"#).count(), 1);
+        assert_eq!(svg.matches(r#"<g class="f""#).count(), 3);
+        assert!(svg.contains(r#"<g class="tl">"#));
+        assert!(svg.contains(r#"<g class="td">"#));
+        assert_eq!(svg.matches(r#"id="shadow-l""#).count(), 1);
+        // Palette classes on runs; truecolor stays inline.
+        assert!(svg.contains(r#"class="c1""#));
+        assert!(svg.contains(r##"fill="#010203""##));
+        // The palette CSS pairs fill and stroke, light first, dark
+        // overridden inside the media query.
+        let c1_light = light.palette[1].hex();
+        let c1_dark = dark.palette[1].hex();
+        assert!(svg.contains(&format!(
+            ".c1{{fill:{c1_light}}}line.c1{{stroke:{c1_light}}}"
+        )));
+        let media = svg
+            .split("@media(prefers-color-scheme:dark)")
+            .nth(1)
+            .unwrap();
+        assert!(media.contains(&format!(".c1{{fill:{c1_dark}}}line.c1{{stroke:{c1_dark}}}")));
+        assert!(media.contains(".tl{display:none}"));
+        // Cursor uses the palette class, not a baked color.
+        assert!(svg.contains(r#"class="cf" opacity="0.55"/>"#));
+        // Only classes the frames use are emitted (no c5, say).
+        assert!(!svg.contains(".c5{"));
+        // Reduced-motion poster still applies.
+        assert!(svg.contains("prefers-reduced-motion"));
+
+        // Sharing frames keeps dual output close to single-theme size.
+        let single = render_animated(&anim, &light, &config, true).unwrap();
+        assert!(
+            (svg.len() as f64) < single.len() as f64 * 1.5,
+            "dual {} vs single {}",
+            svg.len(),
+            single.len()
+        );
     }
 
     #[test]

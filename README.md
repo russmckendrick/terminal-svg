@@ -91,7 +91,7 @@ the [CLI reference](docs/usage.md).
 |---|---|---|
 | `-o, --output` | `terminal.svg` | `-` writes to stdout |
 | `-t, --theme` | `dracula` | built-in name or path to a `.toml` |
-| `--theme-light` / `--theme-dark` | | dual-theme SVG switched by `prefers-color-scheme` (static renders) |
+| `--theme-light` / `--theme-dark` | | dual-theme SVG switched by `prefers-color-scheme`, static or animated |
 | `--chrome` | `macos` | window style: `macos`, `windows`, `ubuntu`, `none` |
 | `--title` | auto | falls back to the title the program set (OSC 0/2), then the command string |
 | `--title-emoji` | 📁 for paths | emoji before the title; `""` disables |
@@ -110,8 +110,9 @@ then the last directory the shell reported via OSC 0/2 (shown Ghostty-style
 as `📁 ~/Code/blog`), then the command string.
 
 ```sh
-# GitHub README image that follows the viewer's light/dark mode
-terminal-svg demo.cast --static --theme-light github-light --theme-dark github-dark
+# GitHub README demo that follows the viewer's light/dark mode — works
+# animated or with --static, at barely any size cost over one theme
+terminal-svg demo.cast --theme-light github-light --theme-dark github-dark
 
 # Faithful Windows PowerShell and Ubuntu GNOME Terminal windows
 terminal-svg --chrome windows -t powershell -- pwsh -c 'Get-ChildItem'

@@ -253,13 +253,6 @@ fn render_cast(
         );
     }
 
-    if style.dual_themes().is_some() {
-        bail!(
-            "--theme-light/--theme-dark need --static for cast inputs (animated dual-theme SVGs are not supported yet)"
-        );
-    }
-    let theme = load_theme(&style.theme, header.theme.as_ref())?;
-
     let osc_title = {
         let mut all = String::new();
         for event in events {
@@ -291,7 +284,14 @@ fn render_cast(
     };
 
     let config = render_config(style, title, font_family, font_faces);
-    let svg = render::render_animated(&animation, &theme, &config, !anim_args.no_loop)?;
+    let svg = if let Some((light_name, dark_name)) = style.dual_themes() {
+        let light = load_theme(light_name, header.theme.as_ref())?;
+        let dark = load_theme(dark_name, header.theme.as_ref())?;
+        render::render_animated_dual(&animation, &light, &dark, &config, !anim_args.no_loop)?
+    } else {
+        let theme = load_theme(&style.theme, header.theme.as_ref())?;
+        render::render_animated(&animation, &theme, &config, !anim_args.no_loop)?
+    };
     write_output(&style.output, &svg)
 }
 

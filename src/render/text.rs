@@ -31,7 +31,14 @@ pub(super) fn background_rects(
     mode: &FillMode,
 ) {
     for (row, runs) in screen.rows.iter().enumerate() {
-        row_background_rects(out, runs, m, origin_x, origin_y + row as f32 * m.line_h, mode);
+        row_background_rects(
+            out,
+            runs,
+            m,
+            origin_x,
+            origin_y + row as f32 * m.line_h,
+            mode,
+        );
         if !runs.is_empty() {
             out.push('\n');
         }

@@ -71,12 +71,12 @@ pub struct StyleArgs {
     pub theme: String,
 
     /// Light theme for a dual light/dark SVG switched by
-    /// prefers-color-scheme (requires --theme-dark; static renders only)
+    /// prefers-color-scheme (requires --theme-dark)
     #[arg(long, value_name = "THEME", requires = "theme_dark")]
     pub theme_light: Option<String>,
 
     /// Dark theme for a dual light/dark SVG switched by
-    /// prefers-color-scheme (requires --theme-light; static renders only)
+    /// prefers-color-scheme (requires --theme-light)
     #[arg(long, value_name = "THEME", requires = "theme_light")]
     pub theme_dark: Option<String>,
 

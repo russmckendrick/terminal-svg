@@ -94,7 +94,7 @@ anywhere an `<img>` tag renders, GitHub READMEs included, no JavaScript.
 |---|---|---|
 | `-o, --output <PATH>` | `terminal.svg` | `-` writes the SVG to stdout |
 | `-t, --theme <THEME>` | `dracula` | built-in name, path to a `.toml`, or `auto` for the palette embedded in an asciicast v3 — see [themes.md](themes.md) |
-| `--theme-light <THEME>` | | with `--theme-dark`: emit both palettes in one SVG, switched by the viewer's `prefers-color-scheme` (static renders only) |
+| `--theme-light <THEME>` | | with `--theme-dark`: emit both palettes in one SVG, switched by the viewer's `prefers-color-scheme`; works for static and animated output |
 | `--theme-dark <THEME>` | | the dark half of the pair |
 | `--list-themes` | | print built-in theme names and exit |
 
@@ -163,10 +163,13 @@ When the detected title looks like a path it gets a 📁 prefix;
 
 ## Recipes
 
-A README image that follows the viewer's light/dark mode:
+A README image that follows the viewer's light/dark mode — animated
+recordings share one set of frames between the two palettes, so the dual
+document costs barely anything over a single theme (add `--static` for a
+still):
 
 ```sh
-terminal-svg demo.cast --static --theme-light github-light --theme-dark github-dark
+terminal-svg demo.cast --theme-light github-light --theme-dark github-dark
 ```
 
 Faithful Windows PowerShell and Ubuntu GNOME Terminal windows (chrome and
