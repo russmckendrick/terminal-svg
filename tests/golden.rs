@@ -59,7 +59,7 @@ fn render_chrome_fixture(chrome: render::ChromeStyle, golden_name: &str) -> Stri
 
 /// Animated rendering is deterministic: the pipeline consumes only the
 /// cast's own timestamps, never the wall clock.
-fn render_animated_fixture(name: &str) -> String {
+fn render_animated_fixture(name: &str, title: &str) -> String {
     let (header, events) = cast::read(Path::new(&format!("tests/fixtures/{name}.cast")))
         .unwrap_or_else(|e| panic!("fixture {name} missing: {e}"));
     let theme = theme::builtin::load("dracula").unwrap();
@@ -68,7 +68,7 @@ fn render_animated_fixture(name: &str) -> String {
         speed: 1.0,
     };
     let animation = anim::build_frames(&header, &events, &theme, &opts);
-    render::render_animated(&animation, &theme, &fixed_config(name), true).unwrap()
+    render::render_animated(&animation, &theme, &fixed_config(title), true).unwrap()
 }
 
 #[test]
@@ -76,7 +76,15 @@ fn golden() {
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
     let mut failures = Vec::new();
 
-    let animated = ("typing", render_animated_fixture("typing"));
+    let animated = ("typing", render_animated_fixture("typing", "typing"));
+    // typing-v3.cast is the same recording hand-converted to asciicast v3;
+    // v3 support is pure input normalization, so the SVGs must match
+    // byte-for-byte.
+    assert_eq!(
+        render_animated_fixture("typing-v3", "typing"),
+        animated.1,
+        "typing-v3.cast must render identical to typing.cast"
+    );
     let rendered = FIXTURES
         .iter()
         .map(|name| (*name, render_fixture(name)))

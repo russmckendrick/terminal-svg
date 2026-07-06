@@ -149,6 +149,7 @@ mod tests {
             title: None,
             env: None,
             idle_time_limit: None,
+            theme: None,
         }
     }
 

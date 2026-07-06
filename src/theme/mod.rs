@@ -121,10 +121,6 @@ impl Theme {
     pub fn from_toml(source: &str) -> Result<Theme> {
         let file: ThemeFile = toml::from_str(source).context("failed to parse theme")?;
         let c = &file.colors;
-        let title_fg = file
-            .chrome
-            .title_fg
-            .unwrap_or_else(|| c.foreground.blend(c.background, 0.45));
         let palette = [
             c.black,
             c.red,
@@ -143,30 +139,72 @@ impl Theme {
             c.bright_cyan,
             c.bright_white,
         ];
-        Ok(Theme {
-            name: file.name,
-            foreground: c.foreground,
-            background: c.background,
+        Ok(Self::build(
+            file.name,
+            c.foreground,
+            c.background,
+            palette,
+            file.chrome,
+        ))
+    }
+
+    /// A theme derived from bare colors with default chrome — for palettes
+    /// embedded in recordings (asciicast v3 `term.theme`). An 8-entry
+    /// palette reuses the normal colors as bright.
+    pub fn from_palette(
+        name: &str,
+        foreground: Rgb,
+        background: Rgb,
+        palette: &[Rgb],
+    ) -> Result<Theme> {
+        let full: [Rgb; 16] = match palette.len() {
+            16 => palette.try_into().unwrap(),
+            8 => {
+                let mut p = [Rgb::new(0, 0, 0); 16];
+                p[..8].copy_from_slice(palette);
+                p[8..].copy_from_slice(palette);
+                p
+            }
+            n => bail!("palette has {n} colors; expected 8 or 16"),
+        };
+        Ok(Self::build(
+            name.to_string(),
+            foreground,
+            background,
+            full,
+            ChromeSection::default(),
+        ))
+    }
+
+    fn build(
+        name: String,
+        foreground: Rgb,
+        background: Rgb,
+        palette: [Rgb; 16],
+        chrome: ChromeSection,
+    ) -> Theme {
+        let title_fg = chrome
+            .title_fg
+            .unwrap_or_else(|| foreground.blend(background, 0.45));
+        Theme {
+            name,
+            foreground,
+            background,
             palette,
             title_fg,
-            shadow_opacity: file.chrome.shadow_opacity.unwrap_or(0.35),
+            shadow_opacity: chrome.shadow_opacity.unwrap_or(0.35),
             lights: [
-                file.chrome
-                    .light_close
-                    .unwrap_or(Rgb::new(0xff, 0x5f, 0x57)),
-                file.chrome
-                    .light_minimize
-                    .unwrap_or(Rgb::new(0xfe, 0xbc, 0x2e)),
-                file.chrome.light_zoom.unwrap_or(Rgb::new(0x28, 0xc8, 0x40)),
+                chrome.light_close.unwrap_or(Rgb::new(0xff, 0x5f, 0x57)),
+                chrome.light_minimize.unwrap_or(Rgb::new(0xfe, 0xbc, 0x2e)),
+                chrome.light_zoom.unwrap_or(Rgb::new(0x28, 0xc8, 0x40)),
             ],
-            button_fg: file.chrome.button_fg.unwrap_or(title_fg),
-            button_bg: file
-                .chrome
+            button_fg: chrome.button_fg.unwrap_or(title_fg),
+            button_bg: chrome
                 .button_bg
-                .unwrap_or_else(|| title_fg.blend(c.background, 0.85)),
-            bar_bg: file.chrome.bar_bg,
-            bar_fg: file.chrome.bar_fg,
-        })
+                .unwrap_or_else(|| title_fg.blend(background, 0.85)),
+            bar_bg: chrome.bar_bg,
+            bar_fg: chrome.bar_fg,
+        }
     }
 
     pub fn resolve(&self, color: avt::Color) -> Rgb {
@@ -201,6 +239,63 @@ mod tests {
         assert_eq!(Rgb::parse("#ff5555").unwrap(), Rgb::new(0xff, 0x55, 0x55));
         assert_eq!(Rgb::parse("fff").unwrap(), Rgb::new(0xff, 0xff, 0xff));
         assert!(Rgb::parse("#12345").is_err());
+    }
+
+    #[test]
+    fn from_palette_derives_chrome_like_from_toml() {
+        // A cast-embedded palette must derive the same chrome defaults a
+        // TOML theme without a [chrome] section would.
+        let toml_theme = Theme::from_toml(
+            r##"
+            name = "x"
+            [colors]
+            foreground = "#f8f8f2"
+            background = "#282a36"
+            black = "#000000"
+            red = "#ff5555"
+            green = "#50fa7b"
+            yellow = "#f1fa8c"
+            blue = "#bd93f9"
+            magenta = "#ff79c6"
+            cyan = "#8be9fd"
+            white = "#bbbbbb"
+            bright_black = "#44475a"
+            bright_red = "#ff6e6e"
+            bright_green = "#69ff94"
+            bright_yellow = "#ffffa5"
+            bright_blue = "#d6acff"
+            bright_magenta = "#ff92df"
+            bright_cyan = "#a4ffff"
+            bright_white = "#ffffff"
+            "##,
+        )
+        .unwrap();
+        let cast_theme = Theme::from_palette(
+            "x",
+            toml_theme.foreground,
+            toml_theme.background,
+            &toml_theme.palette,
+        )
+        .unwrap();
+        assert_eq!(cast_theme.palette, toml_theme.palette);
+        assert_eq!(cast_theme.title_fg, toml_theme.title_fg);
+        assert_eq!(cast_theme.button_bg, toml_theme.button_bg);
+        assert_eq!(cast_theme.shadow_opacity, toml_theme.shadow_opacity);
+
+        // 8 entries reuse the normal colors as bright; other lengths fail.
+        let eight = &toml_theme.palette[..8];
+        let expanded =
+            Theme::from_palette("x", toml_theme.foreground, toml_theme.background, eight).unwrap();
+        assert_eq!(expanded.palette[8..], expanded.palette[..8]);
+        assert!(
+            Theme::from_palette(
+                "x",
+                toml_theme.foreground,
+                toml_theme.background,
+                &eight[..5]
+            )
+            .is_err()
+        );
     }
 
     #[test]

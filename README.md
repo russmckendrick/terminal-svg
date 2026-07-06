@@ -71,7 +71,9 @@ terminal-svg demo.cast --speed 2 --no-loop -o demo-fast.svg
 
 Recordings are standard [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/)
 files — `asciinema play demo.cast` works, and existing asciinema recordings
-render with plain `terminal-svg session.cast`. Long pauses are capped at 2s
+(v2 or v3, so anything asciinema 3 records) render with plain
+`terminal-svg session.cast`; `-t auto` renders a v3 cast with the palette
+of the terminal it was recorded in. Long pauses are capped at 2s
 (`--idle-time-limit`), bursts are coalesced to ≤30fps, identical frames are
 deduplicated, and repeated rows are shared across frames via `<defs>`/`<use>`,
 so even minute-long sessions stay compact. The animation loops with a 1.5s

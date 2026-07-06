@@ -30,6 +30,24 @@ terminal-svg -t path/to/my-theme.toml -- htop
 Anything with a `/` in it or ending in `.toml` is treated as a file path;
 otherwise the name is looked up in the built-ins.
 
+## The `auto` theme
+
+asciinema 3 embeds the recording terminal's colours in the cast file
+(`term.theme` in the asciicast v3 header). `-t auto` renders with that
+palette, so the SVG looks like the terminal the session was recorded in:
+
+```sh
+asciinema rec demo.cast
+terminal-svg demo.cast -t auto -o demo.svg
+```
+
+`auto` only works for cast inputs that carry a theme — v2 casts and other
+input modes error, since there's nothing to detect. The default stays
+`dracula` in all cases: output never changes palette based on the input
+file unless you ask. Window chrome colours (title text, buttons) are
+derived from the embedded foreground/background the same way they are for
+a TOML theme without a `[chrome]` section.
+
 ## Full reference
 
 ```toml

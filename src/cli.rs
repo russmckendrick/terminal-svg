@@ -10,8 +10,8 @@ use crate::render::ChromeStyle;
 ///   terminal-svg dump.ansi
 ///   terminal-svg -- lsd -la
 ///
-/// A .cast input (asciicast v2, e.g. from `terminal-svg rec` or asciinema)
-/// renders as an animated SVG replaying the recording:
+/// A .cast input (asciicast v2 or v3, e.g. from `terminal-svg rec` or
+/// asciinema) renders as an animated SVG replaying the recording:
 ///   terminal-svg demo.cast -o demo.svg
 #[derive(Debug, Parser)]
 #[command(name = "terminal-svg", version, about)]
@@ -19,8 +19,8 @@ pub struct Cli {
     #[command(subcommand)]
     pub sub: Option<Sub>,
 
-    /// Input file with ANSI output or an asciicast v2 recording; stdin is
-    /// read when omitted and no command is given
+    /// Input file with ANSI output or an asciicast (v2/v3) recording;
+    /// stdin is read when omitted and no command is given
     pub input: Option<PathBuf>,
 
     /// Command to run in a PTY and capture (everything after --)
@@ -65,7 +65,8 @@ pub struct StyleArgs {
     #[arg(short, long, default_value = "terminal.svg")]
     pub output: String,
 
-    /// Theme name, or path to a custom theme .toml
+    /// Theme name, path to a custom theme .toml, or "auto" to use the
+    /// palette embedded in an asciicast v3 recording
     #[arg(short, long, default_value = "dracula")]
     pub theme: String,
 

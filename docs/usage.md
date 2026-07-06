@@ -36,13 +36,17 @@ terminal-svg dump.ansi -t nord -o dump.svg
 ```
 
 **Render an asciicast.** A `.cast` input ([asciicast
-v2](https://docs.asciinema.org/manual/asciicast/v2/) — from `terminal-svg
-rec`, asciinema, or anything else that writes the format) renders as an
-animated SVG replaying the recording:
+v2](https://docs.asciinema.org/manual/asciicast/v2/) or
+[v3](https://docs.asciinema.org/manual/asciicast/v3/) — from `terminal-svg
+rec`, any asciinema version, or anything else that writes the format)
+renders as an animated SVG replaying the recording:
 
 ```sh
 terminal-svg demo.cast -o demo.svg
 ```
+
+asciinema 3 recordings embed the terminal's colours; render with them via
+`-t auto` (see [themes.md](themes.md)).
 
 Output height always follows content (scrollback included), not the
 terminal size — `-r` sets the PTY size programs see, not the image height.
@@ -89,7 +93,7 @@ anywhere an `<img>` tag renders, GitHub READMEs included, no JavaScript.
 | Flag | Default | |
 |---|---|---|
 | `-o, --output <PATH>` | `terminal.svg` | `-` writes the SVG to stdout |
-| `-t, --theme <THEME>` | `dracula` | built-in name or path to a `.toml` — see [themes.md](themes.md) |
+| `-t, --theme <THEME>` | `dracula` | built-in name, path to a `.toml`, or `auto` for the palette embedded in an asciicast v3 — see [themes.md](themes.md) |
 | `--theme-light <THEME>` | | with `--theme-dark`: emit both palettes in one SVG, switched by the viewer's `prefers-color-scheme` (static renders only) |
 | `--theme-dark <THEME>` | | the dark half of the pair |
 | `--list-themes` | | print built-in theme names and exit |

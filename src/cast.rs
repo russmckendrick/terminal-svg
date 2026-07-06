@@ -6,9 +6,13 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
-/// Asciicast v2 header — the first line of a .cast file.
+use crate::theme::Rgb;
+
+/// Asciicast header, normalized from the v2 or v3 first line of a .cast
+/// file. Serializing always writes the v2 shape (`CastWriter` records v2).
 /// <https://docs.asciinema.org/manual/asciicast/v2/>
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// <https://docs.asciinema.org/manual/asciicast/v3/>
+#[derive(Debug, Clone, Serialize)]
 pub struct Header {
     pub version: u8,
     pub width: usize,
@@ -21,6 +25,64 @@ pub struct Header {
     pub env: Option<BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub idle_time_limit: Option<f64>,
+    /// Color theme embedded in the recording (v3 `term.theme`); rendered
+    /// with `--theme auto`.
+    #[serde(skip)]
+    pub theme: Option<CastTheme>,
+}
+
+/// The palette a v3 recording carries: the terminal's colors at record time.
+#[derive(Debug, Clone)]
+pub struct CastTheme {
+    pub fg: Rgb,
+    pub bg: Rgb,
+    /// 8 or 16 entries (an 8-entry palette has no bright variants).
+    pub palette: Vec<Rgb>,
+}
+
+#[derive(Deserialize)]
+struct V2Header {
+    version: u8,
+    width: usize,
+    height: usize,
+    #[serde(default)]
+    timestamp: Option<u64>,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    env: Option<BTreeMap<String, String>>,
+    #[serde(default)]
+    idle_time_limit: Option<f64>,
+}
+
+#[derive(Deserialize)]
+struct V3Header {
+    version: u8,
+    term: V3Term,
+    #[serde(default)]
+    timestamp: Option<u64>,
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    env: Option<BTreeMap<String, String>>,
+    #[serde(default)]
+    idle_time_limit: Option<f64>,
+}
+
+#[derive(Deserialize)]
+struct V3Term {
+    cols: usize,
+    rows: usize,
+    #[serde(default)]
+    theme: Option<V3Theme>,
+}
+
+#[derive(Deserialize)]
+struct V3Theme {
+    fg: Rgb,
+    bg: Rgb,
+    /// Colon-separated hex colors.
+    palette: String,
 }
 
 /// One event line: absolute time in seconds since session start.
@@ -60,14 +122,27 @@ pub fn parse(reader: impl BufRead) -> Result<(Header, Vec<Event>)> {
     };
     let header = parse_header(&first)?;
 
+    // v3 event times are intervals since the previous event; v2 times are
+    // absolute. Normalize to absolute so nothing downstream cares.
+    let relative = header.version == 3;
+    let mut clock = 0.0_f64;
     let mut events = Vec::new();
     for line in lines {
         let line = line?;
-        if line.trim().is_empty() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || (relative && trimmed.starts_with('#')) {
             continue;
         }
         let (time, code, data): (f64, String, String) =
-            serde_json::from_str(&line).context("malformed event line")?;
+            serde_json::from_str(trimmed).context("malformed event line")?;
+        // The clock advances before the code filter: a skipped "m"/"x"
+        // event still carries an interval.
+        let time = if relative {
+            clock += time.max(0.0);
+            clock
+        } else {
+            time
+        };
         let data = match code.as_str() {
             "o" => EventData::Output(data),
             "r" => {
@@ -85,16 +160,68 @@ pub fn parse(reader: impl BufRead) -> Result<(Header, Vec<Event>)> {
 }
 
 fn parse_header(line: &str) -> Result<Header> {
-    let header: Header = serde_json::from_str(line).context("malformed asciicast header")?;
-    if header.version != 2 {
-        bail!("unsupported asciicast version {}", header.version);
+    #[derive(Deserialize)]
+    struct Probe {
+        version: u8,
     }
-    Ok(header)
+    let probe: Probe = serde_json::from_str(line).context("malformed asciicast header")?;
+    match probe.version {
+        2 => {
+            let h: V2Header =
+                serde_json::from_str(line).context("malformed asciicast v2 header")?;
+            Ok(Header {
+                version: h.version,
+                width: h.width,
+                height: h.height,
+                timestamp: h.timestamp,
+                title: h.title,
+                env: h.env,
+                idle_time_limit: h.idle_time_limit,
+                theme: None,
+            })
+        }
+        3 => {
+            let h: V3Header =
+                serde_json::from_str(line).context("malformed asciicast v3 header")?;
+            let theme = h.term.theme.map(parse_cast_theme).transpose()?;
+            Ok(Header {
+                version: h.version,
+                width: h.term.cols,
+                height: h.term.rows,
+                timestamp: h.timestamp,
+                title: h.title,
+                env: h.env,
+                idle_time_limit: h.idle_time_limit,
+                theme,
+            })
+        }
+        v => bail!("unsupported asciicast version {v}"),
+    }
+}
+
+fn parse_cast_theme(raw: V3Theme) -> Result<CastTheme> {
+    let palette: Vec<Rgb> = raw
+        .palette
+        .split(':')
+        .map(Rgb::parse)
+        .collect::<Result<_>>()
+        .context("malformed theme palette")?;
+    if palette.len() != 8 && palette.len() != 16 {
+        bail!(
+            "malformed theme palette: {} colors; expected 8 or 16",
+            palette.len()
+        );
+    }
+    Ok(CastTheme {
+        fg: raw.fg,
+        bg: raw.bg,
+        palette,
+    })
 }
 
 /// Whether a path should be treated as an asciicast recording: a .cast
-/// extension, or a first line that parses as a v2 header (covers downloaded
-/// recordings named .json etc.).
+/// extension, or a first line that parses as an asciicast header (covers
+/// downloaded recordings named .json etc.).
 pub fn looks_like_cast(path: &Path) -> bool {
     if path
         .extension()
@@ -198,10 +325,93 @@ mod tests {
         );
     }
 
+    fn sample_v3() -> &'static str {
+        concat!(
+            r##"{"version": 3, "term": {"cols": 80, "rows": 24, "type": "xterm-256color", "theme": {"fg": "#f8f8f2", "bg": "#282a36", "palette": "#000:#f00:#0f0:#ff0:#00f:#f0f:#0ff:#fff"}}, "title": "demo"}"##,
+            "\n",
+            r#"[0.1, "o", "hello "]"#,
+            "\n",
+            "# a comment line\n",
+            r#"[0.4, "i", "typed"]"#,
+            "\n",
+            r#"[0.5, "o", "world\r\n"]"#,
+            "\n",
+            r#"[0.5, "m", "marker"]"#,
+            "\n",
+            r#"[0.5, "r", "100x30"]"#,
+            "\n",
+            r#"[0.5, "x", "0"]"#,
+            "\n",
+        )
+    }
+
+    #[test]
+    fn parses_v3_with_relative_times() {
+        let (header, events) = parse(sample_v3().as_bytes()).unwrap();
+        assert_eq!(header.version, 3);
+        assert_eq!((header.width, header.height), (80, 24));
+        assert_eq!(header.title.as_deref(), Some("demo"));
+        // "i"/"m"/"x" are skipped, but their intervals still advance the
+        // clock; comment lines are ignored.
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[0].time, 0.1);
+        assert_eq!(events[0].data, EventData::Output("hello ".into()));
+        assert_eq!(events[1].time, 1.0);
+        assert_eq!(events[1].data, EventData::Output("world\r\n".into()));
+        assert_eq!(events[2].time, 2.0);
+        assert_eq!(
+            events[2].data,
+            EventData::Resize {
+                cols: 100,
+                rows: 30
+            }
+        );
+    }
+
+    #[test]
+    fn parses_v3_theme() {
+        let (header, _) = parse(sample_v3().as_bytes()).unwrap();
+        let theme = header.theme.unwrap();
+        assert_eq!(theme.fg, Rgb::new(0xf8, 0xf8, 0xf2));
+        assert_eq!(theme.bg, Rgb::new(0x28, 0x2a, 0x36));
+        assert_eq!(theme.palette.len(), 8);
+        assert_eq!(theme.palette[1], Rgb::new(0xff, 0, 0));
+
+        // 16-entry palettes parse too; other lengths are malformed.
+        let full = "#000:".repeat(15) + "#000";
+        let line = format!(
+            r##"{{"version": 3, "term": {{"cols": 1, "rows": 1, "theme": {{"fg": "#fff", "bg": "#000", "palette": "{full}"}}}}}}"##
+        );
+        assert_eq!(
+            parse_header(&line).unwrap().theme.unwrap().palette.len(),
+            16
+        );
+        let bad = r##"{"version": 3, "term": {"cols": 1, "rows": 1, "theme": {"fg": "#fff", "bg": "#000", "palette": "#000:#111"}}}"##;
+        assert!(parse_header(bad).is_err());
+    }
+
+    #[test]
+    fn v3_negative_intervals_clamp() {
+        let cast = concat!(
+            r#"{"version": 3, "term": {"cols": 80, "rows": 24}}"#,
+            "\n",
+            r#"[1.0, "o", "a"]"#,
+            "\n",
+            r#"[-5.0, "o", "b"]"#,
+            "\n",
+        );
+        let (_, events) = parse(cast.as_bytes()).unwrap();
+        assert_eq!(events[0].time, 1.0);
+        assert_eq!(events[1].time, 1.0);
+    }
+
     #[test]
     fn rejects_bad_input() {
         assert!(parse(&b""[..]).is_err());
         assert!(parse(&b"not json\n"[..]).is_err());
+        let v4 = r#"{"version": 4, "term": {"cols": 80, "rows": 24}}"#;
+        assert!(parse(v4.as_bytes()).is_err());
+        // A v3 header without the term object is malformed.
         let v3 = r#"{"version": 3, "width": 80, "height": 24}"#;
         assert!(parse(v3.as_bytes()).is_err());
     }
@@ -222,6 +432,7 @@ mod tests {
             title: Some("t".into()),
             env: None,
             idle_time_limit: None,
+            theme: None,
         };
         let mut buf = Vec::new();
         let mut w = CastWriter::new(&mut buf, &header).unwrap();

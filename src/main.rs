@@ -42,7 +42,22 @@ fn main() -> Result<()> {
             captured.title.clone(),
         ],
     );
-    render_static_bytes(&captured.bytes, cli.cols, cli.rows, title, &cli.style)
+    render_static_bytes(&captured.bytes, cli.cols, cli.rows, title, &cli.style, None)
+}
+
+/// Load a theme by name or path; the reserved name "auto" resolves to the
+/// palette embedded in the recording (asciicast v3 `term.theme`).
+fn load_theme(name: &str, cast_theme: Option<&cast::CastTheme>) -> Result<theme::Theme> {
+    if name == "auto" {
+        let Some(t) = cast_theme else {
+            bail!(
+                "--theme auto needs an asciicast recording with an embedded theme \
+                 (asciinema 3 records one; older casts and other inputs carry none)"
+            );
+        };
+        return theme::Theme::from_palette("auto", t.fg, t.bg, &t.palette);
+    }
+    theme::builtin::load(name)
 }
 
 /// `terminal-svg rec`: record an interactive session to a .cast, then
@@ -141,10 +156,11 @@ fn render_static_bytes(
     rows: usize,
     title: Option<String>,
     style: &StyleArgs,
+    cast_theme: Option<&cast::CastTheme>,
 ) -> Result<()> {
     if let Some((light_name, dark_name)) = style.dual_themes() {
-        let light = theme::builtin::load(light_name)?;
-        let dark = theme::builtin::load(dark_name)?;
+        let light = load_theme(light_name, cast_theme)?;
+        let dark = load_theme(dark_name, cast_theme)?;
         let mut screen_l = term::interpret(bytes, cols, rows, &light);
         let mut screen_d = term::interpret(bytes, cols, rows, &dark);
 
@@ -163,7 +179,7 @@ fn render_static_bytes(
         return write_output(&style.output, &svg);
     }
 
-    let theme = theme::builtin::load(&style.theme)?;
+    let theme = load_theme(&style.theme, cast_theme)?;
     let screen = term::interpret(bytes, cols, rows, &theme);
     render_static(screen, title, &theme, style)
 }
@@ -217,7 +233,14 @@ fn render_cast(
                 best_osc_title(&String::from_utf8_lossy(&bytes)),
             ],
         );
-        return render_static_bytes(&bytes, header.width, header.height, title, style);
+        return render_static_bytes(
+            &bytes,
+            header.width,
+            header.height,
+            title,
+            style,
+            header.theme.as_ref(),
+        );
     }
 
     if style.dual_themes().is_some() {
@@ -225,7 +248,7 @@ fn render_cast(
             "--theme-light/--theme-dark need --static for cast inputs (animated dual-theme SVGs are not supported yet)"
         );
     }
-    let theme = theme::builtin::load(&style.theme)?;
+    let theme = load_theme(&style.theme, header.theme.as_ref())?;
 
     let osc_title = {
         let mut all = String::new();

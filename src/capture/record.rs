@@ -109,6 +109,7 @@ mod unix {
                 ),
             ])),
             idle_time_limit: None,
+            theme: None,
         };
         let writer: SharedWriter = Arc::new(Mutex::new(CastWriter::create(cast_path, &header)?));
 
