@@ -5,7 +5,8 @@ pub mod svg;
 pub mod text;
 
 pub use anim::render_animated;
-pub use svg::render;
+pub use chrome::ChromeStyle;
+pub use svg::{render, render_dual};
 
 #[derive(Debug, Clone)]
 pub struct RenderConfig {
@@ -16,8 +17,10 @@ pub struct RenderConfig {
     pub padding: f32,
     /// Space around the window (room for the shadow).
     pub margin: f32,
-    /// Draw title bar and traffic lights.
-    pub window: bool,
+    /// Window chrome style (title bar and buttons).
+    pub chrome: ChromeStyle,
+    /// Draw the window body; false leaves the background transparent.
+    pub background: bool,
     pub shadow: bool,
     pub title: Option<String>,
     /// CSS font-family chain for the terminal text.

@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="752" height="175" viewBox="0 0 752 175" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="163" viewBox="0 0 752 163" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
 <style>.b{font-weight:700}.i{font-style:italic}</style>
 <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
-<rect x="24" y="24" width="704" height="127" rx="10" fill="#282a36" filter="url(#shadow)"/>
-<circle cx="44" cy="46" r="6.5" fill="#ff5f57"/><circle cx="64" cy="46" r="6.5" fill="#febc2e"/><circle cx="84" cy="46" r="6.5" fill="#28c840"/>
-<text x="376" y="46" text-anchor="middle" dominant-baseline="central" font-size="12.6" fill="#6272a4">starship</text>
-<rect x="40" y="84" width="67.2" height="17" fill="#005f87"/><rect x="107.2" y="84" width="8.4" height="17" fill="#444444"/><rect x="115.6" y="84" width="8.4" height="17" fill="#444444"/><rect x="124" y="84" width="16.8" height="17" fill="#444444"/><rect x="140.8" y="84" width="75.6" height="17" fill="#444444"/>
+<rect x="24" y="24" width="704" height="115" rx="10" fill="#282a36" filter="url(#shadow)"/>
+<circle cx="44" cy="40" r="6" fill="#ff5f57"/><circle cx="64" cy="40" r="6" fill="#febc2e"/><circle cx="84" cy="40" r="6" fill="#28c840"/>
+<text x="376" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">starship</text>
+<rect x="40" y="72" width="67.2" height="17" fill="#005f87"/><rect x="107.2" y="72" width="8.4" height="17" fill="#444444"/><rect x="115.6" y="72" width="8.4" height="17" fill="#444444"/><rect x="124" y="72" width="16.8" height="17" fill="#444444"/><rect x="140.8" y="72" width="75.6" height="17" fill="#444444"/>
 
 
 <g font-size="14">
-<text x="48.4" y="97.54" fill="#ffffff"></text><text x="65.2" y="97.54" fill="#ffffff">main</text><text x="107.2" y="97.54" fill="#005f87"></text><text x="124" y="97.54" fill="#ffffa5">🦀</text><text x="149.2" y="97.54" fill="#ffffa5">v1.95.0</text><text x="216.4" y="97.54" fill="#444444"></text><text x="233.2" y="97.54" fill="#50fa7b" class="b">❯</text><text x="250" y="97.54" fill="#f8f8f2">cargo</text><text x="300.4" y="97.54" fill="#f8f8f2">build</text>
-<text x="65.2" y="114.54" fill="#909194">Compiling</text><text x="149.2" y="114.54" fill="#f8f8f2">terminal-svg</text><text x="258.4" y="114.54" fill="#f8f8f2">v0.1.0</text>
-<text x="73.6" y="131.54" fill="#50fa7b" class="b">Finished</text><text x="149.2" y="131.54" fill="#f8f8f2">dev</text><text x="182.8" y="131.54" fill="#f8f8f2">profile</text><text x="250" y="131.54" fill="#f8f8f2">in</text><text x="275.2" y="131.54" fill="#f8f8f2">7.5s</text>
+<text x="48.4" y="85.54" fill="#ffffff"></text><text x="65.2" y="85.54" fill="#ffffff">main</text><text x="107.2" y="85.54" fill="#005f87"></text><text x="124" y="85.54" fill="#ffffa5">🦀</text><text x="149.2" y="85.54" fill="#ffffa5">v1.95.0</text><text x="216.4" y="85.54" fill="#444444"></text><text x="233.2" y="85.54" fill="#50fa7b" class="b">❯</text><text x="250" y="85.54" fill="#f8f8f2">cargo</text><text x="300.4" y="85.54" fill="#f8f8f2">build</text>
+<text x="65.2" y="102.54" fill="#909194">Compiling</text><text x="149.2" y="102.54" fill="#f8f8f2">terminal-svg</text><text x="258.4" y="102.54" fill="#f8f8f2">v0.1.0</text>
+<text x="73.6" y="119.54" fill="#50fa7b" class="b">Finished</text><text x="149.2" y="119.54" fill="#f8f8f2">dev</text><text x="182.8" y="119.54" fill="#f8f8f2">profile</text><text x="250" y="119.54" fill="#f8f8f2">in</text><text x="275.2" y="119.54" fill="#f8f8f2">7.5s</text>
 </g>
 </svg>

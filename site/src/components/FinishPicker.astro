@@ -3,6 +3,7 @@
 // The same fixture rendered in every theme; swatches swap the image with a
 // crossfade. All seven SVGs are in the DOM (they're ~10 KB each); JS only
 // toggles a class, so with JS off the default theme still shows.
+import ThemeChip from './ThemeChip.astro';
 import { find, THEME_META } from '../lib/gallery';
 
 const fixture = 'starship';
@@ -36,8 +37,9 @@ const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fi
           data-finish={s.key}
           aria-label={s.name}
           title={s.name}
-          style={`--a:${s.a};--b:${s.b}`}
-        />
+        >
+          <ThemeChip theme={s} />
+        </button>
       ))
     }
   </div>
@@ -94,18 +96,21 @@ const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fi
   }
 
   .swatch {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%);
+    border: none;
+    background: none;
+    border-radius: 8px;
     cursor: pointer;
     padding: 0;
+    line-height: 0;
     transition: transform 0.2s ease;
   }
 
+  .swatch :global(svg) {
+    display: block;
+  }
+
   .swatch:hover {
-    transform: scale(1.12);
+    transform: scale(1.1) translateY(-1px);
   }
 
   .swatch.on {
@@ -125,9 +130,9 @@ const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fi
       flex-wrap: wrap;
     }
 
-    .swatch {
-      width: 22px;
-      height: 22px;
+    .swatch :global(svg) {
+      width: 36px;
+      height: auto;
     }
   }
 </style>

@@ -10,8 +10,10 @@ const THEMES = [
   'github-dark',
   'github-light',
   'nord',
+  'powershell',
   'solarized-dark',
   'tokyo-night',
+  'ubuntu',
 ] as const;
 
 export interface GalleryItem {
@@ -64,16 +66,23 @@ export function find(theme: string, fixture: string): GalleryItem | undefined {
   return items.find((i) => i.theme === theme && i.fixture === fixture);
 }
 
-// display metadata shared by the gallery page and the finishes picker
+// display metadata shared by the gallery page and the finishes picker.
+// a/c/d are accent colors from the theme's own palette (drawn as tiny text
+// lines in the theme chips); b is the terminal background; chrome picks the
+// mini window dressing on the chip.
 export const THEME_META = [
-  { key: 'dracula', label: 'Dracula', a: '#bd93f9', b: '#282a36' },
-  { key: 'catppuccin-mocha', label: 'Catppuccin Mocha', a: '#f5c2e7', b: '#1e1e2e' },
-  { key: 'nord', label: 'Nord', a: '#88c0d0', b: '#2e3440' },
-  { key: 'tokyo-night', label: 'Tokyo Night', a: '#7aa2f7', b: '#1a1b26' },
-  { key: 'github-dark', label: 'GitHub Dark', a: '#58a6ff', b: '#0d1117' },
-  { key: 'github-light', label: 'GitHub Light', a: '#0969da', b: '#ffffff' },
-  { key: 'solarized-dark', label: 'Solarized Dark', a: '#b58900', b: '#002b36' },
+  { key: 'dracula', label: 'Dracula', a: '#bd93f9', b: '#282a36', c: '#50fa7b', d: '#ff79c6', chrome: 'macos' },
+  { key: 'catppuccin-mocha', label: 'Catppuccin Mocha', a: '#f5c2e7', b: '#1e1e2e', c: '#a6e3a1', d: '#89b4fa', chrome: 'macos' },
+  { key: 'nord', label: 'Nord', a: '#88c0d0', b: '#2e3440', c: '#a3be8c', d: '#ebcb8b', chrome: 'macos' },
+  { key: 'tokyo-night', label: 'Tokyo Night', a: '#7aa2f7', b: '#1a1b26', c: '#9ece6a', d: '#bb9af7', chrome: 'macos' },
+  { key: 'github-dark', label: 'GitHub Dark', a: '#58a6ff', b: '#0d1117', c: '#3fb950', d: '#d29922', chrome: 'macos' },
+  { key: 'github-light', label: 'GitHub Light', a: '#0969da', b: '#ffffff', c: '#1a7f37', d: '#cf222e', chrome: 'macos' },
+  { key: 'solarized-dark', label: 'Solarized Dark', a: '#268bd2', b: '#002b36', c: '#859900', d: '#b58900', chrome: 'macos' },
+  { key: 'powershell', label: 'PowerShell', a: '#f9f1a5', b: '#012456', c: '#16c60c', d: '#61d6d6', chrome: 'windows' },
+  { key: 'ubuntu', label: 'Ubuntu', a: '#8ae234', b: '#300a24', c: '#729fcf', d: '#fce94f', chrome: 'ubuntu' },
 ] as const;
+
+export type ThemeChipMeta = (typeof THEME_META)[number];
 
 export const FIXTURE_META = [
   { key: 'boxdrawing', label: 'Box drawing' },

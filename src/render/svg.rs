@@ -24,12 +24,10 @@ pub(super) fn layout(cols: usize, rows: usize, config: &RenderConfig) -> Result<
     let m = metrics::from_font(assets::regular(), config.font_size, config.line_height)?;
     let content_w = cols as f32 * m.cell_w + 2.0 * config.padding;
     let content_h = rows as f32 * m.line_h + 2.0 * config.padding;
-    let title_bar_h = if config.window {
-        chrome::TITLE_BAR_H
-    } else {
-        0.0
-    };
-    let win_w = content_w;
+    let title_bar_h = config.chrome.title_bar_h();
+    // Keep the title-bar furniture inside very narrow windows, and leave
+    // room for the style's scrollbar gutter.
+    let win_w = content_w.max(config.chrome.min_width()) + config.chrome.gutter_w();
     let win_h = title_bar_h + content_h;
     Ok(Layout {
         m,
@@ -49,13 +47,52 @@ pub fn render(screen: &Screen, theme: &Theme, config: &RenderConfig) -> Result<S
     let mut out = String::with_capacity(16 * 1024);
     open_document(&mut out, &l, config);
     style_block(&mut out, config, "");
-    chrome_layer(&mut out, theme, config, &l);
+    chrome_layer(&mut out, theme, config, &l, "");
 
     text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y);
     let _ = write!(out, r#"<g font-size="{}">"#, fmt(l.m.font_size));
     out.push('\n');
     text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y);
     out.push_str("</g>\n</svg>\n");
+    Ok(out)
+}
+
+/// Assemble a dual light/dark SVG: the full body rendered once per theme,
+/// switched by `prefers-color-scheme`. Media queries inside <style> apply
+/// even in <img> embeds (GitHub READMEs included). Light is the default
+/// when the renderer supports no scheme at all.
+pub fn render_dual(
+    light: (&Screen, &Theme),
+    dark: (&Screen, &Theme),
+    config: &RenderConfig,
+) -> Result<String> {
+    let (screen_l, theme_l) = light;
+    let (screen_d, theme_d) = dark;
+    let rows = screen_l.rows.len().max(screen_d.rows.len()).max(1);
+    let l = layout(screen_l.cols, rows, config)?;
+
+    let mut out = String::with_capacity(32 * 1024);
+    open_document(&mut out, &l, config);
+    style_block(
+        &mut out,
+        config,
+        ".td{display:none}@media(prefers-color-scheme:dark){.tl{display:none}.td{display:inline}}",
+    );
+    let variants = [
+        ("tl", "-l", screen_l, theme_l),
+        ("td", "-d", screen_d, theme_d),
+    ];
+    for (class, suffix, screen, theme) in variants {
+        let _ = write!(out, r#"<g class="{class}">"#);
+        out.push('\n');
+        chrome_layer(&mut out, theme, config, &l, suffix);
+        text::background_rects(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+        let _ = write!(out, r#"<g font-size="{}">"#, fmt(l.m.font_size));
+        out.push('\n');
+        text::text_runs(&mut out, screen, &l.m, l.origin_x, l.origin_y);
+        out.push_str("</g>\n</g>\n");
+    }
+    out.push_str("</svg>\n");
     Ok(out)
 }
 
@@ -87,9 +124,21 @@ pub(super) fn style_block(out: &mut String, config: &RenderConfig, extra_css: &s
 }
 
 /// Shadow filter (when enabled) plus the window body and title bar.
-pub(super) fn chrome_layer(out: &mut String, theme: &Theme, config: &RenderConfig, l: &Layout) {
-    if config.shadow {
-        chrome::shadow_filter(out, theme.shadow_opacity);
+/// `id_suffix` keeps filter ids unique when the document holds more than
+/// one variant (dual light/dark).
+pub(super) fn chrome_layer(
+    out: &mut String,
+    theme: &Theme,
+    config: &RenderConfig,
+    l: &Layout,
+    id_suffix: &str,
+) {
+    if !config.background {
+        return;
+    }
+    let filter_id = config.shadow.then(|| format!("shadow{id_suffix}"));
+    if let Some(id) = &filter_id {
+        chrome::shadow_filter(out, theme.shadow_opacity, id);
     }
     chrome::window(
         out,
@@ -99,6 +148,8 @@ pub(super) fn chrome_layer(out: &mut String, theme: &Theme, config: &RenderConfi
         config.margin,
         l.win_w,
         l.win_h,
+        filter_id.as_deref(),
+        id_suffix,
     );
 }
 

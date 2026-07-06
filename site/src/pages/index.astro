@@ -33,7 +33,7 @@ const binaries = (latest?.assets ?? [])
 
 <Base
   title="terminal-svg — Your terminal. Rendered beautifully."
-  description="terminal-svg captures real terminal output — colors, cursor and all — as pixel-perfect, self-contained SVG. It records animated replays, too. One Rust binary, seven themes."
+  description="terminal-svg captures real terminal output — colors, cursor and all — as pixel-perfect, self-contained SVG. It records animated replays, too. One Rust binary, nine themes, macOS, Windows and Ubuntu window chrome."
 >
   <!-- hero -->
   <section class="section section--black hero">
@@ -63,12 +63,6 @@ const binaries = (latest?.assets ?? [])
         <p class="fineprint">
           This isn't a video. It's a 44 KB SVG, recorded with <code>terminal‑svg rec</code>.
         </p>
-      </div>
-      <div class="stats" data-reveal>
-        <div><strong>1</strong><span>self‑contained binary</span></div>
-        <div><strong>7</strong><span>built‑in themes</span></div>
-        <div><strong>0</strong><span>runtime dependencies</span></div>
-        <div><strong>MIT</strong><span>open source</span></div>
       </div>
     </div>
   </section>
@@ -164,10 +158,11 @@ const binaries = (latest?.assets ?? [])
   <!-- finishes -->
   <section class="section section--gray">
     <div class="wrap center">
-      <h2 class="headline" data-reveal>Seven stunning finishes.</h2>
+      <h2 class="headline" data-reveal>Nine stunning finishes.</h2>
       <p class="subhead narrow" data-reveal>
-        Dracula to Solarized, with Catppuccin, Nord, Tokyo Night and both GitHubs in between.
-        Or bring your own — any TOML file with sixteen colors works.
+        Dracula to Solarized, with Catppuccin, Nord, Tokyo Night and both GitHubs in between —
+        plus PowerShell and Ubuntu in their native window chrome. Or bring your own — any TOML
+        file with sixteen colors works.
       </p>
       <div class="picker-wrap" data-reveal>
         <FinishPicker />
@@ -336,36 +331,6 @@ const binaries = (latest?.assets ?? [])
     font-size: 12px;
   }
 
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    max-width: 780px;
-    margin: 96px auto 0;
-    text-align: center;
-  }
-
-  .stats div {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .stats strong {
-    font-size: clamp(30px, 3.6vw, 44px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    background: linear-gradient(96deg, #50fa7b, #8be9fd);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .stats span {
-    font-size: 14px;
-    color: var(--text-light-2);
-  }
-
   .center {
     text-align: center;
   }
@@ -496,11 +461,6 @@ const binaries = (latest?.assets ?? [])
       grid-template-columns: minmax(0, 1fr);
       gap: 18px;
       padding: 26px 24px;
-    }
-
-    .stats {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 34px 20px;
     }
   }
 </style>

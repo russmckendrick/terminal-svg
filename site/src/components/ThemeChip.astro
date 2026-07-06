@@ -1,0 +1,74 @@
+---
+// A theme swatch drawn as what terminal-svg actually makes: a tiny
+// terminal window in the theme's own colors, dressed in the chrome that
+// theme renders with in the gallery (traffic lights / conhost bar / GNOME
+// header). Pass `all` for the every-theme chip: a dark window running the
+// colors16 fixture.
+import type { ThemeChipMeta } from '../lib/gallery';
+
+interface Props {
+  theme?: ThemeChipMeta;
+  all?: boolean;
+}
+
+const { theme, all = false } = Astro.props;
+const bg = all ? '#16161d' : theme!.b;
+const chrome = all ? 'macos' : theme!.chrome;
+// conhost is square; everything else keeps soft corners.
+const r = chrome === 'windows' ? 2 : 6;
+---
+
+<svg viewBox="0 0 44 30" width="44" height="30" aria-hidden="true">
+  <rect x="0.5" y="0.5" width="43" height="29" rx={r} fill={bg} stroke="rgba(0,0,0,0.16)"></rect>
+  {
+    chrome === 'macos' && (
+      <>
+        <circle cx="7" cy="6.5" r="2" fill="#ff5f57" />
+        <circle cx="13" cy="6.5" r="2" fill="#febc2e" />
+        <circle cx="19" cy="6.5" r="2" fill="#28c840" />
+      </>
+    )
+  }
+  {
+    chrome === 'windows' && (
+      <>
+        <path
+          d={`M0.5 ${r + 0.5}a${r} ${r} 0 0 1 ${r} -${r}h${43 - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${8.5 - r}h-43Z`}
+          fill="#ffffff"
+          stroke="rgba(0,0,0,0.12)"
+        />
+        <rect x="4" y="2.75" width="4" height="4" rx="1" fill="#2671be" />
+        <path d="M35.5 3.25l3 3m0 -3l-3 3" stroke="#444" stroke-width="0.9" />
+      </>
+    )
+  }
+  {
+    chrome === 'ubuntu' && (
+      <>
+        <path
+          d={`M0.5 ${r + 0.5}a${r} ${r} 0 0 1 ${r} -${r}h${43 - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${8.5 - r}h-43Z`}
+          fill="#3c3836"
+        />
+        <circle cx="38" cy="4.75" r="2.1" fill="#f15d22" />
+      </>
+    )
+  }
+  {
+    all ? (
+      <>
+        <rect x="6" y="13" width="7" height="3" rx="1.5" fill="#ff5555" />
+        <rect x="15" y="13" width="7" height="3" rx="1.5" fill="#50fa7b" />
+        <rect x="24" y="13" width="7" height="3" rx="1.5" fill="#f1fa8c" />
+        <rect x="33" y="13" width="5" height="3" rx="1.5" fill="#8be9fd" />
+        <rect x="6" y="19" width="10" height="3" rx="1.5" fill="#bd93f9" />
+        <rect x="18" y="19" width="7" height="3" rx="1.5" fill="#ff79c6" />
+      </>
+    ) : (
+      <>
+        <rect x="6" y="13" width="20" height="3" rx="1.5" fill={theme!.a} />
+        <rect x="6" y="19" width="10" height="3" rx="1.5" fill={theme!.c} />
+        <rect x="18" y="19" width="7" height="3" rx="1.5" fill={theme!.d} />
+      </>
+    )
+  }
+</svg>

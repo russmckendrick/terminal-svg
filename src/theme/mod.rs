@@ -91,6 +91,10 @@ struct ChromeSection {
     light_close: Option<Rgb>,
     light_minimize: Option<Rgb>,
     light_zoom: Option<Rgb>,
+    button_fg: Option<Rgb>,
+    button_bg: Option<Rgb>,
+    bar_bg: Option<Rgb>,
+    bar_fg: Option<Rgb>,
 }
 
 #[derive(Debug, Clone)]
@@ -102,12 +106,25 @@ pub struct Theme {
     pub title_fg: Rgb,
     pub shadow_opacity: f32,
     pub lights: [Rgb; 3],
+    /// Caption glyph color for the windows/ubuntu chrome styles.
+    pub button_fg: Rgb,
+    /// Button disc fill for the ubuntu chrome style.
+    pub button_bg: Rgb,
+    /// Title bar fill for the windows/ubuntu chrome styles; None uses the
+    /// style's authentic OS default.
+    pub bar_bg: Option<Rgb>,
+    /// Title text/glyph color on that bar; None uses the style default.
+    pub bar_fg: Option<Rgb>,
 }
 
 impl Theme {
     pub fn from_toml(source: &str) -> Result<Theme> {
         let file: ThemeFile = toml::from_str(source).context("failed to parse theme")?;
         let c = &file.colors;
+        let title_fg = file
+            .chrome
+            .title_fg
+            .unwrap_or_else(|| c.foreground.blend(c.background, 0.45));
         let palette = [
             c.black,
             c.red,
@@ -131,10 +148,7 @@ impl Theme {
             foreground: c.foreground,
             background: c.background,
             palette,
-            title_fg: file
-                .chrome
-                .title_fg
-                .unwrap_or_else(|| c.foreground.blend(c.background, 0.45)),
+            title_fg,
             shadow_opacity: file.chrome.shadow_opacity.unwrap_or(0.35),
             lights: [
                 file.chrome
@@ -145,6 +159,13 @@ impl Theme {
                     .unwrap_or(Rgb::new(0xfe, 0xbc, 0x2e)),
                 file.chrome.light_zoom.unwrap_or(Rgb::new(0x28, 0xc8, 0x40)),
             ],
+            button_fg: file.chrome.button_fg.unwrap_or(title_fg),
+            button_bg: file
+                .chrome
+                .button_bg
+                .unwrap_or_else(|| title_fg.blend(c.background, 0.85)),
+            bar_bg: file.chrome.bar_bg,
+            bar_fg: file.chrome.bar_fg,
         })
     }
 

@@ -20,6 +20,8 @@ pub const BUILTIN: &[(&str, &str)] = &[
         "solarized-dark",
         include_str!("../../themes/solarized-dark.toml"),
     ),
+    ("powershell", include_str!("../../themes/powershell.toml")),
+    ("ubuntu", include_str!("../../themes/ubuntu.toml")),
 ];
 
 pub fn names() -> impl Iterator<Item = &'static str> {

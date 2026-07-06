@@ -42,6 +42,13 @@ shadow_opacity = 0.35         # default: 0.35 (github-light uses 0.25)
 light_close = "#ff5f57"       # traffic light overrides; defaults are the
 light_minimize = "#febc2e"    #   standard macOS red/amber/green
 light_zoom = "#28c840"
+button_fg = "#6272a4"         # caption glyphs (--chrome windows/ubuntu);
+                              #   default: title_fg
+button_bg = "#2f3240"         # button discs (--chrome ubuntu); default:
+                              #   title_fg blended 85% toward background
+bar_bg = "#ffffff"            # title bar fill (--chrome windows/ubuntu);
+                              #   default: the authentic OS chrome color
+bar_fg = "#000000"            # title/glyph color on that bar
 ```
 
 ## What themes do and don't control

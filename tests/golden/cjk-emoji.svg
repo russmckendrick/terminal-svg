@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="752" height="175" viewBox="0 0 752 175" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="163" viewBox="0 0 752 163" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
 <style>.b{font-weight:700}.i{font-style:italic}</style>
 <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
-<rect x="24" y="24" width="704" height="127" rx="10" fill="#282a36" filter="url(#shadow)"/>
-<circle cx="44" cy="46" r="6.5" fill="#ff5f57"/><circle cx="64" cy="46" r="6.5" fill="#febc2e"/><circle cx="84" cy="46" r="6.5" fill="#28c840"/>
-<text x="376" y="46" text-anchor="middle" dominant-baseline="central" font-size="12.6" fill="#6272a4">cjk-emoji</text>
+<rect x="24" y="24" width="704" height="115" rx="10" fill="#282a36" filter="url(#shadow)"/>
+<circle cx="44" cy="40" r="6" fill="#ff5f57"/><circle cx="64" cy="40" r="6" fill="#febc2e"/><circle cx="84" cy="40" r="6" fill="#28c840"/>
+<text x="376" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">cjk-emoji</text>
 
 
 
 <g font-size="14">
-<text x="40" y="97.54" fill="#f8f8f2">cjk:</text><text x="82" y="97.54" fill="#f8f8f2">漢</text><text x="98.8" y="97.54" fill="#f8f8f2">字</text><text x="115.6" y="97.54" fill="#f8f8f2">か</text><text x="132.4" y="97.54" fill="#f8f8f2">な</text><text x="149.2" y="97.54" fill="#f8f8f2">한</text><text x="166" y="97.54" fill="#f8f8f2">국</text><text x="191.2" y="97.54" fill="#f8f8f2">wide</text>
-<text x="40" y="114.54" fill="#f8f8f2">emoji:</text><text x="98.8" y="114.54" fill="#f8f8f2">🚀</text><text x="124" y="114.54" fill="#f8f8f2">🎉</text><text x="149.2" y="114.54" fill="#f8f8f2">mixed</text><text x="199.6" y="114.54" fill="#f8f8f2">日</text><text x="216.4" y="114.54" fill="#f8f8f2">本</text><text x="233.2" y="114.54" fill="#f8f8f2">🗾</text><text x="258.4" y="114.54" fill="#f8f8f2">end</text>
-<text x="40" y="131.54" fill="#f8f8f2">combining:</text><text x="132.4" y="131.54" fill="#f8f8f2">café</text><text x="182.8" y="131.54" fill="#f8f8f2">done</text>
+<text x="40" y="85.54" fill="#f8f8f2">cjk:</text><text x="82" y="85.54" fill="#f8f8f2">漢</text><text x="98.8" y="85.54" fill="#f8f8f2">字</text><text x="115.6" y="85.54" fill="#f8f8f2">か</text><text x="132.4" y="85.54" fill="#f8f8f2">な</text><text x="149.2" y="85.54" fill="#f8f8f2">한</text><text x="166" y="85.54" fill="#f8f8f2">국</text><text x="191.2" y="85.54" fill="#f8f8f2">wide</text>
+<text x="40" y="102.54" fill="#f8f8f2">emoji:</text><text x="98.8" y="102.54" fill="#f8f8f2">🚀</text><text x="124" y="102.54" fill="#f8f8f2">🎉</text><text x="149.2" y="102.54" fill="#f8f8f2">mixed</text><text x="199.6" y="102.54" fill="#f8f8f2">日</text><text x="216.4" y="102.54" fill="#f8f8f2">本</text><text x="233.2" y="102.54" fill="#f8f8f2">🗾</text><text x="258.4" y="102.54" fill="#f8f8f2">end</text>
+<text x="40" y="119.54" fill="#f8f8f2">combining:</text><text x="132.4" y="119.54" fill="#f8f8f2">café</text><text x="182.8" y="119.54" fill="#f8f8f2">done</text>
 </g>
 </svg>

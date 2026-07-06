@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="752" height="158" viewBox="0 0 752 158" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="146" viewBox="0 0 752 146" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
 <style>.b{font-weight:700}.i{font-style:italic}</style>
 <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
-<rect x="24" y="24" width="704" height="110" rx="10" fill="#282a36" filter="url(#shadow)"/>
-<circle cx="44" cy="46" r="6.5" fill="#ff5f57"/><circle cx="64" cy="46" r="6.5" fill="#febc2e"/><circle cx="84" cy="46" r="6.5" fill="#28c840"/>
-<text x="376" y="46" text-anchor="middle" dominant-baseline="central" font-size="12.6" fill="#6272a4">truecolor</text>
-<rect x="140.8" y="84" width="126" height="17" fill="#1964c8"/>
+<rect x="24" y="24" width="704" height="98" rx="10" fill="#282a36" filter="url(#shadow)"/>
+<circle cx="44" cy="40" r="6" fill="#ff5f57"/><circle cx="64" cy="40" r="6" fill="#febc2e"/><circle cx="84" cy="40" r="6" fill="#28c840"/>
+<text x="376" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">truecolor</text>
+<rect x="140.8" y="72" width="126" height="17" fill="#1964c8"/>
 
 <g font-size="14">
-<text x="40" y="97.54" fill="#ff69b4">hot</text><text x="73.6" y="97.54" fill="#ff69b4">pink</text><text x="115.6" y="97.54" fill="#ff69b4">fg</text><text x="140.8" y="97.54" fill="#ffff00">yellow</text><text x="199.6" y="97.54" fill="#ffff00">on</text><text x="224.8" y="97.54" fill="#ffff00">azure</text>
-<text x="40" y="114.54" fill="#50fa7b">dracula</text><text x="107.2" y="114.54" fill="#50fa7b">green</text><text x="157.6" y="114.54" fill="#50fa7b">truecolor</text>
+<text x="40" y="85.54" fill="#ff69b4">hot</text><text x="73.6" y="85.54" fill="#ff69b4">pink</text><text x="115.6" y="85.54" fill="#ff69b4">fg</text><text x="140.8" y="85.54" fill="#ffff00">yellow</text><text x="199.6" y="85.54" fill="#ffff00">on</text><text x="224.8" y="85.54" fill="#ffff00">azure</text>
+<text x="40" y="102.54" fill="#50fa7b">dracula</text><text x="107.2" y="102.54" fill="#50fa7b">green</text><text x="157.6" y="102.54" fill="#50fa7b">truecolor</text>
 </g>
 </svg>

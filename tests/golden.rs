@@ -27,7 +27,8 @@ fn fixed_config(title: &str) -> RenderConfig {
         line_height: 1.2,
         padding: 16.0,
         margin: 24.0,
-        window: true,
+        chrome: render::ChromeStyle::Macos,
+        background: true,
         shadow: true,
         title: Some(title.to_string()),
         font_family: render::DEFAULT_FONT_STACK.to_string(),
@@ -41,6 +42,19 @@ fn render_fixture(name: &str) -> String {
     let theme = theme::builtin::load("dracula").unwrap();
     let screen = term::interpret(&bytes, 80, 24, &theme);
     render::render(&screen, &theme, &fixed_config(name)).unwrap()
+}
+
+/// The colors16 fixture rendered with a non-default chrome, locking the
+/// windows/ubuntu title-bar markup.
+fn render_chrome_fixture(chrome: render::ChromeStyle, golden_name: &str) -> String {
+    let bytes = std::fs::read("tests/fixtures/colors16.ansi").unwrap();
+    let theme = theme::builtin::load("dracula").unwrap();
+    let screen = term::interpret(&bytes, 80, 24, &theme);
+    let config = RenderConfig {
+        chrome,
+        ..fixed_config(golden_name)
+    };
+    render::render(&screen, &theme, &config).unwrap()
 }
 
 /// Animated rendering is deterministic: the pipeline consumes only the
@@ -66,7 +80,17 @@ fn golden() {
     let rendered = FIXTURES
         .iter()
         .map(|name| (*name, render_fixture(name)))
-        .chain([(animated.0, animated.1)]);
+        .chain([
+            (animated.0, animated.1),
+            (
+                "chrome-windows",
+                render_chrome_fixture(render::ChromeStyle::Windows, "chrome-windows"),
+            ),
+            (
+                "chrome-ubuntu",
+                render_chrome_fixture(render::ChromeStyle::Ubuntu, "chrome-ubuntu"),
+            ),
+        ]);
 
     for (name, svg) in rendered {
         let golden_path = format!("tests/golden/{name}.svg");

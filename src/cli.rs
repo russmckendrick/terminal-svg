@@ -1,6 +1,8 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
+use crate::render::ChromeStyle;
+
 /// Render terminal output as a pixel-perfect SVG screenshot.
 ///
 /// Reads ANSI from a file or stdin, or runs a command in a PTY:
@@ -67,9 +69,30 @@ pub struct StyleArgs {
     #[arg(short, long, default_value = "dracula")]
     pub theme: String,
 
-    /// Window title (defaults to the command string for PTY captures)
+    /// Light theme for a dual light/dark SVG switched by
+    /// prefers-color-scheme (requires --theme-dark; static renders only)
+    #[arg(long, value_name = "THEME", requires = "theme_dark")]
+    pub theme_light: Option<String>,
+
+    /// Dark theme for a dual light/dark SVG switched by
+    /// prefers-color-scheme (requires --theme-light; static renders only)
+    #[arg(long, value_name = "THEME", requires = "theme_light")]
+    pub theme_dark: Option<String>,
+
+    /// Window title (defaults to the recording's title for casts, or the
+    /// command string for PTY captures)
     #[arg(long)]
     pub title: Option<String>,
+
+    /// Emoji shown before the title (default: 📁 when the title is a
+    /// path; pass an empty string to disable)
+    #[arg(long, value_name = "EMOJI")]
+    pub title_emoji: Option<String>,
+
+    /// Window chrome style; fixed-size like a real window, it does not
+    /// scale with --font-size
+    #[arg(long, value_enum, default_value = "macos")]
+    pub chrome: ChromeStyle,
 
     /// Font size in px
     #[arg(long, default_value_t = 14.0)]
@@ -80,16 +103,20 @@ pub struct StyleArgs {
     pub line_height: f32,
 
     /// Padding between window edge and text, in px
-    #[arg(long, default_value_t = 16.0)]
+    #[arg(long, default_value_t = 10.0)]
     pub padding: f32,
 
     /// Margin around the window, in px (default 24, or 0 with --no-shadow)
     #[arg(long)]
     pub margin: Option<f32>,
 
-    /// Render a bare panel without title bar and traffic lights
+    /// Render a bare panel without a title bar (alias for --chrome none)
     #[arg(long)]
     pub no_window: bool,
+
+    /// Transparent background: no window body, chrome, or shadow
+    #[arg(long)]
+    pub no_background: bool,
 
     /// Disable the drop shadow
     #[arg(long)]
@@ -107,7 +134,30 @@ pub struct StyleArgs {
 impl StyleArgs {
     pub fn margin(&self) -> f32 {
         self.margin
-            .unwrap_or(if self.no_shadow { 0.0 } else { 24.0 })
+            .unwrap_or(if self.shadow() { 24.0 } else { 0.0 })
+    }
+
+    /// The effective chrome style: --no-window and --no-background both
+    /// force a bare panel.
+    pub fn chrome(&self) -> ChromeStyle {
+        if self.no_window || self.no_background {
+            ChromeStyle::None
+        } else {
+            self.chrome
+        }
+    }
+
+    /// --no-background leaves nothing to cast a shadow.
+    pub fn shadow(&self) -> bool {
+        !self.no_shadow && !self.no_background
+    }
+
+    /// Both dual-theme names, when the pair is requested.
+    pub fn dual_themes(&self) -> Option<(&str, &str)> {
+        match (self.theme_light.as_deref(), self.theme_dark.as_deref()) {
+            (Some(l), Some(d)) => Some((l, d)),
+            _ => None,
+        }
     }
 }
 
@@ -131,6 +181,17 @@ pub struct AnimArgs {
     /// Render only the final frame as a static SVG
     #[arg(long = "static")]
     pub static_: bool,
+
+    /// Render the screen as of this many seconds into the recording
+    /// instead of the end (implies --static)
+    #[arg(long, value_name = "SECONDS")]
+    pub at: Option<f64>,
+}
+
+impl AnimArgs {
+    pub fn is_static(&self) -> bool {
+        self.static_ || self.at.is_some()
+    }
 }
 
 #[derive(Debug, Args)]
@@ -289,6 +350,49 @@ mod tests {
             panic!("expected rec subcommand");
         };
         assert_eq!(rec.cast_path(), PathBuf::from("take2.cast"));
+    }
+
+    #[test]
+    fn chrome_flag_and_aliases() {
+        assert_eq!(parse(&["terminal-svg"]).style.chrome(), ChromeStyle::Macos);
+        assert_eq!(
+            parse(&["terminal-svg", "--chrome", "windows"])
+                .style
+                .chrome(),
+            ChromeStyle::Windows
+        );
+        assert_eq!(
+            parse(&["terminal-svg", "--no-window"]).style.chrome(),
+            ChromeStyle::None
+        );
+
+        // --no-background forces a bare panel with no shadow or margin.
+        let style = parse(&["terminal-svg", "--chrome", "ubuntu", "--no-background"]).style;
+        assert_eq!(style.chrome(), ChromeStyle::None);
+        assert!(!style.shadow());
+        assert_eq!(style.margin(), 0.0);
+    }
+
+    #[test]
+    fn dual_theme_flags_require_each_other() {
+        assert!(Cli::try_parse_from(["terminal-svg", "--theme-light", "github-light"]).is_err());
+        let style = parse(&[
+            "terminal-svg",
+            "--theme-light",
+            "github-light",
+            "--theme-dark",
+            "github-dark",
+        ])
+        .style;
+        assert_eq!(style.dual_themes(), Some(("github-light", "github-dark")));
+    }
+
+    #[test]
+    fn at_implies_static() {
+        let cli = parse(&["terminal-svg", "demo.cast", "--at", "2.5"]);
+        assert!(cli.anim.is_static());
+        assert_eq!(cli.anim.at, Some(2.5));
+        assert!(!parse(&["terminal-svg", "demo.cast"]).anim.is_static());
     }
 
     #[test]

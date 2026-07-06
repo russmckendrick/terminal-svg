@@ -21,6 +21,30 @@ pub fn interpret(bytes: &[u8], cols: usize, rows: usize, theme: &Theme) -> Scree
     Screen { cols, rows: out }
 }
 
+/// Every window title set via OSC 0/2 in the stream, in order. avt
+/// discards OSC payloads, so titles are scanned from the raw output here.
+pub fn osc_titles(data: &str) -> Vec<String> {
+    let mut titles = Vec::new();
+    let mut rest = data;
+    while let Some(start) = rest.find("\x1b]") {
+        rest = &rest[start + 2..];
+        let Some(body) = rest.strip_prefix("0;").or_else(|| rest.strip_prefix("2;")) else {
+            continue;
+        };
+        // Terminated by BEL or ST (ESC \); an unterminated sequence ends
+        // the scan.
+        let Some(end) = body.find(['\x07', '\x1b']) else {
+            break;
+        };
+        let t = &body[..end];
+        if !t.is_empty() {
+            titles.push(t.to_string());
+        }
+        rest = &body[end..];
+    }
+    titles
+}
+
 /// Incremental interpreter for animated replays: feed recorded output
 /// chunks one at a time and snapshot the visible screen between them.
 pub struct Interpreter {
@@ -263,5 +287,22 @@ mod tests {
         let s = screen("aaa\nbbb\x1b[1A\rccc\x1b[1B\n");
         assert_eq!(s.rows[0][0].text, "ccc");
         assert_eq!(s.rows[1][0].text, "bbb");
+    }
+
+    #[test]
+    fn osc_title_detection() {
+        // OSC 2 with BEL terminator.
+        assert_eq!(osc_titles("\x1b]2;hello\x07rest"), ["hello"]);
+        // OSC 0 with ST terminator.
+        assert_eq!(osc_titles("\x1b]0;world\x1b\\"), ["world"]);
+        // Titles arrive in order; other OSC codes are ignored.
+        assert_eq!(
+            osc_titles("\x1b]2;first\x07\x1b]7;file://x\x1b\\\x1b]2;second\x07"),
+            ["first", "second"]
+        );
+        // Empty titles and unterminated sequences don't count.
+        assert!(osc_titles("\x1b]2;\x07").is_empty());
+        assert!(osc_titles("\x1b]2;dangling").is_empty());
+        assert!(osc_titles("plain text").is_empty());
     }
 }

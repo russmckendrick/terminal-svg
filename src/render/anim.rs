@@ -28,7 +28,7 @@ pub fn render_animated(
     let mut out = String::with_capacity(64 * 1024);
     svg::open_document(&mut out, &l, config);
     svg::style_block(&mut out, config, &css);
-    svg::chrome_layer(&mut out, theme, config, &l);
+    svg::chrome_layer(&mut out, theme, config, &l, "");
 
     // Screens repeat almost every row from frame to frame (typing appends;
     // scrolling shifts), so each distinct row is defined once and frames
@@ -195,7 +195,8 @@ mod tests {
             line_height: 1.2,
             padding: 16.0,
             margin: 24.0,
-            window: true,
+            chrome: crate::render::ChromeStyle::Macos,
+            background: true,
             shadow: true,
             title: None,
             font_family: "monospace".into(),

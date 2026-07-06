@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import GalleryGrid from '../components/GalleryGrid.astro';
+import ThemeChip from '../components/ThemeChip.astro';
 import { items, themes, fixtures, THEME_META, FIXTURE_META } from '../lib/gallery';
 
 const themeMeta = THEME_META.filter((t) => themes.includes(t.key));
@@ -9,7 +10,7 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
 
 <Base
   title="Gallery — terminal-svg"
-  description="Every terminal-svg test fixture rendered in all seven built-in themes: Dracula, Catppuccin Mocha, Nord, Tokyo Night, GitHub dark & light, and Solarized."
+  description="Every terminal-svg test fixture rendered in all nine built-in themes — Dracula, Catppuccin Mocha, Nord, Tokyo Night, GitHub dark & light, Solarized, PowerShell and Ubuntu — including the Windows and GNOME window chrome."
 >
   <section class="section section--gray">
     <div class="wrap">
@@ -21,16 +22,14 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
 
       <div class="filters" data-reveal>
         <div class="swatch-filter" data-filter-group="theme" role="group" aria-label="Filter by theme">
-          <button class="swatch all on" data-value="" aria-label="All themes" title="All themes"></button>
+          <button class="swatch all on" data-value="" aria-label="All themes" title="All themes">
+            <ThemeChip all />
+          </button>
           {
             themeMeta.map((t) => (
-              <button
-                class="swatch"
-                data-value={t.key}
-                aria-label={t.label}
-                title={t.label}
-                style={`--a:${t.a};--b:${t.b}`}
-              />
+              <button class="swatch" data-value={t.key} aria-label={t.label} title={t.label}>
+                <ThemeChip theme={t} />
+              </button>
             ))
           }
         </div>
@@ -91,22 +90,21 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
   }
 
   .swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%);
+    border: none;
+    background: none;
+    border-radius: 8px;
     cursor: pointer;
     padding: 0;
+    line-height: 0;
     transition: transform 0.2s ease;
   }
 
-  .swatch.all {
-    background: conic-gradient(#bd93f9, #f5c2e7, #88c0d0, #7aa2f7, #58a6ff, #b58900, #bd93f9);
+  .swatch :global(svg) {
+    display: block;
   }
 
   .swatch:hover {
-    transform: scale(1.12);
+    transform: scale(1.1) translateY(-1px);
   }
 
   .swatch.on {

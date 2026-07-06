@@ -21,12 +21,23 @@ cat > "$HTML" <<'EOF'
 </style>
 EOF
 
+# The OS-flavoured themes render in their native window chrome, so the
+# gallery shows the Windows and Ubuntu views alongside the macOS ones.
+chrome_for() {
+  case "$1" in
+    powershell) echo windows ;;
+    ubuntu) echo ubuntu ;;
+    *) echo macos ;;
+  esac
+}
+
 for theme in $("$BIN" --list-themes); do
+  chrome=$(chrome_for "$theme")
   echo "<h2>$theme</h2>" >> "$HTML"
   for fixture in tests/fixtures/*.ansi; do
     name=$(basename "$fixture" .ansi)
     svg="$OUT/$theme-$name.svg"
-    "$BIN" "$fixture" -t "$theme" --title "$name" -c 70 -o "$svg" 2>/dev/null
+    "$BIN" "$fixture" -t "$theme" --chrome "$chrome" --title "$name" -c 70 -o "$svg" 2>/dev/null
     echo "<img src=\"$svg\" alt=\"$theme $name\">" >> "$HTML"
   done
   # Animated: replay the checked-in cast fixture (deterministic, no
@@ -34,7 +45,7 @@ for theme in $("$BIN" --list-themes); do
   for fixture in tests/fixtures/*.cast; do
     name=$(basename "$fixture" .cast)
     svg="$OUT/$theme-$name-anim.svg"
-    "$BIN" "$fixture" -t "$theme" --title "$name" -o "$svg" 2>/dev/null
+    "$BIN" "$fixture" -t "$theme" --chrome "$chrome" --title "$name" -o "$svg" 2>/dev/null
     echo "<img src=\"$svg\" alt=\"$theme $name animated\">" >> "$HTML"
   done
 done

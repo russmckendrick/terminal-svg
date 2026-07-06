@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="752" height="175" viewBox="0 0 752 175" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="163" viewBox="0 0 752 163" font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'" xml:space="preserve">
 <style>.b{font-weight:700}.i{font-style:italic}</style>
 <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow in="SourceGraphic" dx="0" dy="5" stdDeviation="6" flood-opacity="0.19" result="s1"/><feDropShadow in="s1" dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.28"/></filter></defs>
-<rect x="24" y="24" width="704" height="127" rx="10" fill="#282a36" filter="url(#shadow)"/>
-<circle cx="44" cy="46" r="6.5" fill="#ff5f57"/><circle cx="64" cy="46" r="6.5" fill="#febc2e"/><circle cx="84" cy="46" r="6.5" fill="#28c840"/>
-<text x="376" y="46" text-anchor="middle" dominant-baseline="central" font-size="12.6" fill="#6272a4">sgr-styles</text>
-<rect x="384.4" y="84" width="58.8" height="17" fill="#f8f8f2"/>
+<rect x="24" y="24" width="704" height="115" rx="10" fill="#282a36" filter="url(#shadow)"/>
+<circle cx="44" cy="40" r="6" fill="#ff5f57"/><circle cx="64" cy="40" r="6" fill="#febc2e"/><circle cx="84" cy="40" r="6" fill="#28c840"/>
+<text x="376" y="40" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="-apple-system,'Segoe UI',sans-serif" fill="#6272a4">sgr-styles</text>
+<rect x="384.4" y="72" width="58.8" height="17" fill="#f8f8f2"/>
 
-<rect x="40" y="118" width="109.2" height="17" fill="#50fa7b"/><rect x="250" y="118" width="126" height="17" fill="#bd93f9"/>
+<rect x="40" y="106" width="109.2" height="17" fill="#50fa7b"/><rect x="250" y="106" width="126" height="17" fill="#bd93f9"/>
 <g font-size="14">
-<text x="40" y="97.54" fill="#f8f8f2">plain</text><text x="90.4" y="97.54" fill="#f8f8f2" class="b">bold</text><text x="132.4" y="97.54" fill="#909194">faint</text><text x="182.8" y="97.54" fill="#f8f8f2" class="i">italic</text><text x="241.6" y="97.54" fill="#f8f8f2">underline</text><line x1="241.6" y1="99.71" x2="317.2" y2="99.71" stroke="#f8f8f2" stroke-width="1"/><text x="325.6" y="97.54" fill="#f8f8f2">strike</text><line x1="325.6" y1="93.06" x2="376" y2="93.06" stroke="#f8f8f2" stroke-width="1"/><text x="384.4" y="97.54" fill="#282a36">inverse</text>
-<text x="40" y="114.54" fill="#f8f8f2" class="b i">bold-italic</text><text x="140.8" y="114.54" fill="#f8f8f2">under-strike</text><line x1="140.8" y1="116.71" x2="241.6" y2="116.71" stroke="#f8f8f2" stroke-width="1"/><line x1="140.8" y1="110.06" x2="241.6" y2="110.06" stroke="#f8f8f2" stroke-width="1"/><text x="250" y="114.54" fill="#ff5555" class="b">bold-under-red</text><line x1="250" y1="116.71" x2="367.6" y2="116.71" stroke="#ff5555" stroke-width="1"/><text x="376" y="114.54" fill="#f8f8f2">blink</text>
-<text x="40" y="131.54" fill="#282a36">green-inverse</text><text x="157.6" y="131.54" fill="#735f98">faint-blue</text><text x="250" y="131.54" fill="#f8f8f2">underline-on-bg</text><line x1="250" y1="133.71" x2="376" y2="133.71" stroke="#f8f8f2" stroke-width="1"/>
+<text x="40" y="85.54" fill="#f8f8f2">plain</text><text x="90.4" y="85.54" fill="#f8f8f2" class="b">bold</text><text x="132.4" y="85.54" fill="#909194">faint</text><text x="182.8" y="85.54" fill="#f8f8f2" class="i">italic</text><text x="241.6" y="85.54" fill="#f8f8f2">underline</text><line x1="241.6" y1="87.71" x2="317.2" y2="87.71" stroke="#f8f8f2" stroke-width="1"/><text x="325.6" y="85.54" fill="#f8f8f2">strike</text><line x1="325.6" y1="81.06" x2="376" y2="81.06" stroke="#f8f8f2" stroke-width="1"/><text x="384.4" y="85.54" fill="#282a36">inverse</text>
+<text x="40" y="102.54" fill="#f8f8f2" class="b i">bold-italic</text><text x="140.8" y="102.54" fill="#f8f8f2">under-strike</text><line x1="140.8" y1="104.71" x2="241.6" y2="104.71" stroke="#f8f8f2" stroke-width="1"/><line x1="140.8" y1="98.06" x2="241.6" y2="98.06" stroke="#f8f8f2" stroke-width="1"/><text x="250" y="102.54" fill="#ff5555" class="b">bold-under-red</text><line x1="250" y1="104.71" x2="367.6" y2="104.71" stroke="#ff5555" stroke-width="1"/><text x="376" y="102.54" fill="#f8f8f2">blink</text>
+<text x="40" y="119.54" fill="#282a36">green-inverse</text><text x="157.6" y="119.54" fill="#735f98">faint-blue</text><text x="250" y="119.54" fill="#f8f8f2">underline-on-bg</text><line x1="250" y1="121.71" x2="376" y2="121.71" stroke="#f8f8f2" stroke-width="1"/>
 </g>
 </svg>

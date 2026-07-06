@@ -4,8 +4,8 @@ Pixel-perfect SVG screenshots of terminal output, from a single self-contained b
 
 ![terminal-svg rendering a starship prompt and cargo build output](docs/hero.svg)
 
-Point it at a command, a file, or a pipe and it produces an SVG with macOS-style
-window chrome, your favourite colour scheme, and — the part that makes it
+Point it at a command, a file, or a pipe and it produces an SVG with window
+chrome (macOS, Windows 11, or Ubuntu style), your favourite colour scheme, and — the part that makes it
 "perfect" — a **subsetted JetBrains Mono Nerd Font embedded in the SVG itself**,
 so it renders identically everywhere: GitHub READMEs, blog posts, browsers on
 machines with no fonts installed. The image above is terminal-svg's own output.
@@ -84,15 +84,35 @@ renders just the final screen.
 |---|---|---|
 | `-o, --output` | `terminal.svg` | `-` writes to stdout |
 | `-t, --theme` | `dracula` | built-in name or path to a `.toml` |
-| `--title` | command string | title bar text |
+| `--theme-light` / `--theme-dark` | | dual-theme SVG switched by `prefers-color-scheme` (static renders) |
+| `--chrome` | `macos` | window style: `macos`, `windows`, `ubuntu`, `none` |
+| `--title` | auto | falls back to the title the program set (OSC 0/2), then the command string |
+| `--title-emoji` | 📁 for paths | emoji before the title; `""` disables |
 | `-c, --cols` / `-r, --rows` | 80 × 24 | PTY size; image height follows content |
-| `--font-size` / `--line-height` | 14 / 1.2 | |
-| `--padding` / `--margin` | 16 / 24 | margin is 0 with `--no-shadow` |
-| `--no-window` | | bare rounded panel, no chrome |
+| `--font-size` / `--line-height` | 14 / 1.2 | chrome is fixed-size and doesn't scale with the font |
+| `--padding` / `--margin` | 10 / 24 | margin is 0 with `--no-shadow` |
+| `--no-window` | | bare rounded panel, no chrome (alias for `--chrome none`) |
+| `--no-background` | | transparent: no window body, chrome, or shadow |
 | `--no-shadow` | | |
 | `--no-font-embed` | | reference system fonts instead |
 | `--timeout <secs>` | | kill the PTY command after N seconds |
 | `--list-themes` | | |
+
+Titles are auto-detected: `--title` wins, then the recording's own title,
+then the last directory the shell reported via OSC 0/2 (shown Ghostty-style
+as `📁 ~/Code/blog`), then the command string.
+
+```sh
+# GitHub README image that follows the viewer's light/dark mode
+terminal-svg demo.cast --static --theme-light github-light --theme-dark github-dark
+
+# Faithful Windows PowerShell and Ubuntu GNOME Terminal windows
+terminal-svg --chrome windows -t powershell -- pwsh -c 'Get-ChildItem'
+terminal-svg --chrome ubuntu -t ubuntu -- lsd -la
+```
+
+![Windows PowerShell chrome](docs/chrome-windows.svg)
+![Ubuntu GNOME Terminal chrome](docs/chrome-ubuntu.svg)
 
 Animation options (for `rec` and `.cast` input):
 
@@ -102,13 +122,16 @@ Animation options (for `rec` and `.cast` input):
 | `--speed <n>` | 1 | playback speed multiplier |
 | `--no-loop` | | play once and hold the last frame |
 | `--static` | | render only the final screen |
+| `--at <secs>` | | render the screen at this point in the recording (implies `--static`) |
 | `--cast <path>` | output stem + `.cast` | where `rec` saves the recording |
 | `-c` / `-r` (rec) | current terminal size | recorded PTY size |
 
 ### Themes
 
 `dracula` (default), `catppuccin-mocha`, `nord`, `tokyo-night`, `github-dark`,
-`github-light`, `solarized-dark`.
+`github-light`, `solarized-dark`, plus `powershell` (the classic conhost navy
+with the Campbell palette) and `ubuntu` (aubergine + Tango) to pair with the
+matching chrome styles.
 
 ![SGR styles in catppuccin-mocha](docs/styles-catppuccin.svg)
 ![box drawing in github-light](docs/boxes-light.svg)
