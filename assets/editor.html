@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>terminal-svg editor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23191a21'/%3E%3Ctext x='14' y='44' font-family='monospace' font-size='30' font-weight='bold' fill='%2350fa7b'%3E%E2%9D%AF%3C/text%3E%3Crect x='36' y='18' width='13' height='30' fill='%23f8f8f2'%3E%3Canimate attributeName='opacity' values='1;1;0;0' keyTimes='0;0.5;0.5;1' dur='1.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #16171d;
+    --panel: #1e1f28;
+    --panel-edge: #2b2d3a;
+    --ink: #d8dae5;
+    --ink-dim: #8a8ea3;
+    --accent: #50fa7b;
+    --accent-dim: #2d8c48;
+    --danger: #ff5555;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 13px/1.5 var(--mono);
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-edge);
+  }
+  .mark { color: var(--accent); font-weight: 700; }
+  .mark::after { content: "█"; color: var(--ink); animation: blink 1.2s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  header h1 { font-size: 13px; font-weight: 500; margin: 0; white-space: nowrap; }
+  #file-name {
+    color: var(--ink-dim);
+    padding: 2px 8px;
+    border: 1px solid var(--panel-edge);
+    border-radius: 5px;
+    max-width: 32ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  header .spacer { flex: 1; }
+  button {
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 5px 14px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--ink-dim); }
+  button.primary { color: #04140a; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+  button.primary:hover { background: #6cfa90; }
+  button:disabled { opacity: 0.4; cursor: default; }
+
+  main { flex: 1; display: flex; min-height: 0; }
+
+  #controls {
+    width: 300px;
+    flex: none;
+    overflow-y: auto;
+    background: var(--panel);
+    border-right: 1px solid var(--panel-edge);
+    padding: 4px 16px 24px;
+  }
+  fieldset { border: 0; margin: 0; padding: 14px 0 2px; }
+  fieldset + fieldset { border-top: 1px solid var(--panel-edge); }
+  legend { padding: 0; color: var(--ink-dim); text-transform: lowercase; letter-spacing: 0.08em; font-size: 11px; }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 8px 0;
+  }
+  .row > label:first-child { color: var(--ink); flex: none; }
+  input[type="text"], input[type="number"], select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--panel-edge);
+    border-radius: 5px;
+    padding: 4px 7px;
+    width: 130px;
+  }
+  input[type="number"] { width: 76px; }
+  input:focus, select:focus { outline: none; border-color: var(--accent-dim); }
+  input[type="checkbox"] { accent-color: var(--accent); }
+  .check { justify-content: flex-start; gap: 8px; }
+  .hidden { display: none !important; }
+  fieldset.off { opacity: 0.35; pointer-events: none; }
+
+  #stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  #preview {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    overflow: auto;
+    padding: 28px;
+    background-image: radial-gradient(var(--panel-edge) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  #preview img { max-width: 100%; height: auto; }
+  #empty { text-align: center; color: var(--ink-dim); }
+  #empty .big { font-size: 15px; color: var(--ink); margin-bottom: 8px; }
+  #empty code { color: var(--accent); }
+
+  footer {
+    display: flex;
+    gap: 18px;
+    padding: 7px 16px;
+    background: var(--panel);
+    border-top: 1px solid var(--panel-edge);
+    color: var(--ink-dim);
+    min-height: 34px;
+    align-items: center;
+  }
+  footer .err { color: var(--danger); }
+  footer .ok { color: var(--accent); }
+
+  #drop-veil {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    background: rgba(22, 23, 29, 0.88);
+    border: 2px dashed var(--accent);
+    color: var(--accent);
+    font-size: 16px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  body.dragging #drop-veil { display: grid; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">❯</span>
+  <h1>terminal-svg editor</h1>
+  <span id="file-name">no file</span>
+  <span class="spacer"></span>
+  <button id="download" disabled>Download</button>
+  <button id="save" class="primary" disabled>Save</button>
+</header>
+
+<main>
+  <aside id="controls">
+    <fieldset>
+      <legend>output &amp; themes</legend>
+      <div class="row"><label for="theme">theme</label><select id="theme"></select></div>
+      <div class="row check"><input type="checkbox" id="dual"><label for="dual">dual light/dark</label></div>
+      <div class="row dual-only hidden"><label for="theme-light">light</label><select id="theme-light"></select></div>
+      <div class="row dual-only hidden"><label for="theme-dark">dark</label><select id="theme-dark"></select></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>window</legend>
+      <div class="row"><label for="chrome">chrome</label>
+        <select id="chrome">
+          <option value="macos">macos</option>
+          <option value="windows">windows</option>
+          <option value="ubuntu">ubuntu</option>
+          <option value="none">none</option>
+        </select>
+      </div>
+      <div class="row"><label for="title">title</label><input type="text" id="title" placeholder="auto"></div>
+      <div class="row"><label for="title-emoji">title emoji</label><input type="text" id="title-emoji" placeholder="auto 📁"></div>
+      <div class="row check"><input type="checkbox" id="no-background"><label for="no-background">transparent background</label></div>
+      <div class="row check"><input type="checkbox" id="no-shadow"><label for="no-shadow">no shadow</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>layout &amp; fonts</legend>
+      <div class="row"><label for="font-size">font size</label><input type="number" id="font-size" value="14" min="6" max="72" step="1"></div>
+      <div class="row"><label for="line-height">line height</label><input type="number" id="line-height" value="1.2" min="0.8" max="3" step="0.05"></div>
+      <div class="row"><label for="padding">padding</label><input type="number" id="padding" value="10" min="0" step="1"></div>
+      <div class="row"><label for="margin">margin</label><input type="number" id="margin" placeholder="auto" min="0" step="1"></div>
+      <div class="row ansi-only"><label for="cols">columns</label><input type="number" id="cols" min="10" max="500" step="1" placeholder="80"></div>
+      <div class="row ansi-only"><label for="rows">rows</label><input type="number" id="rows" min="2" max="200" step="1" placeholder="24"></div>
+      <div class="row check"><input type="checkbox" id="no-font-embed"><label for="no-font-embed">system fonts only</label></div>
+      <div class="row"><label for="font-family">font family</label><input type="text" id="font-family" placeholder="with system fonts" disabled></div>
+    </fieldset>
+
+    <fieldset id="anim-controls">
+      <legend>animation</legend>
+      <div class="row"><label for="cursor">cursor</label>
+        <select id="cursor">
+          <option value="block">block</option>
+          <option value="bar">bar</option>
+          <option value="underline">underline</option>
+          <option value="none">none</option>
+        </select>
+      </div>
+      <div class="row"><label for="speed">speed ×</label><input type="number" id="speed" value="1" min="0.1" step="0.25"></div>
+      <div class="row"><label for="idle-time-limit">idle cap s</label><input type="number" id="idle-time-limit" placeholder="auto" min="0" step="0.5"></div>
+      <div class="row"><label for="from">from s</label><input type="number" id="from" placeholder="start" min="0" step="0.5"></div>
+      <div class="row"><label for="to">to s</label><input type="number" id="to" placeholder="end" min="0" step="0.5"></div>
+      <div class="row check"><input type="checkbox" id="no-loop"><label for="no-loop">play once</label></div>
+      <div class="row check"><input type="checkbox" id="static"><label for="static">static (final frame)</label></div>
+      <div class="row"><label for="at">at s</label><input type="number" id="at" placeholder="end" min="0" step="0.5"></div>
+    </fieldset>
+  </aside>
+
+  <section id="stage">
+    <div id="preview">
+      <div id="empty">
+        <div class="big">drop a .cast, .ansi, or terminal-svg .svg here</div>
+        <div>or launch with a file: <code>terminal-svg editor demo.cast</code></div>
+      </div>
+      <img id="svg-view" class="hidden" alt="rendered terminal">
+    </div>
+    <footer>
+      <span id="status">ready</span>
+      <span id="dims"></span>
+      <span id="size"></span>
+      <span id="took"></span>
+    </footer>
+  </section>
+</main>
+
+<div id="drop-veil">drop to open</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const state = { loaded: false, kind: null, name: null, output: null };
+let renderSeq = 0;
+let blobUrl = null;
+
+// ---- options <-> controls -------------------------------------------------
+
+function num(id) {
+  const v = $(id).value.trim();
+  return v === "" ? null : Number(v);
+}
+
+function gatherOptions() {
+  const o = {};
+  if ($("dual").checked) {
+    o["theme-light"] = $("theme-light").value;
+    o["theme-dark"] = $("theme-dark").value;
+  } else {
+    o.theme = $("theme").value;
+  }
+  o.chrome = $("chrome").value;
+  if ($("no-background").checked) o["no-background"] = true;
+  if ($("no-shadow").checked) o["no-shadow"] = true;
+  if ($("title").value) o.title = $("title").value;
+  if ($("title-emoji").value) o["title-emoji"] = $("title-emoji").value;
+  for (const key of ["font-size", "line-height", "padding", "margin", "cols", "rows"]) {
+    const v = num(key);
+    if (v !== null) o[key] = v;
+  }
+  if ($("no-font-embed").checked) {
+    o["no-font-embed"] = true;
+    if ($("font-family").value) o["font-family"] = $("font-family").value;
+  }
+  if (state.kind === "cast") {
+    o.cursor = $("cursor").value;
+    const speed = num("speed");
+    if (speed !== null) o.speed = speed;
+    for (const key of ["idle-time-limit", "from", "to", "at"]) {
+      const v = num(key);
+      if (v !== null) o[key] = v;
+    }
+    if ($("no-loop").checked) o["no-loop"] = true;
+    if ($("static").checked) o.static = true;
+  }
+  return o;
+}
+
+function applyOptions(o) {
+  const set = (id, v) => { $(id).value = v ?? ""; };
+  if (o["theme-light"] && o["theme-dark"]) {
+    $("dual").checked = true;
+    $("theme-light").value = o["theme-light"];
+    $("theme-dark").value = o["theme-dark"];
+  } else {
+    $("dual").checked = false;
+    if (o.theme) $("theme").value = o.theme;
+  }
+  $("chrome").value = o["no-window"] ? "none" : (o.chrome ?? "macos");
+  $("no-background").checked = !!o["no-background"];
+  $("no-shadow").checked = !!o["no-shadow"];
+  set("title", o.title);
+  set("title-emoji", o["title-emoji"]);
+  set("font-size", o["font-size"] ?? 14);
+  set("line-height", o["line-height"] ?? 1.2);
+  set("padding", o.padding ?? 10);
+  set("margin", o.margin);
+  set("cols", o.cols);
+  set("rows", o.rows);
+  $("no-font-embed").checked = !!o["no-font-embed"];
+  set("font-family", o["font-family"]);
+  $("cursor").value = o.cursor ?? "block";
+  set("speed", o.speed ?? 1);
+  set("idle-time-limit", o["idle-time-limit"]);
+  set("from", o.from);
+  set("to", o.to);
+  set("at", o.at);
+  $("no-loop").checked = !!o["no-loop"];
+  $("static").checked = !!o.static;
+  syncEnabled();
+}
+
+function syncEnabled() {
+  for (const el of document.querySelectorAll(".dual-only")) {
+    el.classList.toggle("hidden", !$("dual").checked);
+  }
+  $("theme").parentElement.classList.toggle("hidden", $("dual").checked);
+  $("font-family").disabled = !$("no-font-embed").checked;
+  $("anim-controls").classList.toggle("off", state.kind !== "cast");
+  for (const el of document.querySelectorAll(".ansi-only")) {
+    el.classList.toggle("hidden", state.kind !== "ansi");
+  }
+  $("save").disabled = $("download").disabled = !state.loaded;
+}
+
+// ---- rendering ------------------------------------------------------------
+
+function status(text, cls) {
+  const el = $("status");
+  el.textContent = text;
+  el.className = cls || "";
+}
+
+async function api(path, payload) {
+  const res = await fetch(path, {
+    method: payload === undefined ? "GET" : "POST",
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || res.statusText);
+  return body;
+}
+
+async function render() {
+  if (!state.loaded) return;
+  const seq = ++renderSeq;
+  const started = performance.now();
+  status("rendering…");
+  try {
+    const { svg } = await api("/api/render", { options: gatherOptions() });
+    if (seq !== renderSeq) return; // superseded while in flight
+    const took = Math.round(performance.now() - started);
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+    blobUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    const img = $("svg-view");
+    img.src = blobUrl;
+    img.classList.remove("hidden");
+    $("empty").classList.add("hidden");
+    const dims = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    $("dims").textContent = dims ? `${Math.round(dims[1])}×${Math.round(dims[2])}` : "";
+    $("size").textContent = `${(svg.length / 1024).toFixed(1)} KB`;
+    $("took").textContent = `${took} ms`;
+    status("ready");
+  } catch (e) {
+    if (seq === renderSeq) status(e.message, "err");
+  }
+}
+
+let debounceTimer;
+function renderSoon() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(render, 150);
+}
+
+// ---- open / save / download ------------------------------------------------
+
+function setState(s) {
+  state.loaded = s.loaded;
+  state.kind = s.kind;
+  state.name = s.name;
+  state.output = s.output;
+  $("file-name").textContent = s.name ?? "no file";
+  const outName = s.output.split("/").pop();
+  $("save").textContent = `Save → ${outName}`;
+  $("save").title = s.output;
+  if (s.loaded) applyOptions(s.options);
+  syncEnabled();
+}
+
+async function openFile(file) {
+  status(`opening ${file.name}…`);
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    const s = await api("/api/open", {
+      name: file.name,
+      data: btoa(binary),
+      options: gatherOptions(),
+    });
+    setState(s);
+    await render();
+  } catch (e) {
+    status(e.message, "err");
+  }
+}
+
+$("download").addEventListener("click", async () => {
+  try {
+    const { svg } = await api("/api/render", { options: gatherOptions(), embed: true });
+    const stem = (state.name ?? "terminal").replace(/\.[^.]+$/, "");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    a.download = `${stem}.svg`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    status(`downloaded ${a.download}`, "ok");
+  } catch (e) {
+    status(e.message, "err");
+  }
+});
+
+$("save").addEventListener("click", async () => {
+  try {
+    const { path } = await api("/api/save", { options: gatherOptions(), embed: true });
+    status(`wrote ${path}`, "ok");
+  } catch (e) {
+    status(e.message, "err");
+  }
+});
+
+// ---- wiring ---------------------------------------------------------------
+
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  document.body.classList.add("dragging");
+});
+document.addEventListener("dragleave", (e) => {
+  if (!e.relatedTarget) document.body.classList.remove("dragging");
+});
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  document.body.classList.remove("dragging");
+  const file = e.dataTransfer.files[0];
+  if (file) openFile(file);
+});
+
+$("controls").addEventListener("input", (e) => {
+  if (e.target.id === "dual" || e.target.id === "no-font-embed") syncEnabled();
+  renderSoon();
+});
+
+(async () => {
+  try {
+    const s = await api("/api/state");
+    const options = [...s.themes]
+      .map((t) => `<option value="${t}">${t}</option>`)
+      .join("");
+    for (const id of ["theme", "theme-light", "theme-dark"]) $(id).innerHTML = options;
+    $("theme").value = "dracula";
+    $("theme-light").value = s.themes.includes("github-light") ? "github-light" : s.themes[0];
+    $("theme-dark").value = s.themes.includes("github-dark") ? "github-dark" : s.themes[0];
+    setState(s);
+    if (s.loaded) await render();
+  } catch (e) {
+    status(e.message, "err");
+  }
+})();
+</script>
+</body>
+</html>

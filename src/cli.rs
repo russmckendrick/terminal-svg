@@ -1,6 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
+use crate::options::RenderOptions;
 use crate::render::{ChromeStyle, CursorStyle};
 
 const EXAMPLES: &str = "\
@@ -11,6 +12,10 @@ Examples:
   terminal-svg rec -o demo.svg                  record your shell, render on exit
   terminal-svg demo.cast --speed 2              replay a recording as animated SVG
   terminal-svg demo.cast --theme-light github-light --theme-dark github-dark
+  terminal-svg demo.svg -t nord                 re-render an SVG (it carries its source)
+  terminal-svg extract demo.svg                 recover the recording from an SVG
+  terminal-svg edit demo.cast --redact 'ghp_\\w+' -o clean.cast
+  terminal-svg editor demo.cast                 tweak every option live in the browser
 
 Docs & recipes: https://github.com/russmckendrick/terminal-svg/tree/main/docs";
 
@@ -89,10 +94,104 @@ pub struct Cli {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)] // one Sub exists per process
 pub enum Sub {
     /// Record an interactive terminal session and render it as an
     /// animated SVG when the session ends
     Rec(RecArgs),
+    /// Recover the recording embedded in a terminal-svg SVG
+    /// (the source is embedded by default; see --no-embed-source)
+    Extract(ExtractArgs),
+    /// Clean up a recording without re-recording: mask secrets, cut time
+    /// ranges, clamp long pauses
+    Edit(EditArgs),
+    /// Open a recording in the visual editor: a local web page with live
+    /// preview of every render option
+    Editor(EditorArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct EditorArgs {
+    /// Recording (.cast), ANSI dump, or terminal-svg SVG to open
+    /// (a file can also be dropped onto the page later)
+    pub input: Option<PathBuf>,
+
+    /// Port for the local editor server (default: any free port)
+    #[arg(
+        long,
+        value_name = "PORT",
+        default_value_t = 0,
+        help_heading = "Editor"
+    )]
+    pub port: u16,
+
+    /// Print the URL without opening the browser
+    #[arg(long, help_heading = "Editor")]
+    pub no_open: bool,
+
+    #[command(flatten)]
+    pub style: StyleArgs,
+
+    #[command(flatten)]
+    pub anim: AnimArgs,
+}
+
+#[derive(Debug, Args)]
+pub struct ExtractArgs {
+    /// SVG file written by terminal-svg
+    pub input: PathBuf,
+
+    /// Where to write the recovered .cast or .ansi source
+    /// (default: stdout)
+    #[arg(short, long, value_name = "PATH")]
+    pub output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+pub struct EditArgs {
+    /// Recording to edit (.cast, v2 or v3; the output keeps the version)
+    pub input: PathBuf,
+
+    /// Where to write the edited recording ("-" for stdout; editing in
+    /// place is refused so a bad pattern can't destroy the original)
+    #[arg(short, long, value_name = "PATH")]
+    pub output: String,
+
+    /// Mask matches of this regex with '*' (repeatable); matched across
+    /// event boundaries in both the output and input streams
+    #[arg(long, value_name = "REGEX")]
+    pub redact: Vec<String>,
+
+    /// Remove a time range, e.g. --cut 12.5-20 (repeatable, seconds on
+    /// the original recording's timeline)
+    #[arg(long, value_name = "FROM-TO", value_parser = parse_cut_range)]
+    pub cut: Vec<(f64, f64)>,
+
+    /// Clamp pauses between events to this many seconds, baked into the
+    /// recording (unlike --idle-time-limit, which only affects a render)
+    #[arg(long, value_name = "SECONDS")]
+    pub max_pause: Option<f64>,
+}
+
+fn parse_cut_range(s: &str) -> Result<(f64, f64), String> {
+    let (from, to) = s
+        .split_once('-')
+        .ok_or_else(|| format!("expected FROM-TO, got {s:?}"))?;
+    let from: f64 = from
+        .trim()
+        .parse()
+        .map_err(|_| format!("invalid FROM in {s:?}"))?;
+    let to: f64 = to
+        .trim()
+        .parse()
+        .map_err(|_| format!("invalid TO in {s:?}"))?;
+    if from < 0.0 {
+        return Err(format!("FROM must be non-negative in {s:?}"));
+    }
+    if to <= from {
+        return Err(format!("TO must be greater than FROM in {s:?}"));
+    }
+    Ok((from, to))
 }
 
 /// Flags shared by the one-shot renderer and `rec`; the parsed surface is
@@ -204,6 +303,12 @@ pub struct StyleArgs {
     #[arg(long, value_name = "PX", help_heading = "Layout & fonts")]
     pub margin: Option<f32>,
 
+    /// Do not embed the source recording in the SVG metadata (embedding
+    /// makes the SVG re-renderable and the recording recoverable with
+    /// `extract`, but means the SVG carries everything that was captured)
+    #[arg(long, help_heading = "Output & themes")]
+    pub no_embed_source: bool,
+
     /// Reference system fonts instead of embedding a subsetted font
     #[arg(long, help_heading = "Layout & fonts")]
     pub no_font_embed: bool,
@@ -239,6 +344,40 @@ impl StyleArgs {
         match (self.theme_light.as_deref(), self.theme_dark.as_deref()) {
             (Some(l), Some(d)) => Some((l, d)),
             _ => None,
+        }
+    }
+
+    /// The render request these flags describe (post config merge).
+    /// Values copy over verbatim rather than resolved — margin stays None
+    /// so its shadow-dependent default keeps applying at render time.
+    pub fn to_options(&self, anim: &AnimArgs) -> RenderOptions {
+        RenderOptions {
+            theme: Some(self.theme.clone()),
+            theme_light: self.theme_light.clone(),
+            theme_dark: self.theme_dark.clone(),
+            chrome: Some(self.chrome),
+            no_window: self.no_window,
+            no_background: self.no_background,
+            no_shadow: self.no_shadow,
+            title: self.title.clone(),
+            title_emoji: self.title_emoji.clone(),
+            title_fallback: None,
+            font_size: Some(self.font_size),
+            line_height: Some(self.line_height),
+            padding: Some(self.padding),
+            margin: self.margin,
+            no_font_embed: self.no_font_embed,
+            font_family: self.font_family.clone(),
+            cols: None,
+            rows: None,
+            cursor: Some(anim.cursor),
+            speed: Some(anim.speed),
+            idle_time_limit: anim.idle_time_limit,
+            no_loop: anim.no_loop,
+            from: anim.from,
+            to: anim.to,
+            static_: anim.static_,
+            at: anim.at,
         }
     }
 }
@@ -496,6 +635,105 @@ mod tests {
         let cli = parse(&["terminal-svg", "rec.cast"]);
         assert!(cli.sub.is_none());
         assert_eq!(cli.input.unwrap(), PathBuf::from("rec.cast"));
+    }
+
+    #[test]
+    fn extract_like_filename_is_not_the_subcommand() {
+        let cli = parse(&["terminal-svg", "extract.svg"]);
+        assert!(cli.sub.is_none());
+        assert_eq!(cli.input.unwrap(), PathBuf::from("extract.svg"));
+    }
+
+    #[test]
+    fn extract_subcommand_parses() {
+        let cli = parse(&["terminal-svg", "extract", "demo.svg", "-o", "demo.cast"]);
+        let Some(Sub::Extract(args)) = cli.sub else {
+            panic!("expected extract subcommand");
+        };
+        assert_eq!(args.input, PathBuf::from("demo.svg"));
+        assert_eq!(args.output.unwrap(), PathBuf::from("demo.cast"));
+    }
+
+    #[test]
+    fn no_embed_source_flag_parses() {
+        assert!(
+            parse(&["terminal-svg", "--no-embed-source"])
+                .style
+                .no_embed_source
+        );
+        assert!(!parse(&["terminal-svg"]).style.no_embed_source);
+    }
+
+    #[test]
+    fn edit_subcommand_parses() {
+        let cli = parse(&[
+            "terminal-svg",
+            "edit",
+            "demo.cast",
+            "--redact",
+            r"ghp_\w+",
+            "--cut",
+            "12.5-20",
+            "--max-pause",
+            "1.5",
+            "-o",
+            "clean.cast",
+        ]);
+        let Some(Sub::Edit(args)) = cli.sub else {
+            panic!("expected edit subcommand");
+        };
+        assert_eq!(args.input, PathBuf::from("demo.cast"));
+        assert_eq!(args.output, "clean.cast");
+        assert_eq!(args.redact, vec![r"ghp_\w+"]);
+        assert_eq!(args.cut, vec![(12.5, 20.0)]);
+        assert_eq!(args.max_pause, Some(1.5));
+
+        // Malformed ranges are rejected at parse time.
+        assert!(
+            Cli::try_parse_from([
+                "terminal-svg",
+                "edit",
+                "a.cast",
+                "--cut",
+                "20-12",
+                "-o",
+                "b"
+            ])
+            .is_err()
+        );
+        assert!(
+            Cli::try_parse_from(["terminal-svg", "edit", "a.cast", "--cut", "oops", "-o", "b"])
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn editor_subcommand_parses() {
+        let cli = parse(&[
+            "terminal-svg",
+            "editor",
+            "demo.cast",
+            "--port",
+            "7391",
+            "--no-open",
+            "-t",
+            "nord",
+        ]);
+        let Some(Sub::Editor(args)) = cli.sub else {
+            panic!("expected editor subcommand");
+        };
+        assert_eq!(args.input.unwrap(), PathBuf::from("demo.cast"));
+        assert_eq!(args.port, 7391);
+        assert!(args.no_open);
+        assert_eq!(args.style.theme, "nord");
+
+        // Bare launch works; the page's drop zone takes it from there.
+        let cli = parse(&["terminal-svg", "editor"]);
+        let Some(Sub::Editor(args)) = cli.sub else {
+            panic!("expected editor subcommand");
+        };
+        assert!(args.input.is_none());
+        assert_eq!(args.port, 0);
     }
 
     #[test]

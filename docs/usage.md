@@ -7,7 +7,7 @@ terminal-svg rec [OPTIONS] [-- <COMMAND>...]
 
 ## Input modes
 
-terminal-svg takes terminal output from one of four places and always
+terminal-svg takes terminal output from one of five places and always
 produces an SVG:
 
 **Run a command in a PTY.** Everything after `--` is spawned under a real
@@ -48,6 +48,15 @@ terminal-svg demo.cast -o demo.svg
 asciinema 3 recordings embed the terminal's colours; render with them via
 `-t auto` (see [themes.md](themes.md)).
 
+**Re-render a terminal-svg SVG.** Every SVG this tool writes carries its
+own source (see [round-tripping](#round-tripping-the-svg-is-its-own-source)),
+so the SVG itself is an input — flags you pass override the options it was
+rendered with, everything else stays put:
+
+```sh
+terminal-svg demo.svg -t nord --speed 2 -o demo-nord.svg
+```
+
 Output height always follows content (scrollback included), not the
 terminal size — `-r` sets the PTY size programs see, not the image height.
 
@@ -86,6 +95,81 @@ frames are deduplicated, and repeated rows are shared across frames via
 `--no-loop` plays once and freezes. The result is pure SVG/CSS — it animates
 anywhere an `<img>` tag renders, GitHub READMEs included, no JavaScript.
 
+## Round-tripping: the SVG is its own source
+
+Rendered SVGs embed the original input — the `.cast` file byte-for-byte,
+or the captured ANSI stream — plus the effective render options, deflate-
+compressed inside a `<metadata>` block that renderers ignore. Two things
+fall out of that:
+
+```sh
+# The SVG re-renders directly (see input modes above)
+terminal-svg demo.svg -t github-dark -o dark.svg
+
+# ...and the recording is recoverable, byte-exact
+terminal-svg extract demo.svg -o demo.cast     # or to stdout without -o
+```
+
+Merged option precedence when re-rendering: command-line flags, then the
+SVG's embedded options, then your config file, then built-in defaults.
+
+Mind the two caveats:
+
+- **The SVG contains the full capture** — everything programs wrote,
+  which for `rec` sessions includes everything that echoed. Redact first
+  (`terminal-svg edit --redact`), or disable embedding with
+  `--no-embed-source` (flag or config key). Embedding typically adds a
+  few percent to the file.
+- **SVG optimizers strip `<metadata>`.** An SVG that went through svgo or
+  similar loses its source; `extract` says so explicitly.
+
+## Cleaning up recordings: `terminal-svg edit`
+
+`edit` rewrites a `.cast` without re-recording. The output stays a
+standard asciicast in the input's version (v2 → v2, v3 → v3, embedded v3
+theme included); editing in place is refused so a bad pattern can't
+destroy the original.
+
+```sh
+terminal-svg edit demo.cast \
+  --redact 'ghp_[A-Za-z0-9]+' \     # mask matches with '*' (repeatable)
+  --cut 12.5-20 \                   # remove 12.5s–20s, close the gap (repeatable)
+  --max-pause 1.5 \                 # clamp pauses, baked into the file
+  -o clean.cast                     # required; '-' writes to stdout
+```
+
+- `--redact` matches across event boundaries in both the output stream
+  and the keystroke (input) stream, so a token split over several events
+  — or typed character-by-character — is still caught. Masking is
+  per-character, so layout and timing don't shift. Limitation: a secret
+  interleaved with cursor-movement escape sequences can evade a regex;
+  check the result before publishing.
+- `--cut` ranges refer to the original timeline; multiple ranges are
+  applied from the latest backwards so they don't interact.
+- `--max-pause` is `--idle-time-limit` made permanent: the gaps are
+  clamped in the file, and the header's own `idle_time_limit` is cleared
+  so the cap isn't applied twice.
+
+## The visual editor: `terminal-svg editor`
+
+`editor` serves a live-preview UI for every render option and opens your
+browser:
+
+```sh
+terminal-svg editor demo.cast            # tweak a recording visually
+terminal-svg editor shot.ansi            # or an ANSI dump
+terminal-svg editor demo.svg             # or re-edit any terminal-svg SVG
+terminal-svg editor --port 7391 --no-open
+```
+
+The page is served by the binary itself on `127.0.0.1` (a random free
+port unless `--port` says otherwise), and every preview is rendered by
+the same pipeline the CLI uses — what you see is exactly what you get.
+Drop a `.cast`, ANSI dump, or terminal-svg SVG onto the page to switch
+files; **Download** saves through the browser and **Save** writes to the
+`-o` path. Style and animation flags (`-t`, `--speed`, …) seed the
+controls; a config file applies as usual. `ctrl-c` stops the server.
+
 ## Options
 
 ### Output and themes
@@ -96,6 +180,7 @@ anywhere an `<img>` tag renders, GitHub READMEs included, no JavaScript.
 | `-t, --theme <THEME>` | `dracula` | built-in name, path to a `.toml`, or `auto` for the palette embedded in an asciicast v3 — see [themes.md](themes.md) |
 | `--theme-light <THEME>` | | with `--theme-dark`: emit both palettes in one SVG, switched by the viewer's `prefers-color-scheme`; works for static and animated output |
 | `--theme-dark <THEME>` | | the dark half of the pair |
+| `--no-embed-source` | | don't embed the source recording in the SVG (disables [round-tripping](#round-tripping-the-svg-is-its-own-source)) |
 | `--list-themes` | | print built-in theme names and exit |
 
 ### Window
@@ -170,6 +255,7 @@ padding = 12.0
 # speed = 1.5
 # idle-time-limit = 3.0
 # no-shadow = true
+# no-embed-source = true
 ```
 
 Unknown keys are an error (typos fail loudly rather than silently doing

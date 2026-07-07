@@ -98,10 +98,14 @@ pub enum EventData {
     Output(String),
     /// "r" — terminal resized ("COLSxROWS" payload).
     Resize { cols: usize, rows: usize },
+    /// Any other code ("i" input, "m" markers, "x" exit, future codes):
+    /// nothing renderable, but kept so `edit` and `write` are lossless.
+    Other { code: String, data: String },
 }
 
-/// Read a .cast file. Event codes other than "o" and "r" ("i" input, "m"
-/// markers, future codes) are skipped — they carry nothing renderable.
+/// Read a .cast file. Every event is kept — renderers ignore the
+/// non-renderable codes ("i", "m", "x", …), but they survive an
+/// edit/write round trip.
 pub fn read(path: &Path) -> Result<(Header, Vec<Event>)> {
     let file = File::open(path).with_context(|| format!("failed to open {}", path.display()))?;
     parse(BufReader::new(file)).with_context(|| format!("failed to parse {}", path.display()))
@@ -135,8 +139,6 @@ pub fn parse(reader: impl BufRead) -> Result<(Header, Vec<Event>)> {
         }
         let (time, code, data): (f64, String, String) =
             serde_json::from_str(trimmed).context("malformed event line")?;
-        // The clock advances before the code filter: a skipped "m"/"x"
-        // event still carries an interval.
         let time = if relative {
             clock += time.max(0.0);
             clock
@@ -152,7 +154,7 @@ pub fn parse(reader: impl BufRead) -> Result<(Header, Vec<Event>)> {
                     .with_context(|| format!("malformed resize payload {data:?}"))?;
                 EventData::Resize { cols, rows }
             }
-            _ => continue,
+            _ => EventData::Other { code, data },
         };
         events.push(Event { time, data });
     }
@@ -285,6 +287,94 @@ impl<W: Write> CastWriter<W> {
     }
 }
 
+/// Write a parsed cast back out, preserving its version: v2 events keep
+/// absolute times, v3 events convert back to intervals (and the header
+/// carries the embedded theme again). v3 comment lines are not retained —
+/// `parse` drops them.
+pub fn write(mut out: impl Write, header: &Header, events: &[Event]) -> Result<()> {
+    match header.version {
+        3 => write_v3_header(&mut out, header)?,
+        _ => {
+            serde_json::to_writer(&mut out, header)?;
+            out.write_all(b"\n")?;
+        }
+    }
+
+    let relative = header.version == 3;
+    let mut clock = 0.0_f64;
+    for event in events {
+        let time = if relative {
+            let interval = (event.time - clock).max(0.0);
+            clock = event.time;
+            interval
+        } else {
+            event.time
+        };
+        let (code, data) = match &event.data {
+            EventData::Output(data) => ("o", data.clone()),
+            EventData::Resize { cols, rows } => ("r", format!("{cols}x{rows}")),
+            EventData::Other { code, data } => (code.as_str(), data.clone()),
+        };
+        writeln!(
+            out,
+            "[{time:.6}, {}, {}]",
+            serde_json::to_string(code)?,
+            serde_json::to_string(&data)?
+        )?;
+    }
+    Ok(())
+}
+
+fn write_v3_header(out: &mut impl Write, header: &Header) -> Result<()> {
+    #[derive(Serialize)]
+    struct V3ThemeOut {
+        fg: String,
+        bg: String,
+        palette: String,
+    }
+    #[derive(Serialize)]
+    struct V3TermOut {
+        cols: usize,
+        rows: usize,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        theme: Option<V3ThemeOut>,
+    }
+    #[derive(Serialize)]
+    struct V3HeaderOut<'a> {
+        version: u8,
+        term: V3TermOut,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        timestamp: Option<u64>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<&'a String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        env: Option<&'a BTreeMap<String, String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        idle_time_limit: Option<f64>,
+    }
+
+    let theme = header.theme.as_ref().map(|t| V3ThemeOut {
+        fg: t.fg.hex(),
+        bg: t.bg.hex(),
+        palette: t.palette.iter().map(Rgb::hex).collect::<Vec<_>>().join(":"),
+    });
+    let h = V3HeaderOut {
+        version: 3,
+        term: V3TermOut {
+            cols: header.width,
+            rows: header.height,
+            theme,
+        },
+        timestamp: header.timestamp,
+        title: header.title.as_ref(),
+        env: header.env.as_ref(),
+        idle_time_limit: header.idle_time_limit,
+    };
+    serde_json::to_writer(&mut *out, &h)?;
+    out.write_all(b"\n")?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -312,12 +402,26 @@ mod tests {
         assert_eq!(header.version, 2);
         assert_eq!((header.width, header.height), (80, 24));
         assert_eq!(header.title.as_deref(), Some("demo"));
-        // "i" and "m" events are skipped
-        assert_eq!(events.len(), 3);
+        // "i" and "m" events are kept (renderers ignore them).
+        assert_eq!(events.len(), 5);
         assert_eq!(events[0].data, EventData::Output("hello ".into()));
-        assert_eq!(events[1].time, 1.0);
         assert_eq!(
-            events[2].data,
+            events[1].data,
+            EventData::Other {
+                code: "i".into(),
+                data: "typed".into()
+            }
+        );
+        assert_eq!(events[2].time, 1.0);
+        assert_eq!(
+            events[3].data,
+            EventData::Other {
+                code: "m".into(),
+                data: "marker".into()
+            }
+        );
+        assert_eq!(
+            events[4].data,
             EventData::Resize {
                 cols: 100,
                 rows: 30
@@ -351,19 +455,36 @@ mod tests {
         assert_eq!(header.version, 3);
         assert_eq!((header.width, header.height), (80, 24));
         assert_eq!(header.title.as_deref(), Some("demo"));
-        // "i"/"m"/"x" are skipped, but their intervals still advance the
+        // Every event is kept with its interval folded into the absolute
         // clock; comment lines are ignored.
-        assert_eq!(events.len(), 3);
+        assert_eq!(events.len(), 6);
         assert_eq!(events[0].time, 0.1);
         assert_eq!(events[0].data, EventData::Output("hello ".into()));
-        assert_eq!(events[1].time, 1.0);
-        assert_eq!(events[1].data, EventData::Output("world\r\n".into()));
-        assert_eq!(events[2].time, 2.0);
+        assert_eq!(events[1].time, 0.5);
         assert_eq!(
-            events[2].data,
+            events[1].data,
+            EventData::Other {
+                code: "i".into(),
+                data: "typed".into()
+            }
+        );
+        assert_eq!(events[2].time, 1.0);
+        assert_eq!(events[2].data, EventData::Output("world\r\n".into()));
+        assert_eq!(events[3].time, 1.5);
+        assert_eq!(events[4].time, 2.0);
+        assert_eq!(
+            events[4].data,
             EventData::Resize {
                 cols: 100,
                 rows: 30
+            }
+        );
+        assert_eq!(events[5].time, 2.5);
+        assert_eq!(
+            events[5].data,
+            EventData::Other {
+                code: "x".into(),
+                data: "0".into()
             }
         );
     }
@@ -388,6 +509,43 @@ mod tests {
         );
         let bad = r##"{"version": 3, "term": {"cols": 1, "rows": 1, "theme": {"fg": "#fff", "bg": "#000", "palette": "#000:#111"}}}"##;
         assert!(parse_header(bad).is_err());
+    }
+
+    #[test]
+    fn write_round_trips_v2_and_v3() {
+        for sample in [sample(), sample_v3()] {
+            let (header, events) = parse(sample.as_bytes()).unwrap();
+            let mut buf = Vec::new();
+            write(&mut buf, &header, &events).unwrap();
+            let (header2, events2) = parse(&buf[..]).unwrap();
+
+            assert_eq!(header2.version, header.version);
+            assert_eq!(
+                (header2.width, header2.height),
+                (header.width, header.height)
+            );
+            assert_eq!(header2.title, header.title);
+            assert_eq!(events2.len(), events.len());
+            for (a, b) in events.iter().zip(&events2) {
+                assert!(
+                    (a.time - b.time).abs() < 1e-6,
+                    "time drift: {} vs {}",
+                    a.time,
+                    b.time
+                );
+                assert_eq!(a.data, b.data);
+            }
+        }
+
+        // The v3 header keeps its embedded theme through a rewrite.
+        let (header, events) = parse(sample_v3().as_bytes()).unwrap();
+        let mut buf = Vec::new();
+        write(&mut buf, &header, &events).unwrap();
+        let (header2, _) = parse(&buf[..]).unwrap();
+        let (t, t2) = (header.theme.unwrap(), header2.theme.unwrap());
+        assert_eq!(t2.fg, t.fg);
+        assert_eq!(t2.bg, t.bg);
+        assert_eq!(t2.palette, t.palette);
     }
 
     #[test]

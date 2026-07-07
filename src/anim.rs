@@ -53,6 +53,15 @@ pub fn build_frames(header: &Header, events: &[Event], opts: &AnimOptions) -> An
     let from = opts.from.unwrap_or(0.0).max(0.0);
     let to = opts.to.unwrap_or(f64::INFINITY);
 
+    // Non-renderable events ("i" input, "m" markers, …) drop out before
+    // the delta walk: idle capping applies to the gaps between *rendered*
+    // events, exactly as if the others were never recorded.
+    let events: Vec<&Event> = events
+        .iter()
+        .filter(|e| !matches!(e.data, EventData::Other { .. }))
+        .collect();
+    let events = &events[..];
+
     // Trim window on the raw timeline: events before `from` seed the
     // screen silently, events after `to` are cut.
     let events = &events[..events.partition_point(|e| e.time <= to)];
@@ -73,6 +82,7 @@ pub fn build_frames(header: &Header, events: &[Event], opts: &AnimOptions) -> An
         match &event.data {
             EventData::Output(data) => vt.feed(data),
             EventData::Resize { cols, rows } => vt.resize(*cols, *rows),
+            EventData::Other { .. } => {} // filtered out above
         }
     }
     let events = &events[seed..];
@@ -124,6 +134,7 @@ pub fn build_frames(header: &Header, events: &[Event], opts: &AnimOptions) -> An
         match &event.data {
             EventData::Output(data) => vt.feed(data),
             EventData::Resize { cols, rows } => vt.resize(*cols, *rows),
+            EventData::Other { .. } => {} // filtered out above
         }
         pending_since.get_or_insert(time);
         playback = time;

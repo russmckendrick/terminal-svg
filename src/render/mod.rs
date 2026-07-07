@@ -31,7 +31,17 @@ pub(crate) fn palette_class(color: crate::term::screen::PenColor) -> Option<Stri
 }
 
 /// Cursor shape in animated output.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, clap::ValueEnum, serde::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    clap::ValueEnum,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum CursorStyle {
     #[default]

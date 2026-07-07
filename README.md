@@ -76,6 +76,60 @@ terminal-svg demo.cast -t github-dark -o demo-dark.svg
 terminal-svg demo.cast --speed 2 --no-loop -o demo-fast.svg
 ```
 
+## The SVG is its own source
+
+Every SVG carries its recording (compressed, in a `<metadata>` block
+browsers ignore) plus the options it was rendered with. Lose the `.cast`
+and nothing is lost — the SVG re-renders and the recording extracts,
+byte-for-byte:
+
+```sh
+# Re-render an existing SVG with different options; flags you pass win,
+# everything else stays as the original render had it
+terminal-svg demo.svg -t nord --speed 2 -o demo-nord.svg
+
+# Recover the recording (or the captured ANSI bytes, for screenshots)
+terminal-svg extract demo.svg -o demo.cast
+```
+
+The embedded source means the SVG contains everything that was captured —
+including anything a program echoed. `--no-embed-source` (flag or config
+key) turns it off, and `terminal-svg edit` scrubs a recording first. Note
+that SVG optimizers (svgo and friends) strip `<metadata>`, which forfeits
+the round trip.
+
+## Cleaning up a recording
+
+`terminal-svg edit` fixes a take without re-recording it — the output
+stays a standard asciicast (v2 in, v2 out; v3 in, v3 out):
+
+```sh
+# Mask a leaked token (matched even when split across events, in both
+# the output and keystroke streams), drop a fumble, tame the pauses
+terminal-svg edit demo.cast \
+  --redact 'ghp_[A-Za-z0-9]+' \
+  --cut 12.5-20 \
+  --max-pause 1.5 \
+  -o clean.cast
+```
+
+Matches are masked with `*` per character so layout and timing are
+untouched. (A secret interleaved with cursor-movement escapes can still
+evade a regex — eyeball the result.)
+
+## The visual editor
+
+`terminal-svg editor` opens a recording — or any terminal-svg SVG — in
+your browser with a live preview of every render option: themes, chrome,
+layout, timing, trims. It's the same renderer serving on 127.0.0.1, so
+the preview is exactly what `Save` writes.
+
+```sh
+terminal-svg editor demo.cast          # opens the browser
+terminal-svg editor demo.svg -o v2.svg # re-edit a shipped SVG
+terminal-svg editor --port 7391 --no-open
+```
+
 Recordings are standard [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/)
 files — `asciinema play demo.cast` works, and existing asciinema recordings
 (v2 or v3, so anything asciinema 3 records) render with plain
@@ -109,6 +163,7 @@ the [CLI reference](docs/usage.md).
 | `--no-background` | | transparent: no window body, chrome, or shadow |
 | `--no-shadow` | | |
 | `--no-font-embed` | | reference system fonts instead |
+| `--no-embed-source` | | don't embed the recording in the SVG (see above) |
 | `--timeout <secs>` | | kill the PTY command after N seconds |
 | `--list-themes` | | |
 

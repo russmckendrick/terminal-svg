@@ -1,9 +1,10 @@
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use clap::{CommandFactory, FromArgMatches};
 
-use terminal_svg::cli::{AnimArgs, Cli, StyleArgs, Sub};
-use terminal_svg::term::screen::Screen;
-use terminal_svg::{anim, capture, cast, config, font, render, term, theme};
+use terminal_svg::cli::{Cli, Sub};
+use terminal_svg::embed::{EmbeddedSource, SourceKind};
+use terminal_svg::pipeline::{SourceInput, render_svg};
+use terminal_svg::{capture, cast, config, embed, theme};
 
 fn main() -> Result<()> {
     let matches = Cli::command().get_matches();
@@ -26,8 +27,13 @@ fn main() -> Result<()> {
     let file_config = config::load(cli.config.as_deref())?;
     config::apply(&mut cli, &matches, &file_config)?;
 
-    if let Some(Sub::Rec(rec)) = &cli.sub {
-        return run_rec(rec);
+    if let Some(sub) = cli.sub.take() {
+        return match sub {
+            Sub::Rec(rec) => run_rec(&rec),
+            Sub::Extract(args) => run_extract(&args),
+            Sub::Edit(args) => run_edit(&args),
+            Sub::Editor(mut args) => run_editor(&mut args, &matches),
+        };
     }
 
     if cli.list_themes {
@@ -37,9 +43,34 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // A terminal-svg SVG is its own source: recover the embedded
+    // recording and re-render it, letting flags override the options it
+    // was rendered with.
+    if let Some(path) = cli
+        .input
+        .clone()
+        .filter(|p| embed::looks_like_terminal_svg(p))
+    {
+        let svg_text = std::fs::read_to_string(&path)?;
+        let source = embed::extract(&svg_text)?
+            .with_context(|| format!("{} has no embedded terminal-svg source", path.display()))?;
+        config::apply_embedded(&mut cli, &matches, &source.options)?;
+        return match source.kind {
+            SourceKind::Cast => {
+                let (header, events) = cast::parse(&source.data[..])?;
+                render_cast_input(&cli, header, events, source.data)
+            }
+            SourceKind::Ansi => {
+                let title_fallback = source.options.title_fallback.clone();
+                render_ansi_input(&cli, source.data, title_fallback)
+            }
+        };
+    }
+
     if let Some(path) = cli.input.as_deref().filter(|p| cast::looks_like_cast(p)) {
-        let (header, events) = cast::read(path)?;
-        return render_cast(header, &events, &cli.style, &cli.anim);
+        let bytes = std::fs::read(path)?;
+        let (header, events) = cast::parse(&bytes[..])?;
+        return render_cast_input(&cli, header, events, bytes);
     }
 
     let source = if !cli.command.is_empty() {
@@ -50,32 +81,45 @@ fn main() -> Result<()> {
         capture::Source::Stdin
     };
     let captured = capture::capture(source, cli.cols as u16, cli.rows as u16, cli.timeout)?;
-
-    // Title precedence: --title, then a title the program set via OSC 0/2,
-    // then the captured command string.
-    let title = resolve_title(
-        &cli.style,
-        [
-            best_osc_title(&String::from_utf8_lossy(&captured.bytes)),
-            captured.title.clone(),
-        ],
-    );
-    render_static_bytes(&captured.bytes, cli.cols, cli.rows, title, &cli.style, None)
+    render_ansi_input(&cli, captured.bytes, captured.title)
 }
 
-/// Load a theme by name or path; the reserved name "auto" resolves to the
-/// palette embedded in the recording (asciicast v3 `term.theme`).
-fn load_theme(name: &str, cast_theme: Option<&cast::CastTheme>) -> Result<theme::Theme> {
-    if name == "auto" {
-        let Some(t) = cast_theme else {
-            bail!(
-                "--theme auto needs an asciicast recording with an embedded theme \
-                 (asciinema 3 records one; older casts and other inputs carry none)"
-            );
-        };
-        return theme::Theme::from_palette("auto", t.fg, t.bg, &t.palette);
-    }
-    theme::builtin::load(name)
+/// Render a parsed cast and write the SVG, embedding the cast file bytes.
+fn render_cast_input(
+    cli: &Cli,
+    header: cast::Header,
+    events: Vec<cast::Event>,
+    cast_bytes: Vec<u8>,
+) -> Result<()> {
+    let opts = cli.style.to_options(&cli.anim);
+    let svg = render_svg(
+        &SourceInput::Cast {
+            header: &header,
+            events: &events,
+        },
+        &opts,
+    )?;
+    let source = EmbeddedSource {
+        kind: SourceKind::Cast,
+        data: cast_bytes,
+        options: opts,
+    };
+    write_output(&cli.style, &svg, Some(&source))
+}
+
+/// Render captured/recovered ANSI bytes and write the SVG, embedding them.
+fn render_ansi_input(cli: &Cli, bytes: Vec<u8>, title_fallback: Option<String>) -> Result<()> {
+    let mut opts = cli.style.to_options(&cli.anim);
+    opts.cols = Some(cli.cols);
+    opts.rows = Some(cli.rows);
+    opts.title_fallback = title_fallback;
+    let svg = render_svg(&SourceInput::Ansi { bytes: &bytes }, &opts)?;
+    let source = EmbeddedSource {
+        kind: SourceKind::Ansi,
+        data: bytes,
+        options: opts,
+    };
+    write_output(&cli.style, &svg, Some(&source))
 }
 
 /// `terminal-svg rec`: record an interactive session to a .cast, then
@@ -94,356 +138,179 @@ fn run_rec(rec: &terminal_svg::cli::RecArgs) -> Result<()> {
 
     // Re-read the cast rather than trusting in-memory state: the file is
     // the recording of record, and this proves it round-trips.
-    let (header, events) = cast::read(&cast_path)?;
-    render_cast(header, &events, &rec.style, &rec.anim)
-}
-
-/// Resolve the window title: --title wins untouched (bar an explicit
-/// --title-emoji); otherwise the first available fallback, decorated
-/// Ghostty-style with a folder emoji when it looks like a path. The folder
-/// treatment only fits the macOS chrome — Windows and Ubuntu bars show the
-/// title as-is, like the real terminals do.
-fn resolve_title(
-    style: &StyleArgs,
-    fallbacks: impl IntoIterator<Item = Option<String>>,
-) -> Option<String> {
-    let (title, from_user) = match &style.title {
-        Some(t) => (Some(t.clone()), true),
-        None => (fallbacks.into_iter().flatten().next(), false),
+    let cast_bytes = std::fs::read(&cast_path)?;
+    let (header, events) = cast::parse(&cast_bytes[..])?;
+    let opts = rec.style.to_options(&rec.anim);
+    let svg = render_svg(
+        &SourceInput::Cast {
+            header: &header,
+            events: &events,
+        },
+        &opts,
+    )?;
+    let source = EmbeddedSource {
+        kind: SourceKind::Cast,
+        data: cast_bytes,
+        options: opts,
     };
-    let auto_folder = !from_user && style.chrome() == render::ChromeStyle::Macos;
-    decorate_title(title, style.title_emoji.as_deref(), auto_folder)
+    write_output(&rec.style, &svg, Some(&source))
 }
 
-fn decorate_title(title: Option<String>, emoji: Option<&str>, auto_folder: bool) -> Option<String> {
-    match emoji {
-        // Explicitly disabled.
-        Some("") => title,
-        // Explicit emoji applies to any title, even a bare one.
-        Some(e) => Some(match title {
-            Some(t) => format!("{e} {t}"),
-            None => e.to_string(),
-        }),
-        None => {
-            let t = title?;
-            if !auto_folder {
-                return Some(t);
-            }
-            // Auto-detected titles that name a directory render like
-            // Ghostty: "📁 ~/Code/blog", stripping any user@host: prefix.
-            if let Some(p) = path_component(&t) {
-                let decorated = format!("📁 {p}");
-                return Some(decorated);
-            }
-            Some(t)
+/// `terminal-svg editor`: serve the visual editor on localhost and open
+/// the browser. Runs until interrupted.
+fn run_editor(args: &mut terminal_svg::cli::EditorArgs, matches: &clap::ArgMatches) -> Result<()> {
+    use terminal_svg::editor;
+
+    let (source, name) = match &args.input {
+        Some(path) => {
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| path.display().to_string());
+            let data = std::fs::read(path)
+                .with_context(|| format!("failed to read {}", path.display()))?;
+            let text = String::from_utf8_lossy(&data);
+            let head = text.trim_start();
+
+            let source = if head.starts_with("<?xml") || head.starts_with("<svg") {
+                // A terminal-svg SVG seeds the controls with the options
+                // it carries; flags on the editor invocation still win.
+                let embedded = embed::extract(&text)?.with_context(|| {
+                    format!("{} has no embedded terminal-svg source", path.display())
+                })?;
+                let m = matches
+                    .subcommand_matches("editor")
+                    .expect("editor subcommand parsed");
+                config::apply_embedded_style(
+                    &mut args.style,
+                    &mut args.anim,
+                    m,
+                    &embedded.options,
+                )?;
+                let mut opts = args.style.to_options(&args.anim);
+                // The editor has no --cols/--rows; capture context carries over.
+                opts.cols = embedded.options.cols;
+                opts.rows = embedded.options.rows;
+                opts.title_fallback = embedded.options.title_fallback.clone();
+                EmbeddedSource {
+                    kind: embedded.kind,
+                    data: embedded.data,
+                    options: opts,
+                }
+            } else {
+                editor::sniff_source(&name, data, args.style.to_options(&args.anim))?
+            };
+            (Some(source), Some(name))
         }
+        None => (None, None),
+    };
+
+    let editor = editor::Editor::new(
+        source,
+        name,
+        args.style.output.clone(),
+        args.style.to_options(&args.anim),
+    );
+    editor::serve(&editor, args.port, |url| {
+        eprintln!("terminal-svg editor listening on {url} (ctrl-c to stop)");
+        if !args.no_open {
+            open_browser(url);
+        }
+    })
+}
+
+fn open_browser(url: &str) {
+    #[cfg(target_os = "macos")]
+    let launcher = "open";
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let launcher = "xdg-open";
+    #[cfg(windows)]
+    let launcher = "explorer";
+    if let Err(e) = std::process::Command::new(launcher).arg(url).spawn() {
+        eprintln!("could not open the browser ({e}); visit {url}");
     }
 }
 
-/// The directory a title points at, when it looks like one: "~/x", "/x",
-/// or the path in "user@host:~/x".
-fn path_component(title: &str) -> Option<&str> {
-    if title.starts_with('~') || title.starts_with('/') {
-        return Some(title);
+/// `terminal-svg edit`: clean up a recording and write it back out in
+/// the same asciicast version.
+fn run_edit(args: &terminal_svg::cli::EditArgs) -> Result<()> {
+    use terminal_svg::edit;
+
+    if args.redact.is_empty() && args.cut.is_empty() && args.max_pause.is_none() {
+        bail!("nothing to do: pass --redact, --cut, and/or --max-pause");
     }
-    title
-        .rsplit_once(':')
-        .map(|(_, p)| p.trim())
-        .filter(|p| p.starts_with('~') || p.starts_with('/'))
-}
-
-/// The best OSC 0/2 title in a stream. Shells flip the title between the
-/// running command and a "user@host:pwd" prompt title, so the most recent
-/// path-style title wins — a recording that ends with `exit` shouldn't be
-/// titled "exit".
-fn best_osc_title(data: &str) -> Option<String> {
-    let titles = term::osc_titles(data);
-    titles
-        .iter()
-        .rev()
-        .find(|t| path_component(t).is_some())
-        .or(titles.last())
-        .cloned()
-}
-
-/// Interpret raw ANSI bytes and render a static SVG — one theme, or a
-/// dual light/dark document when --theme-light/--theme-dark are set.
-fn render_static_bytes(
-    bytes: &[u8],
-    cols: usize,
-    rows: usize,
-    title: Option<String>,
-    style: &StyleArgs,
-    cast_theme: Option<&cast::CastTheme>,
-) -> Result<()> {
-    if let Some((light_name, dark_name)) = style.dual_themes() {
-        let light = load_theme(light_name, cast_theme)?;
-        let dark = load_theme(dark_name, cast_theme)?;
-        // Screens are theme-free, so both variants share one.
-        let mut screen = term::interpret(bytes, cols, rows);
-
-        let (font_family, font_faces) = if style.no_font_embed {
-            (referenced_family(style), None)
-        } else {
-            let covered = font::subset::coverage(font::assets::regular())?;
-            screen.split_uncovered(&covered);
-            let faces = embedded_faces(std::iter::once(&screen))?;
-            (font::EMBEDDED_FONT_STACK.to_string(), faces)
-        };
-
-        let config = render_config(style, title, font_family, font_faces);
-        let svg = render::render_dual((&screen, &light), (&screen, &dark), &config)?;
-        return write_output(&style.output, &svg);
+    if args.output != "-" && std::path::Path::new(&args.output) == args.input {
+        bail!("refusing to edit in place; write to a new file (or - for stdout)");
     }
 
-    let theme = load_theme(&style.theme, cast_theme)?;
-    let screen = term::interpret(bytes, cols, rows);
-    render_static(screen, title, &theme, style)
-}
+    let (mut header, mut events) = cast::read(&args.input)?;
+    let stats = edit::apply(
+        &mut header,
+        &mut events,
+        &edit::EditOps {
+            redact: args.redact.clone(),
+            cuts: args.cut.clone(),
+            max_pause: args.max_pause,
+        },
+    )?;
 
-/// The v1 path: render one screen to a static SVG and write it out.
-fn render_static(
-    mut screen: Screen,
-    title: Option<String>,
-    theme: &theme::Theme,
-    style: &StyleArgs,
-) -> Result<()> {
-    let (font_family, font_faces) = if style.no_font_embed {
-        (referenced_family(style), None)
+    if args.output == "-" {
+        let stdout = std::io::stdout();
+        cast::write(stdout.lock(), &header, &events)?;
     } else {
-        let covered = font::subset::coverage(font::assets::regular())?;
-        screen.split_uncovered(&covered);
-        let faces = embedded_faces(std::iter::once(&screen))?;
-        (font::EMBEDDED_FONT_STACK.to_string(), faces)
-    };
-
-    let config = render_config(style, title, font_family, font_faces);
-    let svg = render::render(&screen, theme, &config)?;
-    write_output(&style.output, &svg)
-}
-
-/// Render an asciicast to an animated SVG (or a static screen with
-/// --static / --at).
-fn render_cast(
-    header: cast::Header,
-    events: &[cast::Event],
-    style: &StyleArgs,
-    anim_args: &AnimArgs,
-) -> Result<()> {
-    if let Some(from) = anim_args.from
-        && from < 0.0
-    {
-        bail!("--from must be non-negative");
-    }
-    if let (Some(from), Some(to)) = (anim_args.from, anim_args.to)
-        && to <= from
-    {
-        bail!("--to must be greater than --from");
-    }
-
-    if anim_args.is_static() {
-        // A single point in time (--at, or the end): concatenate the
-        // output and reuse the v1 path (scrollback included, trailing
-        // blank rows trimmed).
-        let mut bytes = Vec::new();
-        for event in events {
-            if anim_args.at.is_some_and(|at| event.time > at) {
-                break;
-            }
-            if let cast::EventData::Output(data) = &event.data {
-                bytes.extend_from_slice(data.as_bytes());
-            }
-        }
-        let title = resolve_title(
-            style,
-            [
-                header.title.clone(),
-                best_osc_title(&String::from_utf8_lossy(&bytes)),
-            ],
+        let file = std::fs::File::create(&args.output)
+            .with_context(|| format!("failed to create {}", args.output))?;
+        cast::write(std::io::BufWriter::new(file), &header, &events)?;
+        eprintln!(
+            "wrote {} ({} masked, {} events cut, {:.1}s removed)",
+            args.output, stats.redactions, stats.events_cut, stats.time_removed
         );
-        return render_static_bytes(
-            &bytes,
-            header.width,
-            header.height,
-            title,
-            style,
-            header.theme.as_ref(),
-        );
-    }
-
-    let osc_title = {
-        let mut all = String::new();
-        for event in events {
-            if let cast::EventData::Output(data) = &event.data {
-                all.push_str(data);
-            }
-        }
-        best_osc_title(&all)
-    };
-    let title = resolve_title(style, [header.title.clone(), osc_title]);
-
-    let opts = anim::AnimOptions {
-        idle_time_limit: anim_args.idle_time_limit,
-        speed: anim_args.speed,
-        from: anim_args.from,
-        to: anim_args.to,
-    };
-    let mut animation = anim::build_frames(&header, events, &opts);
-
-    let (font_family, font_faces) = if style.no_font_embed {
-        (referenced_family(style), None)
-    } else {
-        let covered = font::subset::coverage(font::assets::regular())?;
-        for frame in &mut animation.frames {
-            frame.screen.split_uncovered(&covered);
-        }
-        let faces = embedded_faces(animation.frames.iter().map(|f| &f.screen))?;
-        (font::EMBEDDED_FONT_STACK.to_string(), faces)
-    };
-
-    let mut config = render_config(style, title, font_family, font_faces);
-    config.cursor = anim_args.cursor;
-    let svg = if let Some((light_name, dark_name)) = style.dual_themes() {
-        let light = load_theme(light_name, header.theme.as_ref())?;
-        let dark = load_theme(dark_name, header.theme.as_ref())?;
-        render::render_animated_dual(&animation, &light, &dark, &config, !anim_args.no_loop)?
-    } else {
-        let theme = load_theme(&style.theme, header.theme.as_ref())?;
-        render::render_animated(&animation, &theme, &config, !anim_args.no_loop)?
-    };
-    write_output(&style.output, &svg)
-}
-
-fn referenced_family(style: &StyleArgs) -> String {
-    style
-        .font_family
-        .clone()
-        .unwrap_or_else(|| render::DEFAULT_FONT_STACK.to_string())
-}
-
-fn render_config(
-    style: &StyleArgs,
-    title: Option<String>,
-    font_family: String,
-    font_faces: Option<render::FontFaces>,
-) -> render::RenderConfig {
-    render::RenderConfig {
-        font_size: style.font_size,
-        line_height: style.line_height,
-        padding: style.padding,
-        margin: style.margin(),
-        chrome: style.chrome(),
-        background: !style.no_background,
-        shadow: style.shadow(),
-        title,
-        font_family,
-        font_faces,
-        // Only the animated renderers draw a cursor; render_cast
-        // overrides this with --cursor.
-        cursor: render::CursorStyle::default(),
-    }
-}
-
-fn write_output(output: &str, svg: &str) -> Result<()> {
-    if output == "-" {
-        print!("{svg}");
-    } else {
-        std::fs::write(output, svg)?;
-        eprintln!("wrote {output}");
     }
     Ok(())
 }
 
-/// Collect the chars each face must cover across every screen (bold runs
-/// subset into the bold face, everything else into regular) and build the
-/// base64 WOFF2 @font-face payloads. Chrome title text renders in system
-/// sans fonts, so it never needs the embedded mono subset.
-fn embedded_faces<'a>(
-    screens: impl Iterator<Item = &'a Screen>,
-) -> Result<Option<render::FontFaces>> {
-    use std::collections::BTreeSet;
-
-    let mut regular: BTreeSet<char> = BTreeSet::new();
-    let mut bold: BTreeSet<char> = BTreeSet::new();
-    for run in screens.flat_map(|s| s.rows.iter()).flatten() {
-        let set = if run.bold { &mut bold } else { &mut regular };
-        set.extend(run.text.chars());
+/// `terminal-svg extract`: recover the source a terminal-svg SVG carries.
+fn run_extract(args: &terminal_svg::cli::ExtractArgs) -> Result<()> {
+    let svg_text = std::fs::read_to_string(&args.input)
+        .with_context(|| format!("failed to read {}", args.input.display()))?;
+    let source = embed::extract(&svg_text)?.with_context(|| {
+        format!(
+            "{} has no embedded terminal-svg source (rendered with \
+             --no-embed-source, or stripped by an SVG optimizer?)",
+            args.input.display()
+        )
+    })?;
+    match &args.output {
+        Some(path) => {
+            std::fs::write(path, &source.data)?;
+            eprintln!(
+                "wrote {} ({} source)",
+                path.display(),
+                source.kind.extension()
+            );
+        }
+        None => {
+            use std::io::Write;
+            std::io::stdout().write_all(&source.data)?;
+        }
     }
-
-    let mut faces = Vec::new();
-    if let Some(b64) = font::subset::woff2_base64(font::assets::regular(), &regular)? {
-        faces.push((400, b64));
-    }
-    if let Some(b64) = font::subset::woff2_base64(font::assets::bold(), &bold)? {
-        faces.push((700, b64));
-    }
-    if faces.is_empty() {
-        return Ok(None);
-    }
-    Ok(Some(render::FontFaces {
-        family: font::EMBEDDED_FAMILY.to_string(),
-        faces,
-    }))
+    Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{best_osc_title, decorate_title};
-
-    fn auto(title: &str) -> Option<String> {
-        decorate_title(Some(title.into()), None, true)
+fn write_output(
+    style: &terminal_svg::cli::StyleArgs,
+    svg: &str,
+    source: Option<&EmbeddedSource>,
+) -> Result<()> {
+    let document = match source.filter(|_| !style.no_embed_source) {
+        Some(s) => embed::embed(svg, s),
+        None => svg.to_string(),
+    };
+    if style.output == "-" {
+        print!("{document}");
+    } else {
+        std::fs::write(&style.output, document)?;
+        eprintln!("wrote {}", style.output);
     }
-
-    #[test]
-    fn auto_titles_get_folder_emoji_for_paths() {
-        assert_eq!(auto("~/Code/blog").as_deref(), Some("📁 ~/Code/blog"));
-        assert_eq!(auto("/etc").as_deref(), Some("📁 /etc"));
-        // user@host:path strips down to the path.
-        assert_eq!(
-            auto("russ@mbp:~/Code/blog").as_deref(),
-            Some("📁 ~/Code/blog")
-        );
-        // Non-path titles pass through.
-        assert_eq!(auto("vim").as_deref(), Some("vim"));
-        assert_eq!(auto("make: build").as_deref(), Some("make: build"));
-    }
-
-    #[test]
-    fn titles_untouched_without_auto_folder_unless_emoji_given() {
-        // No auto-folder (user title, or windows/ubuntu chrome).
-        assert_eq!(
-            decorate_title(Some("~/Code".into()), None, false).as_deref(),
-            Some("~/Code")
-        );
-        assert_eq!(
-            decorate_title(Some("demo".into()), Some("🚀"), false).as_deref(),
-            Some("🚀 demo")
-        );
-        // An emoji with no title stands alone; empty string disables.
-        assert_eq!(
-            decorate_title(None, Some("🚀"), true).as_deref(),
-            Some("🚀")
-        );
-        assert_eq!(
-            decorate_title(Some("~/x".into()), Some(""), true).as_deref(),
-            Some("~/x")
-        );
-        assert_eq!(decorate_title(None, None, true), None);
-    }
-
-    #[test]
-    fn prompt_path_title_beats_last_command() {
-        // zsh sets the title to each running command; the prompt-style
-        // path title should win over a trailing "exit".
-        let data = "\x1b]2;russ@mbp:~/Code/blog\x07\x1b]2;git pull\x07\x1b]2;exit\x07";
-        assert_eq!(
-            best_osc_title(data).as_deref(),
-            Some("russ@mbp:~/Code/blog")
-        );
-        // With no path-style title, the last one still wins.
-        assert_eq!(
-            best_osc_title("\x1b]2;vim\x07\x1b]2;htop\x07").as_deref(),
-            Some("htop")
-        );
-    }
+    Ok(())
 }
