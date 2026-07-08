@@ -94,6 +94,8 @@ fn respond(editor: &Editor, request: &mut tiny_http::Request) -> (u16, &'static 
     match (request.method().as_str(), request.url()) {
         ("GET", "/") => (200, "text/html; charset=utf-8", PAGE.to_string()),
         ("GET", "/api/state") => json(state_json(editor)),
+        ("GET", "/api/events") => json(handle_events_get(editor)),
+        ("POST", "/api/events") => json(handle_events_replace(editor, &body)),
         ("POST", "/api/render") => json(handle_render(editor, &body)),
         ("POST", "/api/open") => json(handle_open(editor, &body)),
         ("POST", "/api/save") => json(handle_save(editor, &body)),
@@ -109,6 +111,37 @@ struct State {
     options: RenderOptions,
     themes: Vec<&'static str>,
     output: String,
+    /// Recording context for cast sources (None otherwise): the grid the
+    /// UI shows as placeholders, and the counters in the status bar.
+    cast: Option<CastInfo>,
+}
+
+#[derive(Serialize)]
+struct CastInfo {
+    version: u8,
+    cols: usize,
+    rows: usize,
+    title: Option<String>,
+    #[serde(rename = "idle-time-limit")]
+    idle_time_limit: Option<f64>,
+    events: usize,
+    duration: f64,
+}
+
+fn cast_info(source: &EmbeddedSource) -> Option<CastInfo> {
+    if source.kind != SourceKind::Cast {
+        return None;
+    }
+    let (header, events) = cast::parse(&source.data[..]).ok()?;
+    Some(CastInfo {
+        version: header.version,
+        cols: header.width,
+        rows: header.height,
+        title: header.title,
+        idle_time_limit: header.idle_time_limit,
+        events: events.len(),
+        duration: events.last().map_or(0.0, |e| e.time),
+    })
 }
 
 fn state_json(editor: &Editor) -> Result<String> {
@@ -123,8 +156,103 @@ fn state_json(editor: &Editor) -> Result<String> {
             .unwrap_or_else(|| editor.initial.clone()),
         themes: theme::builtin::names().collect(),
         output: editor.output.clone(),
+        cast: source.as_ref().and_then(cast_info),
     };
     Ok(serde_json::to_string(&state)?)
+}
+
+/// An event as the timeline edits it: the flat `(time, code, data)`
+/// triple a .cast line stores, times in absolute seconds.
+#[derive(Serialize, Deserialize)]
+struct WireEvent {
+    time: f64,
+    code: String,
+    data: String,
+}
+
+fn handle_events_get(editor: &Editor) -> Result<String> {
+    let source = editor.source.lock().unwrap();
+    let source = source.as_ref().ok_or_else(|| anyhow!("no source loaded"))?;
+    if source.kind != SourceKind::Cast {
+        bail!("the timeline needs a .cast source");
+    }
+    let (_, events) = cast::parse(&source.data[..])?;
+    let wire: Vec<WireEvent> = events
+        .iter()
+        .map(|e| {
+            let (code, data) = e.data.to_wire();
+            WireEvent {
+                time: e.time,
+                code: code.to_string(),
+                data,
+            }
+        })
+        .collect();
+    Ok(serde_json::json!({ "events": wire }).to_string())
+}
+
+/// The header fields the timeline can change; everything else the header
+/// carries (version, env, timestamp, v3 theme) passes through untouched.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+struct HeaderPatch {
+    cols: usize,
+    rows: usize,
+    title: Option<String>,
+    idle_time_limit: Option<f64>,
+}
+
+#[derive(Deserialize)]
+struct EventsReplaceRequest {
+    header: HeaderPatch,
+    events: Vec<WireEvent>,
+}
+
+/// Replace the loaded cast wholesale: the timeline's one mutation
+/// endpoint. The client only calls this after a real user edit — an
+/// untouched session must keep the original bytes byte-exact, and
+/// `parse` → `write` is not an identity (float formatting, v3 comments).
+fn handle_events_replace(editor: &Editor, body: &str) -> Result<String> {
+    let req: EventsReplaceRequest = serde_json::from_str(body).context("bad events request")?;
+
+    {
+        let mut source = editor.source.lock().unwrap();
+        let source = source.as_mut().ok_or_else(|| anyhow!("no source loaded"))?;
+        if source.kind != SourceKind::Cast {
+            bail!("the timeline needs a .cast source");
+        }
+
+        // Recover the full header from the current bytes so the fields
+        // the client never sees survive, then lay the patch over it.
+        let (mut header, _) = cast::parse(&source.data[..])?;
+        header.width = req.header.cols;
+        header.height = req.header.rows;
+        header.title = req.header.title;
+        header.idle_time_limit = req.header.idle_time_limit;
+
+        // Validate everything before touching the source: a bad request
+        // leaves the recording as it was.
+        let mut events = Vec::with_capacity(req.events.len());
+        for (i, e) in req.events.into_iter().enumerate() {
+            if !e.time.is_finite() || e.time < 0.0 {
+                bail!("event {i}: time must be a non-negative number");
+            }
+            if e.code.is_empty() {
+                bail!("event {i}: empty event code");
+            }
+            let data =
+                cast::EventData::from_wire(e.code, e.data).with_context(|| format!("event {i}"))?;
+            events.push(cast::Event { time: e.time, data });
+        }
+        // Stable, so the client's order stands between equal timestamps —
+        // that is how same-time events are reordered.
+        events.sort_by(|a, b| a.time.total_cmp(&b.time));
+
+        let mut data = Vec::new();
+        cast::write(&mut data, &header, &events)?;
+        source.data = data;
+    }
+    state_json(editor)
 }
 
 #[derive(Deserialize)]
@@ -365,5 +493,158 @@ mod tests {
         assert_eq!(state["name"], "typing.cast");
         assert_eq!(state["output"], "demo.svg");
         assert!(state["themes"].as_array().unwrap().len() >= 9);
+        // The cast block carries the recording's own grid and counters.
+        assert_eq!(state["cast"]["cols"], 40);
+        assert_eq!(state["cast"]["rows"], 10);
+        assert_eq!(state["cast"]["title"], "typing");
+        assert!(state["cast"]["events"].as_u64().unwrap() > 0);
+        assert!(state["cast"]["duration"].as_f64().unwrap() > 0.0);
+    }
+
+    fn editor_with(source: EmbeddedSource) -> Editor {
+        Editor::new(
+            Some(source),
+            Some("test".into()),
+            "out.svg".into(),
+            RenderOptions::default(),
+        )
+    }
+
+    fn get_events(editor: &Editor) -> Vec<serde_json::Value> {
+        let response = handle_events_get(editor).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&response).unwrap();
+        parsed["events"].as_array().unwrap().clone()
+    }
+
+    /// A replace request that echoes the current header and events —
+    /// mutate the pieces under test before sending.
+    fn replace_body(header: serde_json::Value, events: &[serde_json::Value]) -> String {
+        serde_json::json!({ "header": header, "events": events }).to_string()
+    }
+
+    #[test]
+    fn events_get_returns_the_flat_triples() {
+        let editor = editor_with(cast_source());
+        let events = get_events(&editor);
+        assert!(!events.is_empty());
+        assert!(events[0]["time"].is_number());
+        assert_eq!(events[0]["code"], "o");
+        assert!(events[0]["data"].is_string());
+        // typing.cast carries a resize; it flattens back to COLSxROWS.
+        assert!(
+            events
+                .iter()
+                .any(|e| e["code"] == "r" && e["data"] == "46x12")
+        );
+    }
+
+    #[test]
+    fn events_endpoints_need_a_cast() {
+        let editor = editor_with(EmbeddedSource {
+            kind: SourceKind::Ansi,
+            data: b"hi".to_vec(),
+            options: RenderOptions::default(),
+        });
+        assert!(handle_events_get(&editor).is_err());
+        let body = replace_body(
+            serde_json::json!({"cols": 80, "rows": 24, "title": null, "idle-time-limit": null}),
+            &[],
+        );
+        assert!(handle_events_replace(&editor, &body).is_err());
+    }
+
+    #[test]
+    fn events_replace_rewrites_the_source_and_survives_extract() {
+        let editor = editor_with(cast_source());
+        let mut events = get_events(&editor);
+        events[0]["data"] = "EDITED ".into();
+        let body = replace_body(
+            serde_json::json!({"cols": 33, "rows": 11, "title": "edited", "idle-time-limit": 1.5}),
+            &events,
+        );
+        let state: serde_json::Value =
+            serde_json::from_str(&handle_events_replace(&editor, &body).unwrap()).unwrap();
+        assert_eq!(state["cast"]["cols"], 33);
+        assert_eq!(state["cast"]["title"], "edited");
+
+        // Save-path render embeds the EDITED cast: the SVG stays its own
+        // (updated) source.
+        let response = handle_render(&editor, r#"{"options":{},"embed":true}"#).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let extracted = embed::extract(parsed["svg"].as_str().unwrap())
+            .unwrap()
+            .unwrap();
+        let (header, events) = cast::parse(&extracted.data[..]).unwrap();
+        assert_eq!((header.width, header.height), (33, 11));
+        assert_eq!(header.idle_time_limit, Some(1.5));
+        assert_eq!(
+            events[0].data,
+            cast::EventData::Output("EDITED ".to_string())
+        );
+    }
+
+    #[test]
+    fn events_replace_sorts_by_time_stably() {
+        let editor = editor_with(cast_source());
+        let events = vec![
+            serde_json::json!({"time": 2.0, "code": "o", "data": "late"}),
+            serde_json::json!({"time": 1.0, "code": "o", "data": "first-at-1"}),
+            serde_json::json!({"time": 1.0, "code": "o", "data": "second-at-1"}),
+        ];
+        let body = replace_body(
+            serde_json::json!({"cols": 40, "rows": 10, "title": null, "idle-time-limit": null}),
+            &events,
+        );
+        handle_events_replace(&editor, &body).unwrap();
+        let stored = get_events(&editor);
+        let datas: Vec<&str> = stored.iter().map(|e| e["data"].as_str().unwrap()).collect();
+        assert_eq!(datas, ["first-at-1", "second-at-1", "late"]);
+    }
+
+    #[test]
+    fn invalid_events_leave_the_source_untouched() {
+        let editor = editor_with(cast_source());
+        let before = get_events(&editor);
+        for bad in [
+            serde_json::json!({"time": -1.0, "code": "o", "data": "x"}),
+            serde_json::json!({"time": 1.0, "code": "r", "data": "not-a-size"}),
+            serde_json::json!({"time": 1.0, "code": "", "data": "x"}),
+        ] {
+            let body = replace_body(
+                serde_json::json!({"cols": 40, "rows": 10, "title": null, "idle-time-limit": null}),
+                std::slice::from_ref(&bad),
+            );
+            assert!(handle_events_replace(&editor, &body).is_err());
+        }
+        assert_eq!(get_events(&editor).len(), before.len());
+    }
+
+    #[test]
+    fn v3_casts_stay_v3_through_a_replace() {
+        let data = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/typing-v3.cast"
+        ))
+        .unwrap();
+        let editor = editor_with(EmbeddedSource {
+            kind: SourceKind::Cast,
+            data,
+            options: RenderOptions::default(),
+        });
+        let events = get_events(&editor);
+        let body = replace_body(
+            serde_json::json!({"cols": 40, "rows": 10, "title": "still v3", "idle-time-limit": null}),
+            &events,
+        );
+        let state: serde_json::Value =
+            serde_json::from_str(&handle_events_replace(&editor, &body).unwrap()).unwrap();
+        assert_eq!(state["cast"]["version"], 3);
+        assert_eq!(state["cast"]["title"], "still v3");
+        // Times normalize to intervals and back without drifting.
+        let after = get_events(&editor);
+        for (a, b) in events.iter().zip(&after) {
+            let (ta, tb) = (a["time"].as_f64().unwrap(), b["time"].as_f64().unwrap());
+            assert!((ta - tb).abs() < 1e-6);
+        }
     }
 }

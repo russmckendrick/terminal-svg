@@ -103,6 +103,32 @@ pub enum EventData {
     Other { code: String, data: String },
 }
 
+impl EventData {
+    /// Build from the `(code, data)` pair an event line stores.
+    pub fn from_wire(code: String, data: String) -> Result<EventData> {
+        Ok(match code.as_str() {
+            "o" => EventData::Output(data),
+            "r" => {
+                let (cols, rows) = data
+                    .split_once('x')
+                    .and_then(|(c, r)| Some((c.parse().ok()?, r.parse().ok()?)))
+                    .with_context(|| format!("malformed resize payload {data:?}"))?;
+                EventData::Resize { cols, rows }
+            }
+            _ => EventData::Other { code, data },
+        })
+    }
+
+    /// Flatten back to the `(code, data)` pair an event line stores.
+    pub fn to_wire(&self) -> (&str, String) {
+        match self {
+            EventData::Output(data) => ("o", data.clone()),
+            EventData::Resize { cols, rows } => ("r", format!("{cols}x{rows}")),
+            EventData::Other { code, data } => (code.as_str(), data.clone()),
+        }
+    }
+}
+
 /// Read a .cast file. Every event is kept — renderers ignore the
 /// non-renderable codes ("i", "m", "x", …), but they survive an
 /// edit/write round trip.
@@ -145,18 +171,10 @@ pub fn parse(reader: impl BufRead) -> Result<(Header, Vec<Event>)> {
         } else {
             time
         };
-        let data = match code.as_str() {
-            "o" => EventData::Output(data),
-            "r" => {
-                let (cols, rows) = data
-                    .split_once('x')
-                    .and_then(|(c, r)| Some((c.parse().ok()?, r.parse().ok()?)))
-                    .with_context(|| format!("malformed resize payload {data:?}"))?;
-                EventData::Resize { cols, rows }
-            }
-            _ => EventData::Other { code, data },
-        };
-        events.push(Event { time, data });
+        events.push(Event {
+            time,
+            data: EventData::from_wire(code, data)?,
+        });
     }
     Ok((header, events))
 }
@@ -310,11 +328,7 @@ pub fn write(mut out: impl Write, header: &Header, events: &[Event]) -> Result<(
         } else {
             event.time
         };
-        let (code, data) = match &event.data {
-            EventData::Output(data) => ("o", data.clone()),
-            EventData::Resize { cols, rows } => ("r", format!("{cols}x{rows}")),
-            EventData::Other { code, data } => (code.as_str(), data.clone()),
-        };
+        let (code, data) = event.data.to_wire();
         writeln!(
             out,
             "[{time:.6}, {}, {}]",
