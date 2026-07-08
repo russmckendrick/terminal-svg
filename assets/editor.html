@@ -215,12 +215,83 @@
     border-bottom: 1px solid var(--accent);
     padding: 2px 0;
   }
+  #panel-tabs .pbtn {
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+  #panel-tabs .pbtn:hover:not(:disabled) { color: var(--ink); }
+  #panel-tabs .rec { color: var(--ink-dim); }
+  #panel-tabs input { width: 58px; padding: 1px 6px; font-size: 11px; }
+  #panel-tabs input[type="text"] { width: 120px; }
+
   #panel-body {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }
-  #panel-empty { display: grid; place-items: center; height: 100%; color: var(--ink-dim); }
+  #panel-empty { display: grid; place-items: center; flex: 1; color: var(--ink-dim); }
+
+  #ev-head, .ev-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    font-size: 11px;
+    height: 22px;
+    white-space: nowrap;
+  }
+  #ev-head { color: var(--ink-dim); border-bottom: 1px solid var(--panel-edge); flex: none; }
+  #ev-scroll { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
+  #ev-spacer { width: 1px; }
+  .ev-row { position: absolute; left: 0; right: 0; cursor: pointer; }
+  .ev-row:hover { background: rgba(80, 250, 123, 0.05); }
+  .ev-row.sel { background: rgba(80, 250, 123, 0.1); box-shadow: inset 2px 0 var(--accent); }
+  .ev-row.dim .ev-data, .ev-row.dim .ev-code { color: var(--ink-dim); }
+  .ev-idx { width: 4ch; color: var(--ink-dim); text-align: right; flex: none; }
+  .ev-time { width: 8ch; flex: none; }
+  .ev-delta { width: 7ch; color: var(--ink-dim); flex: none; }
+  .ev-code { width: 4ch; flex: none; }
+  .ev-code.code-r { color: var(--accent); }
+  .ev-data { flex: 1; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .ev-data .ctl { color: var(--accent-dim); }
+  .ev-acts { display: none; gap: 2px; flex: none; }
+  .ev-row:hover .ev-acts, .ev-row.sel .ev-acts { display: flex; }
+  .ev-acts button {
+    padding: 0 5px;
+    border: 0;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--ink-dim);
+    line-height: 20px;
+  }
+  .ev-acts button:hover { color: var(--ink); background: var(--panel-edge); border: 0; }
+
+  #ev-edit {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 12px;
+    border-top: 1px solid var(--panel-edge);
+    flex: none;
+    font-size: 11px;
+  }
+  #ev-edit input, #ev-edit select { font-size: 11px; padding: 3px 6px; }
+  #ev-edit input { width: 76px; }
+  #ev-edit textarea {
+    flex: 1;
+    font: 11px/1.5 var(--mono);
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--panel-edge);
+    border-radius: 5px;
+    padding: 4px 7px;
+    resize: vertical;
+  }
+  #ev-edit textarea:focus { outline: none; border-color: var(--accent-dim); }
+  #ev-err { color: var(--danger); max-width: 24ch; white-space: normal; }
 
   /* ---- status bar ---- */
   footer {
@@ -363,10 +434,37 @@
       <div id="panel-tabs">
         <span class="tab">timeline</span>
         <span id="panel-meta"></span>
+        <button id="ev-add" class="pbtn" title="insert an output event after the selection">+ event</button>
+        <button id="ev-undo" class="pbtn" title="undo (⌘Z)" disabled>undo</button>
+        <button id="ev-redo" class="pbtn" title="redo (⇧⌘Z)" disabled>redo</button>
+        <button id="ev-live" class="pbtn hidden" title="leave the scrubbed frame, play the animation">▶ live</button>
         <span class="spacer"></span>
+        <label class="rec" for="rec-title">recording</label>
+        <input id="rec-title" type="text" placeholder="title">
+        <input id="rec-cols" type="number" min="10" max="500" step="1" title="recording width — rewrites the header">
+        <span class="rec">×</span>
+        <input id="rec-rows" type="number" min="2" max="200" step="1" title="recording height — rewrites the header">
       </div>
       <div id="panel-body">
         <div id="panel-empty">the timeline needs a .cast</div>
+        <div id="ev-head" class="hidden">
+          <span class="ev-idx">#</span><span class="ev-time">time</span><span class="ev-delta">Δ</span><span class="ev-code">code</span><span class="ev-data">data</span>
+        </div>
+        <div id="ev-scroll" class="hidden"><div id="ev-spacer"></div></div>
+        <div id="ev-edit" class="hidden">
+          <span id="ev-edit-idx" class="rec"></span>
+          <label class="rec" for="ev-time-in">t</label>
+          <input id="ev-time-in" type="number" min="0" step="0.05">
+          <select id="ev-code-in">
+            <option value="o">o out</option>
+            <option value="i">i in</option>
+            <option value="m">m mark</option>
+            <option value="r">r resize</option>
+            <option value="x">x exit</option>
+          </select>
+          <textarea id="ev-data-in" rows="2" spellcheck="false" placeholder='text — escapes: \e \r \n \t \\ \xNN (resize: COLSxROWS)'></textarea>
+          <span id="ev-err"></span>
+        </div>
       </div>
     </section>
   </section>
@@ -517,7 +615,11 @@ async function render() {
   const started = performance.now();
   status("rendering…");
   try {
-    const { svg } = await api("/api/render", { options: gatherOptions() });
+    // Scrubbing pins the preview to a moment; it never reaches
+    // Download/Save, which call gatherOptions() themselves.
+    const options = gatherOptions();
+    if (scrub.active) options.at = scrub.time;
+    const { svg } = await api("/api/render", { options });
     if (seq !== renderSeq) return; // superseded while in flight
     const took = Math.round(performance.now() - started);
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -645,6 +747,7 @@ async function openFile(file) {
       options: gatherOptions(),
     });
     setState(s);
+    await loadTimeline();
     await render();
   } catch (e) {
     status(e.message, "err");
@@ -715,6 +818,404 @@ dragHandle($("panel-handle"), (e) => {
   document.documentElement.style.setProperty("--panel-h", `${h}px`);
 });
 
+// ---- timeline ---------------------------------------------------------------
+
+const ROW_H = 22;
+const timeline = {
+  events: [],      // [{time, code, data}] — absolute seconds, wire triples
+  header: null,    // {cols, rows, title, "idle-time-limit"}
+  selected: null,  // the selected event object (survives re-sorts)
+  dirty: false,
+  undo: [],
+  redo: [],
+  loaded: false,
+  notified: false, // the one-time "first edit rewrites" note
+};
+const scrub = { active: false, time: 0 };
+
+async function loadTimeline() {
+  Object.assign(timeline, {
+    events: [], header: null, selected: null, dirty: false,
+    undo: [], redo: [], loaded: false, notified: false,
+  });
+  scrub.active = false;
+  if (state.kind === "cast" && state.cast) {
+    try {
+      const { events } = await api("/api/events");
+      timeline.events = events;
+      timeline.header = {
+        cols: state.cast.cols,
+        rows: state.cast.rows,
+        title: state.cast.title,
+        "idle-time-limit": state.cast["idle-time-limit"],
+      };
+      timeline.loaded = true;
+    } catch (e) {
+      status(e.message, "err");
+    }
+  }
+  // The panel follows the source: open for casts, shut otherwise.
+  document.body.classList.toggle("show-panel", timeline.loaded);
+  $("act-timeline").classList.toggle("active", timeline.loaded);
+  renderTimeline();
+}
+
+function renderTimeline() {
+  const on = timeline.loaded;
+  $("panel-empty").classList.toggle("hidden", on);
+  $("ev-head").classList.toggle("hidden", !on);
+  $("ev-scroll").classList.toggle("hidden", !on);
+  for (const id of ["rec-title", "rec-cols", "rec-rows", "ev-add"]) $(id).disabled = !on;
+  $("file-name").classList.toggle("dirty", timeline.dirty);
+  $("ev-undo").disabled = !timeline.undo.length;
+  $("ev-redo").disabled = !timeline.redo.length;
+  $("ev-live").classList.toggle("hidden", !scrub.active);
+  if (!on) {
+    $("ev-edit").classList.add("hidden");
+    $("rec-title").value = $("rec-cols").value = $("rec-rows").value = "";
+    $("panel-meta").textContent = "";
+    return;
+  }
+  const dur = timeline.events.length ? timeline.events[timeline.events.length - 1].time : 0;
+  $("panel-meta").textContent = `${timeline.events.length} events · ${dur.toFixed(1)}s`;
+  $("rec-title").value = timeline.header.title ?? "";
+  $("rec-cols").value = timeline.header.cols;
+  $("rec-rows").value = timeline.header.rows;
+  $("ev-spacer").style.height = `${timeline.events.length * ROW_H}px`;
+  renderRows();
+  renderEditStrip();
+}
+
+// Windowed rows: only what's visible (±20) exists in the DOM.
+function renderRows() {
+  const scroll = $("ev-scroll");
+  for (const el of scroll.querySelectorAll(".ev-row")) el.remove();
+  const first = Math.max(0, Math.floor(scroll.scrollTop / ROW_H) - 20);
+  const last = Math.min(
+    timeline.events.length,
+    Math.ceil((scroll.scrollTop + scroll.clientHeight) / ROW_H) + 20,
+  );
+  const frag = document.createDocumentFragment();
+  for (let i = first; i < last; i++) frag.append(buildRow(i));
+  scroll.append(frag);
+}
+
+function ctrlPictures(s) {
+  let out = "";
+  for (const ch of s) {
+    const c = ch.codePointAt(0);
+    if (c === 0x7f) out += "␡";
+    else if (c < 0x20) out += String.fromCodePoint(0x2400 + c);
+    else out += ch;
+  }
+  return out;
+}
+
+function buildRow(i) {
+  const e = timeline.events[i];
+  const row = document.createElement("div");
+  row.className = "ev-row";
+  if (timeline.selected === e) row.classList.add("sel");
+  if (e.code !== "o") row.classList.add("dim");
+  row.style.top = `${i * ROW_H}px`;
+  const cell = (cls, text) => {
+    const s = document.createElement("span");
+    s.className = cls;
+    s.textContent = text;
+    return s;
+  };
+  row.append(
+    cell("ev-idx", i),
+    cell("ev-time", e.time.toFixed(2)),
+    cell("ev-delta", `+${(e.time - (i > 0 ? timeline.events[i - 1].time : 0)).toFixed(2)}`),
+    cell(`ev-code code-${e.code}`, e.code),
+    cell("ev-data", e.code === "r" ? `⇲ ${e.data}` : ctrlPictures(e.data)),
+  );
+  const acts = document.createElement("span");
+  acts.className = "ev-acts";
+  const act = (label, title, fn) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
+    acts.append(b);
+  };
+  act("↑", "swap with the row above (same timestamp only)", () => swapEvent(e, -1));
+  act("↓", "swap with the row below (same timestamp only)", () => swapEvent(e, 1));
+  act("⧉", "duplicate", () => duplicateEvent(e));
+  act("✕", "delete", () => deleteEvent(e));
+  row.append(acts);
+  row.addEventListener("click", () => selectEvent(timeline.selected === e ? null : e));
+  return row;
+}
+
+$("ev-scroll").addEventListener("scroll", () => requestAnimationFrame(renderRows));
+
+// ---- timeline: selection + scrub ----
+
+function selectEvent(e) {
+  timeline.selected = e;
+  scrub.active = e !== null;
+  if (e) scrub.time = e.time;
+  renderTimeline();
+  render();
+}
+
+$("ev-live").addEventListener("click", () => selectEvent(null));
+
+// ---- timeline: mutations ----
+
+/// Every user edit lands here: snapshot for undo (coalescing typing
+/// bursts on the same field), mutate, re-sort, re-render, and push the
+/// rewritten cast to the server. The first edit is the point of no
+/// return for byte-exactness — say so once.
+let lastUndoKey = null;
+function mutate(undoKey, fn) {
+  if (undoKey === null || undoKey !== lastUndoKey) {
+    timeline.undo.push(snapshotTimeline());
+    if (timeline.undo.length > 100) timeline.undo.shift();
+    timeline.redo = [];
+  }
+  lastUndoKey = undoKey;
+  fn();
+  timeline.events.sort((a, b) => a.time - b.time); // stable: ties keep order
+  if (!timeline.dirty) {
+    timeline.dirty = true;
+    if (!timeline.notified) {
+      timeline.notified = true;
+      status("editing rewrites the recording (times normalize; v3 comments drop)", "ok");
+    }
+  }
+  renderTimeline();
+  commitSoon();
+}
+
+function snapshotTimeline() {
+  return {
+    events: structuredClone(timeline.events),
+    header: { ...timeline.header },
+    selected: timeline.events.indexOf(timeline.selected),
+  };
+}
+
+function restoreTimeline(snap) {
+  timeline.events = snap.events;
+  timeline.header = snap.header;
+  timeline.selected = snap.selected >= 0 ? timeline.events[snap.selected] : null;
+  scrub.active = timeline.selected !== null;
+  if (timeline.selected) scrub.time = timeline.selected.time;
+  timeline.dirty = true;
+  renderTimeline();
+  commitSoon();
+  render();
+}
+
+function undoTimeline() {
+  const snap = timeline.undo.pop();
+  if (!snap) return;
+  timeline.redo.push(snapshotTimeline());
+  lastUndoKey = null;
+  restoreTimeline(snap);
+}
+
+function redoTimeline() {
+  const snap = timeline.redo.pop();
+  if (!snap) return;
+  timeline.undo.push(snapshotTimeline());
+  lastUndoKey = null;
+  restoreTimeline(snap);
+}
+
+$("ev-undo").addEventListener("click", undoTimeline);
+$("ev-redo").addEventListener("click", redoTimeline);
+
+document.addEventListener("keydown", (e) => {
+  if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;
+  if (!timeline.loaded || !document.body.classList.contains("show-panel")) return;
+  const t = e.target;
+  if (t.tagName === "INPUT" || t.tagName === "TEXTAREA") return; // native undo
+  e.preventDefault();
+  if (e.shiftKey) redoTimeline(); else undoTimeline();
+});
+
+function swapEvent(e, dir) {
+  const i = timeline.events.indexOf(e);
+  const j = i + dir;
+  if (j < 0 || j >= timeline.events.length) return;
+  if (timeline.events[j].time !== e.time) {
+    status("different timestamps — edit the time to move it", "err");
+    return;
+  }
+  mutate(null, () => {
+    [timeline.events[i], timeline.events[j]] = [timeline.events[j], timeline.events[i]];
+  });
+}
+
+function duplicateEvent(e) {
+  const i = timeline.events.indexOf(e);
+  mutate(null, () => timeline.events.splice(i + 1, 0, { ...e }));
+}
+
+function deleteEvent(e) {
+  const i = timeline.events.indexOf(e);
+  mutate(null, () => timeline.events.splice(i, 1));
+  if (timeline.selected === e) selectEvent(null);
+}
+
+$("ev-add").addEventListener("click", () => {
+  const i = timeline.selected
+    ? timeline.events.indexOf(timeline.selected)
+    : timeline.events.length - 1;
+  const at = timeline.events[i]?.time ?? 0;
+  const next = timeline.events[i + 1]?.time;
+  const fresh = {
+    time: Number((next !== undefined ? (at + next) / 2 : at + 0.5).toFixed(6)),
+    code: "o",
+    data: "",
+  };
+  mutate(null, () => timeline.events.splice(i + 1, 0, fresh));
+  selectEvent(fresh);
+  $("ev-data-in").focus();
+});
+
+// Recording header fields: the destructive resize (vs the sidebar's
+// non-destructive render override).
+$("rec-cols").addEventListener("input", () => {
+  const v = num("rec-cols");
+  if (v !== null && v >= 2) mutate("rec-cols", () => { timeline.header.cols = v; });
+});
+$("rec-rows").addEventListener("input", () => {
+  const v = num("rec-rows");
+  if (v !== null && v >= 2) mutate("rec-rows", () => { timeline.header.rows = v; });
+});
+$("rec-title").addEventListener("input", () => {
+  mutate("rec-title", () => { timeline.header.title = $("rec-title").value || null; });
+});
+
+// ---- timeline: the edit strip ----
+
+/// Escapes for the data cell: \e \r \n \t \\ \xNN. `unescapeEvent` is
+/// the exact inverse of `escapeEvent` (backslash first), checked on
+/// every save below.
+function escapeEvent(s) {
+  let out = "";
+  for (const ch of s) {
+    const c = ch.codePointAt(0);
+    if (ch === "\\") out += "\\\\";
+    else if (ch === "\x1b") out += "\\e";
+    else if (ch === "\r") out += "\\r";
+    else if (ch === "\n") out += "\\n";
+    else if (ch === "\t") out += "\\t";
+    else if (c < 0x20 || c === 0x7f) out += `\\x${c.toString(16).padStart(2, "0")}`;
+    else out += ch;
+  }
+  return out;
+}
+
+function unescapeEvent(s) {
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] !== "\\") { out += s[i]; continue; }
+    const n = s[++i];
+    if (n === "\\") out += "\\";
+    else if (n === "e") out += "\x1b";
+    else if (n === "r") out += "\r";
+    else if (n === "n") out += "\n";
+    else if (n === "t") out += "\t";
+    else if (n === "x") {
+      const hex = s.slice(i + 1, i + 3);
+      if (!/^[0-9a-fA-F]{2}$/.test(hex)) throw new Error(`bad \\x escape at ${i - 1}`);
+      out += String.fromCharCode(parseInt(hex, 16));
+      i += 2;
+    } else throw new Error(`unknown escape \\${n ?? "<end>"}`);
+  }
+  return out;
+}
+
+function renderEditStrip() {
+  const e = timeline.selected;
+  $("ev-edit").classList.toggle("hidden", !e);
+  $("ev-err").textContent = "";
+  if (!e) return;
+  $("ev-edit-idx").textContent = `#${timeline.events.indexOf(e)}`;
+  $("ev-time-in").value = e.time;
+  $("ev-code-in").value = e.code;
+  if ($("ev-code-in").value !== e.code) {
+    // An unknown code from a future format: keep it selectable.
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = e.code;
+    $("ev-code-in").append(opt);
+    $("ev-code-in").value = e.code;
+  }
+  $("ev-data-in").value = escapeEvent(e.data);
+}
+
+$("ev-time-in").addEventListener("input", () => {
+  const e = timeline.selected;
+  const v = num("ev-time-in");
+  if (!e || v === null || v < 0) return;
+  mutate("ev-time", () => { e.time = v; });
+  scrub.time = v;
+  render();
+});
+
+$("ev-code-in").addEventListener("input", () => {
+  const e = timeline.selected;
+  if (!e) return;
+  mutate(null, () => { e.code = $("ev-code-in").value; });
+  render();
+});
+
+$("ev-data-in").addEventListener("input", () => {
+  const e = timeline.selected;
+  if (!e) return;
+  let data;
+  try {
+    data = unescapeEvent($("ev-data-in").value);
+  } catch (err) {
+    $("ev-err").textContent = err.message;
+    return;
+  }
+  // Round-trip self-check: what we store must escape back losslessly.
+  if (unescapeEvent(escapeEvent(data)) !== data) {
+    $("ev-err").textContent = "escape round-trip failed";
+    return;
+  }
+  if (e.code === "r" && !/^\d+x\d+$/.test(data)) {
+    $("ev-err").textContent = "resize data is COLSxROWS";
+    return;
+  }
+  $("ev-err").textContent = "";
+  mutate("ev-data", () => { e.data = data; });
+  render();
+});
+
+// ---- timeline: pushing edits to the server ----
+
+let commitTimer;
+function commitSoon() {
+  clearTimeout(commitTimer);
+  commitTimer = setTimeout(commitTimeline, 300);
+}
+
+async function commitTimeline() {
+  if (!timeline.loaded || !timeline.dirty) return;
+  try {
+    const s = await api("/api/events", {
+      header: timeline.header,
+      events: timeline.events,
+    });
+    state.cast = s.cast ?? state.cast;
+    $("grid-size").textContent = state.cast ? `${state.cast.cols}×${state.cast.rows}` : "";
+    $("ev-count").textContent = state.cast ? `${state.cast.events} events` : "";
+    $("duration").textContent = state.cast ? `${state.cast.duration.toFixed(1)}s` : "";
+    syncEnabled(); // cols/rows placeholders track the recording
+    renderSoon();
+  } catch (e) {
+    status(e.message, "err");
+  }
+}
+
 // ---- wiring ---------------------------------------------------------------
 
 document.addEventListener("dragover", (e) => {
@@ -747,6 +1248,7 @@ $("controls").addEventListener("input", (e) => {
     $("theme-light").value = s.themes.includes("github-light") ? "github-light" : s.themes[0];
     $("theme-dark").value = s.themes.includes("github-dark") ? "github-dark" : s.themes[0];
     setState(s);
+    await loadTimeline();
     if (s.loaded) await render();
   } catch (e) {
     status(e.message, "err");
