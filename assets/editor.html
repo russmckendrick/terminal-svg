@@ -152,18 +152,41 @@
     min-width: 0;
     min-height: 0;
   }
+  #stage-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 3px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-edge);
+    color: var(--ink-dim);
+    font-size: 11px;
+  }
+  .zbtn {
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+  .zbtn.active { color: var(--accent); border-color: var(--accent-dim); }
+  #zoom-label { min-width: 5ch; text-align: right; }
   #preview {
     flex: 1;
     min-height: 0;
     display: grid;
-    place-items: center;
     overflow: auto;
     padding: 28px;
     background-image: radial-gradient(var(--panel-edge) 1px, transparent 1px);
     background-size: 22px 22px;
+    cursor: grab;
   }
-  #preview img { max-width: 100%; height: auto; }
-  #empty { text-align: center; color: var(--ink-dim); }
+  #preview.panning { cursor: grabbing; }
+  /* margin:auto centers like place-items but keeps oversized content
+     reachable by scrolling (centered grid items clip their overflow). */
+  #preview img { max-width: 100%; height: auto; margin: auto; }
+  #preview.zoomed img { max-width: none; }
+  #empty { text-align: center; color: var(--ink-dim); margin: auto; }
   #empty .big { font-size: 15px; color: var(--ink); margin-bottom: 8px; }
   #empty code { color: var(--accent); }
 
@@ -321,6 +344,13 @@
   <div id="sidebar-handle"></div>
 
   <section id="stage">
+    <div id="stage-toolbar">
+      <button id="zoom-fit" class="zbtn active" title="fit to window (⌘0)">fit</button>
+      <button id="zoom-100" class="zbtn" title="actual size (⌘1)">100%</button>
+      <button id="zoom-out" class="zbtn" title="zoom out (⌘−)">−</button>
+      <button id="zoom-in" class="zbtn" title="zoom in (⌘+)">+</button>
+      <span id="zoom-label"></span>
+    </div>
     <div id="preview">
       <div id="empty">
         <div class="big">drop a .cast, .ansi, or terminal-svg .svg here</div>
@@ -498,6 +528,8 @@ async function render() {
     $("empty").classList.add("hidden");
     const dims = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
     $("dims").textContent = dims ? `${Math.round(dims[1])}×${Math.round(dims[2])}` : "";
+    if (dims) zoom.natural = { w: Number(dims[1]), h: Number(dims[2]) };
+    applyZoom();
     $("size").textContent = `${(svg.length / 1024).toFixed(1)} KB`;
     $("took").textContent = `${took} ms`;
     status("ready");
@@ -511,6 +543,73 @@ function renderSoon() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(render, 150);
 }
+
+// ---- preview zoom ------------------------------------------------------------
+
+/// "fit" scales down to the window (never up); an explicit level sizes
+/// the image at natural × level. Survives re-renders.
+const zoom = { mode: "fit", level: 1, natural: { w: 0, h: 0 } };
+
+function applyZoom() {
+  const img = $("svg-view");
+  const fit = zoom.mode === "fit";
+  $("preview").classList.toggle("zoomed", !fit);
+  img.style.width = fit || !zoom.natural.w ? "" : `${zoom.natural.w * zoom.level}px`;
+  $("zoom-label").textContent = fit ? "" : `${Math.round(zoom.level * 100)}%`;
+  $("zoom-fit").classList.toggle("active", fit);
+  $("zoom-100").classList.toggle("active", !fit && zoom.level === 1);
+}
+
+function setZoom(mode, level) {
+  zoom.mode = mode;
+  if (level !== undefined) zoom.level = Math.min(4, Math.max(0.25, level));
+  applyZoom();
+}
+
+$("zoom-fit").addEventListener("click", () => setZoom("fit"));
+$("zoom-100").addEventListener("click", () => setZoom("manual", 1));
+$("zoom-in").addEventListener("click", () => setZoom("manual", zoom.level * 1.25));
+$("zoom-out").addEventListener("click", () => setZoom("manual", zoom.level / 1.25));
+
+document.addEventListener("keydown", (e) => {
+  if (!(e.metaKey || e.ctrlKey)) return;
+  const target = e.target;
+  if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return;
+  if (e.key === "0") { e.preventDefault(); setZoom("fit"); }
+  else if (e.key === "1") { e.preventDefault(); setZoom("manual", 1); }
+  else if (e.key === "=" || e.key === "+") { e.preventDefault(); setZoom("manual", zoom.level * 1.25); }
+  else if (e.key === "-") { e.preventDefault(); setZoom("manual", zoom.level / 1.25); }
+});
+
+$("preview").addEventListener("wheel", (e) => {
+  if (!(e.metaKey || e.ctrlKey)) return;
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+  const base = zoom.mode === "fit"
+    ? $("svg-view").getBoundingClientRect().width / (zoom.natural.w || 1)
+    : zoom.level;
+  setZoom("manual", base * factor);
+}, { passive: false });
+
+// Grab-to-pan: drag anywhere on the dotted stage scrolls it.
+$("preview").addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  const el = $("preview");
+  const start = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop };
+  el.setPointerCapture(e.pointerId);
+  el.classList.add("panning");
+  const move = (ev) => {
+    el.scrollLeft = start.left - (ev.clientX - start.x);
+    el.scrollTop = start.top - (ev.clientY - start.y);
+  };
+  const up = () => {
+    el.classList.remove("panning");
+    el.removeEventListener("pointermove", move);
+    el.removeEventListener("pointerup", up);
+  };
+  el.addEventListener("pointermove", move);
+  el.addEventListener("pointerup", up);
+});
 
 // ---- open / save / download ------------------------------------------------
 
