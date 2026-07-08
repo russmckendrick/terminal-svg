@@ -186,6 +186,22 @@ fn render_cast(
     events: &[cast::Event],
     opts: &RenderOptions,
 ) -> Result<String> {
+    // --cols/--rows replay the recording through a different-sized
+    // terminal: the override sets the initial grid, recorded resize
+    // events still apply on top, and the emulator reflows/clips exactly
+    // as a real resize would.
+    let header = {
+        let mut h = header.clone();
+        if let Some(c) = opts.cols {
+            h.width = c;
+        }
+        if let Some(r) = opts.rows {
+            h.height = r;
+        }
+        h
+    };
+    let header = &header;
+
     if let Some(from) = opts.from
         && from < 0.0
     {
@@ -332,7 +348,9 @@ fn embedded_faces<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{best_osc_title, decorate_title};
+    use super::{SourceInput, best_osc_title, decorate_title, render_svg};
+    use crate::cast;
+    use crate::options::RenderOptions;
 
     fn auto(title: &str) -> Option<String> {
         decorate_title(Some(title.into()), None, true)
@@ -389,5 +407,69 @@ mod tests {
             best_osc_title("\x1b]2;vim\x07\x1b]2;htop\x07").as_deref(),
             Some("htop")
         );
+    }
+
+    /// A tiny v2 cast that draws at column 100 — wide enough that a
+    /// shrunken grid forces a real reflow/clip in the emulator.
+    const WIDE_CAST: &str = concat!(
+        r#"{"version":2,"width":120,"height":30}"#,
+        "\n",
+        r#"[0.1,"o","hello\r\n"]"#,
+        "\n",
+        "[0.5,\"o\",\"\\u001b[1;100Hwide\"]",
+        "\n",
+    );
+
+    fn render_cast_with(opts: &RenderOptions) -> String {
+        let (header, events) = cast::parse(WIDE_CAST.as_bytes()).unwrap();
+        render_svg(
+            &SourceInput::Cast {
+                header: &header,
+                events: &events,
+            },
+            opts,
+        )
+        .unwrap()
+    }
+
+    fn viewbox_width(svg: &str) -> f64 {
+        let vb = svg.split("viewBox=\"").nth(1).unwrap();
+        let vb = vb.split('"').next().unwrap();
+        vb.split_whitespace().nth(2).unwrap().parse().unwrap()
+    }
+
+    #[test]
+    fn cols_override_shrinks_a_cast() {
+        let opts = RenderOptions {
+            no_font_embed: true,
+            ..Default::default()
+        };
+        let full = render_cast_with(&opts);
+
+        // Half the columns: the animated render must come out narrower,
+        // and shrinking below the recording's cursor positions must not
+        // panic the emulator.
+        let narrow = render_cast_with(&RenderOptions {
+            cols: Some(40),
+            rows: Some(12),
+            no_font_embed: true,
+            ..Default::default()
+        });
+        assert!(viewbox_width(&narrow) < viewbox_width(&full));
+    }
+
+    #[test]
+    fn cols_override_applies_to_static_frames() {
+        let base = RenderOptions {
+            at: Some(1.0),
+            no_font_embed: true,
+            ..Default::default()
+        };
+        let full = render_cast_with(&base);
+        let narrow = render_cast_with(&RenderOptions {
+            cols: Some(40),
+            ..base
+        });
+        assert!(viewbox_width(&narrow) < viewbox_width(&full));
     }
 }
