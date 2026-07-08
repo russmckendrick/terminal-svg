@@ -10,12 +10,15 @@
     --bg: #16171d;
     --panel: #1e1f28;
     --panel-edge: #2b2d3a;
+    --bar: #131419;
     --ink: #d8dae5;
     --ink-dim: #8a8ea3;
     --accent: #50fa7b;
     --accent-dim: #2d8c48;
     --danger: #ff5555;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sidebar-w: 300px;
+    --panel-h: 240px;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -24,15 +27,16 @@
     background: var(--bg);
     color: var(--ink);
     font: 13px/1.5 var(--mono);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
+  /* ---- title bar ---- */
   header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 16px;
+    padding: 8px 14px;
     background: var(--panel);
     border-bottom: 1px solid var(--panel-edge);
   }
@@ -50,7 +54,8 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  header .spacer { flex: 1; }
+  #file-name.dirty::after { content: " ●"; color: var(--accent); }
+  header .spacer, #panel-tabs .spacer { flex: 1; }
   button {
     font: inherit;
     color: var(--ink);
@@ -65,16 +70,54 @@
   button.primary:hover { background: #6cfa90; }
   button:disabled { opacity: 0.4; cursor: default; }
 
-  main { flex: 1; display: flex; min-height: 0; }
+  /* ---- shell: activity bar | sidebar | handle | stage ---- */
+  #shell {
+    display: grid;
+    grid-template-columns: 44px var(--sidebar-w) 4px minmax(0, 1fr);
+    min-height: 0;
+  }
+  body.no-sidebar #shell { grid-template-columns: 44px 0 0 minmax(0, 1fr); }
+  body.no-sidebar #sidebar, body.no-sidebar #sidebar-handle { display: none; }
 
-  #controls {
-    width: 300px;
-    flex: none;
+  #activity {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--bar);
+    border-right: 1px solid var(--panel-edge);
+    padding-top: 4px;
+  }
+  .act {
+    position: relative;
+    border: 0;
+    border-radius: 0;
+    padding: 11px 0;
+    color: var(--ink-dim);
+    background: transparent;
+  }
+  .act:hover { color: var(--ink); border: 0; }
+  .act.active { color: var(--ink); }
+  .act.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 2px;
+    background: var(--accent);
+  }
+  .act svg { width: 20px; height: 20px; display: block; margin: 0 auto; }
+
+  #sidebar {
+    min-height: 0;
     overflow-y: auto;
     background: var(--panel);
-    border-right: 1px solid var(--panel-edge);
     padding: 4px 16px 24px;
   }
+  #sidebar-handle, #panel-handle { background: transparent; }
+  #sidebar-handle { cursor: col-resize; }
+  #panel-handle { cursor: row-resize; height: 4px; margin-top: -4px; position: relative; z-index: 2; }
+  #sidebar-handle:hover, #sidebar-handle.dragging,
+  #panel-handle:hover, #panel-handle.dragging { background: var(--accent-dim); }
+
   fieldset { border: 0; margin: 0; padding: 14px 0 2px; }
   fieldset + fieldset { border-top: 1px solid var(--panel-edge); }
   legend { padding: 0; color: var(--ink-dim); text-transform: lowercase; letter-spacing: 0.08em; font-size: 11px; }
@@ -102,14 +145,16 @@
   .hidden { display: none !important; }
   fieldset.off { opacity: 0.35; pointer-events: none; }
 
+  /* ---- stage: preview above the collapsible bottom panel ---- */
   #stage {
-    flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
   }
   #preview {
     flex: 1;
+    min-height: 0;
     display: grid;
     place-items: center;
     overflow: auto;
@@ -122,18 +167,56 @@
   #empty .big { font-size: 15px; color: var(--ink); margin-bottom: 8px; }
   #empty code { color: var(--accent); }
 
+  #panel {
+    display: none;
+    flex-direction: column;
+    height: var(--panel-h);
+    min-height: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--panel-edge);
+  }
+  body.show-panel #panel { display: flex; }
+  #panel-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--panel-edge);
+    color: var(--ink-dim);
+    font-size: 11px;
+  }
+  #panel-tabs .tab {
+    color: var(--ink);
+    text-transform: lowercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--accent);
+    padding: 2px 0;
+  }
+  #panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  #panel-empty { display: grid; place-items: center; height: 100%; color: var(--ink-dim); }
+
+  /* ---- status bar ---- */
   footer {
     display: flex;
-    gap: 18px;
-    padding: 7px 16px;
+    gap: 0;
+    padding: 3px 12px;
     background: var(--panel);
     border-top: 1px solid var(--panel-edge);
     color: var(--ink-dim);
-    min-height: 34px;
+    font-size: 11px;
     align-items: center;
+    min-height: 24px;
   }
+  footer span:not(:empty) { padding: 0 9px; border-right: 1px solid var(--panel-edge); }
+  footer span:not(:empty):last-of-type { border-right: 0; }
+  footer #status { padding-left: 0; }
   footer .err { color: var(--danger); }
   footer .ok { color: var(--accent); }
+  footer .spacer { flex: 1; border: 0 !important; }
 
   #drop-veil {
     position: fixed;
@@ -161,63 +244,81 @@
   <button id="save" class="primary" disabled>Save</button>
 </header>
 
-<main>
-  <aside id="controls">
-    <fieldset>
-      <legend>output &amp; themes</legend>
-      <div class="row"><label for="theme">theme</label><select id="theme"></select></div>
-      <div class="row check"><input type="checkbox" id="dual"><label for="dual">dual light/dark</label></div>
-      <div class="row dual-only hidden"><label for="theme-light">light</label><select id="theme-light"></select></div>
-      <div class="row dual-only hidden"><label for="theme-dark">dark</label><select id="theme-dark"></select></div>
-    </fieldset>
+<div id="shell">
+  <nav id="activity">
+    <button id="act-style" class="act active" title="style controls">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <path d="M4 8h10M18 8h2M4 16h2M10 16h10"/>
+        <circle cx="15.5" cy="8" r="2.2"/><circle cx="7.5" cy="16" r="2.2"/>
+      </svg>
+    </button>
+    <button id="act-timeline" class="act" title="timeline (cast events)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <path d="M4 6h16M4 12h9M4 18h13"/>
+        <circle cx="18" cy="17" r="3.2"/><path d="M18 15.6v1.6l1.1 0.8"/>
+      </svg>
+    </button>
+  </nav>
 
-    <fieldset>
-      <legend>window</legend>
-      <div class="row"><label for="chrome">chrome</label>
-        <select id="chrome">
-          <option value="macos">macos</option>
-          <option value="windows">windows</option>
-          <option value="ubuntu">ubuntu</option>
-          <option value="none">none</option>
-        </select>
-      </div>
-      <div class="row"><label for="title">title</label><input type="text" id="title" placeholder="auto"></div>
-      <div class="row"><label for="title-emoji">title emoji</label><input type="text" id="title-emoji" placeholder="auto 📁"></div>
-      <div class="row check"><input type="checkbox" id="no-background"><label for="no-background">transparent background</label></div>
-      <div class="row check"><input type="checkbox" id="no-shadow"><label for="no-shadow">no shadow</label></div>
-    </fieldset>
+  <aside id="sidebar">
+    <div id="controls">
+      <fieldset>
+        <legend>output &amp; themes</legend>
+        <div class="row"><label for="theme">theme</label><select id="theme"></select></div>
+        <div class="row check"><input type="checkbox" id="dual"><label for="dual">dual light/dark</label></div>
+        <div class="row dual-only hidden"><label for="theme-light">light</label><select id="theme-light"></select></div>
+        <div class="row dual-only hidden"><label for="theme-dark">dark</label><select id="theme-dark"></select></div>
+      </fieldset>
 
-    <fieldset>
-      <legend>layout &amp; fonts</legend>
-      <div class="row"><label for="font-size">font size</label><input type="number" id="font-size" value="14" min="6" max="72" step="1"></div>
-      <div class="row"><label for="line-height">line height</label><input type="number" id="line-height" value="1.2" min="0.8" max="3" step="0.05"></div>
-      <div class="row"><label for="padding">padding</label><input type="number" id="padding" value="10" min="0" step="1"></div>
-      <div class="row"><label for="margin">margin</label><input type="number" id="margin" placeholder="auto" min="0" step="1"></div>
-      <div class="row ansi-only"><label for="cols">columns</label><input type="number" id="cols" min="10" max="500" step="1" placeholder="80"></div>
-      <div class="row ansi-only"><label for="rows">rows</label><input type="number" id="rows" min="2" max="200" step="1" placeholder="24"></div>
-      <div class="row check"><input type="checkbox" id="no-font-embed"><label for="no-font-embed">system fonts only</label></div>
-      <div class="row"><label for="font-family">font family</label><input type="text" id="font-family" placeholder="with system fonts" disabled></div>
-    </fieldset>
+      <fieldset>
+        <legend>window</legend>
+        <div class="row"><label for="chrome">chrome</label>
+          <select id="chrome">
+            <option value="macos">macos</option>
+            <option value="windows">windows</option>
+            <option value="ubuntu">ubuntu</option>
+            <option value="none">none</option>
+          </select>
+        </div>
+        <div class="row"><label for="title">title</label><input type="text" id="title" placeholder="auto"></div>
+        <div class="row"><label for="title-emoji">title emoji</label><input type="text" id="title-emoji" placeholder="auto 📁"></div>
+        <div class="row check"><input type="checkbox" id="no-background"><label for="no-background">transparent background</label></div>
+        <div class="row check"><input type="checkbox" id="no-shadow"><label for="no-shadow">no shadow</label></div>
+      </fieldset>
 
-    <fieldset id="anim-controls">
-      <legend>animation</legend>
-      <div class="row"><label for="cursor">cursor</label>
-        <select id="cursor">
-          <option value="block">block</option>
-          <option value="bar">bar</option>
-          <option value="underline">underline</option>
-          <option value="none">none</option>
-        </select>
-      </div>
-      <div class="row"><label for="speed">speed ×</label><input type="number" id="speed" value="1" min="0.1" step="0.25"></div>
-      <div class="row"><label for="idle-time-limit">idle cap s</label><input type="number" id="idle-time-limit" placeholder="auto" min="0" step="0.5"></div>
-      <div class="row"><label for="from">from s</label><input type="number" id="from" placeholder="start" min="0" step="0.5"></div>
-      <div class="row"><label for="to">to s</label><input type="number" id="to" placeholder="end" min="0" step="0.5"></div>
-      <div class="row check"><input type="checkbox" id="no-loop"><label for="no-loop">play once</label></div>
-      <div class="row check"><input type="checkbox" id="static"><label for="static">static (final frame)</label></div>
-      <div class="row"><label for="at">at s</label><input type="number" id="at" placeholder="end" min="0" step="0.5"></div>
-    </fieldset>
+      <fieldset>
+        <legend>layout &amp; fonts</legend>
+        <div class="row"><label for="font-size">font size</label><input type="number" id="font-size" value="14" min="6" max="72" step="1"></div>
+        <div class="row"><label for="line-height">line height</label><input type="number" id="line-height" value="1.2" min="0.8" max="3" step="0.05"></div>
+        <div class="row"><label for="padding">padding</label><input type="number" id="padding" value="10" min="0" step="1"></div>
+        <div class="row"><label for="margin">margin</label><input type="number" id="margin" placeholder="auto" min="0" step="1"></div>
+        <div class="row"><label for="cols">columns</label><input type="number" id="cols" min="10" max="500" step="1" placeholder="80"></div>
+        <div class="row"><label for="rows">rows</label><input type="number" id="rows" min="2" max="200" step="1" placeholder="24"></div>
+        <div class="row check"><input type="checkbox" id="no-font-embed"><label for="no-font-embed">system fonts only</label></div>
+        <div class="row"><label for="font-family">font family</label><input type="text" id="font-family" placeholder="with system fonts" disabled></div>
+      </fieldset>
+
+      <fieldset id="anim-controls">
+        <legend>animation</legend>
+        <div class="row"><label for="cursor">cursor</label>
+          <select id="cursor">
+            <option value="block">block</option>
+            <option value="bar">bar</option>
+            <option value="underline">underline</option>
+            <option value="none">none</option>
+          </select>
+        </div>
+        <div class="row"><label for="speed">speed ×</label><input type="number" id="speed" value="1" min="0.1" step="0.25"></div>
+        <div class="row"><label for="idle-time-limit">idle cap s</label><input type="number" id="idle-time-limit" placeholder="auto" min="0" step="0.5"></div>
+        <div class="row"><label for="from">from s</label><input type="number" id="from" placeholder="start" min="0" step="0.5"></div>
+        <div class="row"><label for="to">to s</label><input type="number" id="to" placeholder="end" min="0" step="0.5"></div>
+        <div class="row check"><input type="checkbox" id="no-loop"><label for="no-loop">play once</label></div>
+        <div class="row check"><input type="checkbox" id="static"><label for="static">static (final frame)</label></div>
+        <div class="row"><label for="at">at s</label><input type="number" id="at" placeholder="end" min="0" step="0.5"></div>
+      </fieldset>
+    </div>
   </aside>
+  <div id="sidebar-handle"></div>
 
   <section id="stage">
     <div id="preview">
@@ -227,14 +328,30 @@
       </div>
       <img id="svg-view" class="hidden" alt="rendered terminal">
     </div>
-    <footer>
-      <span id="status">ready</span>
-      <span id="dims"></span>
-      <span id="size"></span>
-      <span id="took"></span>
-    </footer>
+    <div id="panel-handle"></div>
+    <section id="panel">
+      <div id="panel-tabs">
+        <span class="tab">timeline</span>
+        <span id="panel-meta"></span>
+        <span class="spacer"></span>
+      </div>
+      <div id="panel-body">
+        <div id="panel-empty">the timeline needs a .cast</div>
+      </div>
+    </section>
   </section>
-</main>
+</div>
+
+<footer>
+  <span id="status">ready</span>
+  <span id="grid-size"></span>
+  <span id="ev-count"></span>
+  <span id="duration"></span>
+  <span class="spacer"></span>
+  <span id="dims"></span>
+  <span id="size"></span>
+  <span id="took"></span>
+</footer>
 
 <div id="drop-veil">drop to open</div>
 
@@ -242,7 +359,7 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const state = { loaded: false, kind: null, name: null, output: null };
+const state = { loaded: false, kind: null, name: null, output: null, cast: null };
 let renderSeq = 0;
 let blobUrl = null;
 
@@ -329,8 +446,19 @@ function syncEnabled() {
   $("theme").parentElement.classList.toggle("hidden", $("dual").checked);
   $("font-family").disabled = !$("no-font-embed").checked;
   $("anim-controls").classList.toggle("off", state.kind !== "cast");
-  for (const el of document.querySelectorAll(".ansi-only")) {
-    el.classList.toggle("hidden", state.kind !== "ansi");
+  // cols/rows: a PTY size for ANSI, a grid override for casts — the
+  // recording's own size shows as the placeholder.
+  const colsRows = [$("cols"), $("rows")];
+  if (state.cast) {
+    colsRows[0].placeholder = state.cast.cols;
+    colsRows[1].placeholder = state.cast.rows;
+    for (const el of colsRows) {
+      el.title = `recording is ${state.cast.cols}×${state.cast.rows} — an override replays it at the new size`;
+    }
+  } else {
+    colsRows[0].placeholder = "80";
+    colsRows[1].placeholder = "24";
+    for (const el of colsRows) el.title = "";
   }
   $("save").disabled = $("download").disabled = !state.loaded;
 }
@@ -391,10 +519,15 @@ function setState(s) {
   state.kind = s.kind;
   state.name = s.name;
   state.output = s.output;
+  state.cast = s.cast ?? null;
   $("file-name").textContent = s.name ?? "no file";
   const outName = s.output.split("/").pop();
   $("save").textContent = `Save → ${outName}`;
   $("save").title = s.output;
+  $("grid-size").textContent = state.cast ? `${state.cast.cols}×${state.cast.rows}` : "";
+  $("ev-count").textContent = state.cast ? `${state.cast.events} events` : "";
+  $("duration").textContent = state.cast ? `${state.cast.duration.toFixed(1)}s` : "";
+  $("panel-meta").textContent = state.cast ? `${state.cast.events} events` : "";
   if (s.loaded) applyOptions(s.options);
   syncEnabled();
 }
@@ -441,6 +574,46 @@ $("save").addEventListener("click", async () => {
   } catch (e) {
     status(e.message, "err");
   }
+});
+
+// ---- shell: activity bar + resizable panels ---------------------------------
+
+$("act-style").addEventListener("click", () => {
+  const hidden = document.body.classList.toggle("no-sidebar");
+  $("act-style").classList.toggle("active", !hidden);
+});
+
+$("act-timeline").addEventListener("click", () => {
+  const shown = document.body.classList.toggle("show-panel");
+  $("act-timeline").classList.toggle("active", shown);
+});
+
+/// Drag a divider: `apply` gets the pointer position and sets the CSS var.
+function dragHandle(handle, apply) {
+  handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add("dragging");
+    const move = (ev) => apply(ev);
+    const up = () => {
+      handle.classList.remove("dragging");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+  });
+}
+
+dragHandle($("sidebar-handle"), (e) => {
+  const w = Math.min(460, Math.max(220, e.clientX - 44));
+  document.documentElement.style.setProperty("--sidebar-w", `${w}px`);
+});
+
+dragHandle($("panel-handle"), (e) => {
+  const shell = $("shell").getBoundingClientRect();
+  const h = Math.min(shell.height - 120, Math.max(120, shell.bottom - e.clientY));
+  document.documentElement.style.setProperty("--panel-h", `${h}px`);
 });
 
 // ---- wiring ---------------------------------------------------------------
