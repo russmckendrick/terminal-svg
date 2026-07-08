@@ -6,17 +6,22 @@
 <title>terminal-svg editor</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23191a21'/%3E%3Ctext x='14' y='44' font-family='monospace' font-size='30' font-weight='bold' fill='%2350fa7b'%3E%E2%9D%AF%3C/text%3E%3Crect x='36' y='18' width='13' height='30' fill='%23f8f8f2'%3E%3Canimate attributeName='opacity' values='1;1;0;0' keyTimes='0;0.5;0.5;1' dur='1.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/svg%3E">
 <style>
+  /* IDE chrome is sans (like VS Code); mono is reserved for data —
+     filenames, event payloads, numeric values. */
   :root {
     --bg: #16171d;
-    --panel: #1e1f28;
-    --panel-edge: #2b2d3a;
+    --panel: #1b1c23;
+    --panel-edge: #262833;
     --bar: #131419;
-    --ink: #d8dae5;
+    --field: #111218;
+    --hover: #262836;
+    --ink: #d3d5e0;
     --ink-dim: #8a8ea3;
     --accent: #50fa7b;
     --accent-dim: #2d8c48;
     --danger: #ff5555;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Ubuntu", "Helvetica Neue", sans-serif;
     --sidebar-w: 300px;
     --panel-h: 240px;
   }
@@ -26,43 +31,62 @@
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font: 13px/1.5 var(--mono);
+    font: 12px/1.5 var(--sans);
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
+    -webkit-font-smoothing: antialiased;
   }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #33364433; border-radius: 5px; background: #383b49; background-clip: padding-box; border: 2px solid transparent; }
+  ::-webkit-scrollbar-thumb:hover { background: #4a4e60; background-clip: padding-box; border: 2px solid transparent; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 
-  /* ---- title bar ---- */
+  /* ---- title bar: app id left, command-center pill in the middle,
+     actions right — the VS Code silhouette. ---- */
   header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, auto) 1fr;
     align-items: center;
     gap: 12px;
-    padding: 8px 14px;
-    background: var(--panel);
+    padding: 5px 12px;
+    background: var(--bar);
     border-bottom: 1px solid var(--panel-edge);
   }
-  .mark { color: var(--accent); font-weight: 700; }
+  .tb-side { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .tb-side.right { justify-content: flex-end; gap: 8px; }
+  .mark { color: var(--accent); font-weight: 700; font-family: var(--mono); font-size: 13px; }
   .mark::after { content: "█"; color: var(--ink); animation: blink 1.2s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  header h1 { font-size: 13px; font-weight: 500; margin: 0; white-space: nowrap; }
+  header h1 { font-size: 12px; font-weight: 500; margin: 0; white-space: nowrap; color: var(--ink-dim); }
+  #file-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    padding: 2px 16px;
+    min-width: 24ch;
+    max-width: 44ch;
+  }
   #file-name {
     color: var(--ink-dim);
-    padding: 2px 8px;
-    border: 1px solid var(--panel-edge);
-    border-radius: 5px;
-    max-width: 32ch;
+    font-family: var(--mono);
+    font-size: 11.5px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   #file-name.dirty::after { content: " ●"; color: var(--accent); }
-  header .spacer, #panel-tabs .spacer { flex: 1; }
+  #panel-tabs .spacer { flex: 1; }
   button {
     font: inherit;
     color: var(--ink);
     background: transparent;
     border: 1px solid var(--panel-edge);
-    border-radius: 6px;
-    padding: 5px 14px;
+    border-radius: 4px;
+    padding: 3px 11px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -70,18 +94,18 @@
     gap: 6px;
   }
   .icon { width: 14px; height: 14px; flex: none; pointer-events: none; }
-  button:hover { border-color: var(--ink-dim); }
-  button.primary { color: #04140a; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+  button:hover { background: var(--hover); }
+  button.primary { color: #04140a; background: var(--accent); border-color: var(--accent); font-weight: 600; }
   button.primary:hover { background: #6cfa90; }
-  button:disabled { opacity: 0.4; cursor: default; }
+  button:disabled { opacity: 0.4; cursor: default; background: transparent; }
 
   /* ---- shell: activity bar | sidebar | handle | stage ---- */
   #shell {
     display: grid;
-    grid-template-columns: 44px var(--sidebar-w) 4px minmax(0, 1fr);
+    grid-template-columns: 46px var(--sidebar-w) 4px minmax(0, 1fr);
     min-height: 0;
   }
-  body.no-sidebar #shell { grid-template-columns: 44px 0 0 minmax(0, 1fr); }
+  body.no-sidebar #shell { grid-template-columns: 46px 0 0 minmax(0, 1fr); }
   body.no-sidebar #sidebar, body.no-sidebar #sidebar-handle { display: none; }
 
   #activity {
@@ -90,33 +114,33 @@
     align-items: stretch;
     background: var(--bar);
     border-right: 1px solid var(--panel-edge);
-    padding-top: 4px;
   }
   .act {
     position: relative;
     border: 0;
     border-radius: 0;
-    padding: 11px 0;
+    padding: 12px 0;
     color: var(--ink-dim);
     background: transparent;
+    justify-content: center;
   }
-  .act:hover { color: var(--ink); border: 0; }
+  .act:hover { color: var(--ink); border: 0; background: transparent; }
   .act.active { color: var(--ink); }
   .act.active::before {
     content: "";
     position: absolute;
-    left: 0; top: 8px; bottom: 8px;
+    left: 0; top: 7px; bottom: 7px;
     width: 2px;
     background: var(--accent);
   }
-  .act { justify-content: center; }
-  .act .icon { width: 19px; height: 19px; }
+  .act .icon { width: 21px; height: 21px; }
+  .act.bottom { margin-top: auto; margin-bottom: 4px; }
 
   #sidebar {
     min-height: 0;
     overflow-y: auto;
     background: var(--panel);
-    padding: 4px 16px 24px;
+    padding: 0 0 24px;
   }
   #sidebar-handle, #panel-handle { background: transparent; }
   #sidebar-handle { cursor: col-resize; }
@@ -124,29 +148,59 @@
   #sidebar-handle:hover, #sidebar-handle.dragging,
   #panel-handle:hover, #panel-handle.dragging { background: var(--accent-dim); }
 
-  fieldset { border: 0; margin: 0; padding: 14px 0 2px; }
+  /* VS Code-style sections: uppercase headers with a disclosure chevron,
+     click to collapse. */
+  fieldset { border: 0; margin: 0; padding: 0 14px 8px; }
   fieldset + fieldset { border-top: 1px solid var(--panel-edge); }
-  legend { padding: 0; color: var(--ink-dim); text-transform: lowercase; letter-spacing: 0.08em; font-size: 11px; }
+  legend {
+    float: left; /* legends escape normal flow; float keeps rows below */
+    width: 100%;
+    padding: 6px 0 2px;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-size: 10.5px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  legend::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-right: 1.4px solid var(--ink-dim);
+    border-bottom: 1.4px solid var(--ink-dim);
+    transform: rotate(45deg) translate(-1px, -1px);
+    transition: transform 0.1s;
+    flex: none;
+  }
+  fieldset.collapsed legend::before { transform: rotate(-45deg) translate(-1px, -1px); }
+  fieldset.collapsed .row { display: none; }
   .row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin: 8px 0;
+    margin: 5px 0;
+    min-height: 24px;
+    clear: both; /* drop below the floated legend */
   }
   .row > label:first-child { color: var(--ink); flex: none; }
-  input[type="text"], input[type="number"], select {
-    font: inherit;
+  input[type="text"], input[type="number"], select, textarea {
+    font-family: var(--mono);
+    font-size: 11.5px;
     color: var(--ink);
-    background: var(--bg);
+    background: var(--field);
     border: 1px solid var(--panel-edge);
-    border-radius: 5px;
-    padding: 4px 7px;
-    width: 130px;
+    border-radius: 3px;
+    padding: 3px 8px;
+    width: 138px;
   }
-  input[type="number"] { width: 76px; }
-  input:focus, select:focus { outline: none; border-color: var(--accent-dim); }
-  input[type="checkbox"] { accent-color: var(--accent); }
+  input[type="number"] { width: 72px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-dim); }
+  input[type="checkbox"] { accent-color: var(--accent); width: 13px; height: 13px; }
   .check { justify-content: flex-start; gap: 8px; }
   .hidden { display: none !important; }
   fieldset.off { opacity: 0.35; pointer-events: none; }
@@ -162,22 +216,25 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 4px;
-    padding: 3px 10px;
+    gap: 2px;
+    padding: 2px 8px;
     background: var(--panel);
     border-bottom: 1px solid var(--panel-edge);
     color: var(--ink-dim);
     font-size: 11px;
+    min-height: 26px;
   }
   .zbtn {
-    padding: 1px 8px;
-    border-radius: 4px;
+    padding: 2px 7px;
+    border: 0;
+    border-radius: 3px;
     font-size: 11px;
     color: var(--ink-dim);
     gap: 4px;
   }
-  .zbtn .icon { width: 12px; height: 12px; }
-  .zbtn.active { color: var(--accent); border-color: var(--accent-dim); }
+  .zbtn:hover { color: var(--ink); background: var(--hover); border: 0; }
+  .zbtn .icon { width: 13px; height: 13px; }
+  .zbtn.active { color: var(--accent); }
   #zoom-label { min-width: 5ch; text-align: right; }
   #preview {
     flex: 1;
@@ -197,6 +254,7 @@
   #empty { text-align: center; color: var(--ink-dim); margin: auto; }
   .empty-icon { width: 42px; height: 42px; margin: 0 auto 14px; display: block; opacity: 0.5; }
   #empty .big { font-size: 15px; color: var(--ink); margin-bottom: 8px; }
+  code { font-family: var(--mono); font-size: 11.5px; }
   #empty code { color: var(--accent); }
 
   #panel {
@@ -212,32 +270,39 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 12px;
+    padding: 0 12px;
     border-bottom: 1px solid var(--panel-edge);
     color: var(--ink-dim);
     font-size: 11px;
     white-space: nowrap;
     overflow: hidden;
+    min-height: 30px;
   }
   #panel-tabs .tab {
     color: var(--ink);
-    text-transform: lowercase;
+    text-transform: uppercase;
     letter-spacing: 0.08em;
+    font-size: 10.5px;
     border-bottom: 1px solid var(--accent);
-    padding: 2px 0;
+    padding: 6px 0 5px;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
   }
   #panel-tabs .pbtn {
-    padding: 1px 8px;
-    border-radius: 4px;
+    padding: 2px 6px;
+    border: 0;
+    border-radius: 3px;
     font-size: 11px;
     color: var(--ink-dim);
     gap: 4px;
   }
-  #panel-tabs .pbtn .icon { width: 12px; height: 12px; }
-  #panel-tabs .pbtn:hover:not(:disabled) { color: var(--ink); }
+  #panel-tabs .pbtn:hover:not(:disabled) { color: var(--ink); background: var(--hover); border: 0; }
+  #panel-tabs .pbtn .icon { width: 13px; height: 13px; }
+  #panel-tabs .sep { width: 1px; height: 14px; background: var(--panel-edge); flex: none; }
   #panel-tabs .rec { color: var(--ink-dim); }
-  #panel-tabs input { width: 58px; padding: 1px 6px; font-size: 11px; }
-  #panel-tabs input[type="text"] { width: 120px; }
+  #panel-tabs input { width: 54px; padding: 1px 6px; }
+  #panel-tabs input[type="text"] { width: 110px; }
 
   #panel-body {
     flex: 1;
@@ -252,11 +317,20 @@
     align-items: center;
     gap: 10px;
     padding: 0 12px;
+    font-family: var(--mono);
     font-size: 11px;
     height: 22px;
     white-space: nowrap;
   }
-  #ev-head { color: var(--ink-dim); border-bottom: 1px solid var(--panel-edge); flex: none; }
+  #ev-head {
+    color: var(--ink-dim);
+    border-bottom: 1px solid var(--panel-edge);
+    flex: none;
+    font-family: var(--sans);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
   #ev-scroll { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
   #ev-spacer { width: 1px; }
   .ev-row { position: absolute; left: 0; right: 0; cursor: pointer; }
@@ -306,24 +380,24 @@
   #ev-edit textarea:focus { outline: none; border-color: var(--accent-dim); }
   #ev-err { color: var(--danger); max-width: 24ch; white-space: normal; }
 
-  /* ---- status bar ---- */
+  /* ---- status bar: slim and flat, VS Code-style spaced items ---- */
   footer {
     display: flex;
-    gap: 0;
-    padding: 3px 12px;
-    background: var(--panel);
+    gap: 2px;
+    padding: 0 10px;
+    background: var(--bar);
     border-top: 1px solid var(--panel-edge);
     color: var(--ink-dim);
     font-size: 11px;
     align-items: center;
-    min-height: 24px;
+    min-height: 22px;
   }
-  footer span:not(:empty) { padding: 0 9px; border-right: 1px solid var(--panel-edge); }
-  footer span:not(:empty):last-of-type { border-right: 0; }
-  footer #status { padding-left: 0; }
+  footer span:not(:empty) { padding: 1px 7px; border-radius: 3px; }
+  footer span:not(:empty):hover { background: var(--hover); }
   footer .err { color: var(--danger); }
   footer .ok { color: var(--accent); }
-  footer .spacer { flex: 1; border: 0 !important; }
+  footer .spacer { flex: 1; }
+  footer .spacer:hover { background: transparent; }
 
   #drop-veil {
     position: fixed;
@@ -365,16 +439,22 @@
     <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
     <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
     <symbol id="i-file-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
+    <symbol id="i-folder-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
   </defs>
 </svg>
 
 <header>
-  <span class="mark">❯</span>
-  <h1>terminal-svg editor</h1>
-  <span id="file-name">no file</span>
-  <span class="spacer"></span>
-  <button id="download" disabled><svg class="icon"><use href="#i-download"/></svg>Download</button>
-  <button id="save" class="primary" disabled><svg class="icon"><use href="#i-save"/></svg><span id="save-label">Save</span></button>
+  <div class="tb-side">
+    <span class="mark">❯</span>
+    <h1>terminal-svg editor</h1>
+  </div>
+  <div id="file-pill">
+    <span id="file-name">no file</span>
+  </div>
+  <div class="tb-side right">
+    <button id="download" disabled><svg class="icon"><use href="#i-download"/></svg>Download</button>
+    <button id="save" class="primary" disabled><svg class="icon"><use href="#i-save"/></svg><span id="save-label">Save</span></button>
+  </div>
 </header>
 
 <div id="shell">
@@ -385,6 +465,10 @@
     <button id="act-timeline" class="act" title="timeline (cast events)">
       <svg class="icon"><use href="#i-timeline"/></svg>
     </button>
+    <button id="act-open" class="act bottom" title="open a .cast, .ansi, or terminal-svg .svg…">
+      <svg class="icon"><use href="#i-folder-open"/></svg>
+    </button>
+    <input type="file" id="file-input" accept=".cast,.ansi,.txt,.svg,.json" hidden>
   </nav>
 
   <aside id="sidebar">
@@ -468,16 +552,17 @@
       <div id="panel-tabs">
         <span class="tab">timeline</span>
         <span id="panel-meta"></span>
-        <button id="ev-add" class="pbtn" title="insert an output event after the selection"><svg class="icon"><use href="#i-plus"/></svg>event</button>
-        <button id="ev-undo" class="pbtn" title="undo (⌘Z)" disabled><svg class="icon"><use href="#i-undo"/></svg></button>
-        <button id="ev-redo" class="pbtn" title="redo (⇧⌘Z)" disabled><svg class="icon"><use href="#i-redo"/></svg></button>
-        <button id="ev-live" class="pbtn hidden" title="leave the scrubbed frame, play the animation"><svg class="icon"><use href="#i-play"/></svg>live</button>
         <span class="spacer"></span>
         <label class="rec" for="rec-title">recording</label>
         <input id="rec-title" type="text" placeholder="title">
         <input id="rec-cols" type="number" min="10" max="500" step="1" title="recording width — rewrites the header">
         <span class="rec">×</span>
         <input id="rec-rows" type="number" min="2" max="200" step="1" title="recording height — rewrites the header">
+        <span class="sep"></span>
+        <button id="ev-live" class="pbtn hidden" title="leave the scrubbed frame, play the animation"><svg class="icon"><use href="#i-play"/></svg>live</button>
+        <button id="ev-add" class="pbtn" title="insert an output event after the selection"><svg class="icon"><use href="#i-plus"/></svg></button>
+        <button id="ev-undo" class="pbtn" title="undo (⌘Z)" disabled><svg class="icon"><use href="#i-undo"/></svg></button>
+        <button id="ev-redo" class="pbtn" title="redo (⇧⌘Z)" disabled><svg class="icon"><use href="#i-redo"/></svg></button>
       </div>
       <div id="panel-body">
         <div id="panel-empty">the timeline needs a .cast</div>
@@ -823,6 +908,20 @@ $("act-timeline").addEventListener("click", () => {
   const shown = document.body.classList.toggle("show-panel");
   $("act-timeline").classList.toggle("active", shown);
 });
+
+$("act-open").addEventListener("click", () => $("file-input").click());
+$("file-input").addEventListener("change", () => {
+  const file = $("file-input").files[0];
+  if (file) openFile(file);
+  $("file-input").value = ""; // reopening the same file fires change again
+});
+
+// Sidebar sections collapse on their header, VS Code style.
+for (const legend of document.querySelectorAll("#controls legend")) {
+  legend.addEventListener("click", () => {
+    legend.closest("fieldset").classList.toggle("collapsed");
+  });
+}
 
 /// Drag a divider: `apply` gets the pointer position and sets the CSS var.
 function dragHandle(handle, apply) {
