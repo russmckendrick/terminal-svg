@@ -209,8 +209,8 @@ controls; a config file applies as usual. `ctrl-c` stops the server.
 
 | Flag | Default | |
 |---|---|---|
-| `-c, --cols <N>` | `80` (`rec`: current terminal) | PTY width programs see |
-| `-r, --rows <N>` | `24` (`rec`: current terminal) | PTY height; image height still follows content |
+| `-c, --cols <N>` | `80` (`rec`: current terminal) | PTY width programs see; for a `.cast` input, overrides the recording's width — content reflows as a real resize would (recorded resize events still apply, so the canvas never shrinks below the largest grid the recording switches to) |
+| `-r, --rows <N>` | `24` (`rec`: current terminal) | PTY height; image height still follows content; for a `.cast` input, overrides the recording's height |
 | `--timeout <SECS>` | | kill the PTY command after N seconds and render what was captured — handy for `tail -f`-ish commands and CI |
 | `--cast <PATH>` | output stem + `.cast` | (`rec` only) where the asciicast is saved |
 

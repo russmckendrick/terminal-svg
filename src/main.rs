@@ -58,7 +58,14 @@ fn main() -> Result<()> {
         return match source.kind {
             SourceKind::Cast => {
                 let (header, events) = cast::parse(&source.data[..])?;
-                render_cast_input(&cli, header, events, source.data)
+                // apply_embedded merged any embedded grid override into
+                // cli.cols/rows (CLI flags winning), so a re-render keeps
+                // the original document's size unless flags say otherwise.
+                let cols = (explicit_flag(&matches, "cols") || source.options.cols.is_some())
+                    .then_some(cli.cols);
+                let rows = (explicit_flag(&matches, "rows") || source.options.rows.is_some())
+                    .then_some(cli.rows);
+                render_cast_input(&cli, header, events, source.data, cols, rows)
             }
             SourceKind::Ansi => {
                 let title_fallback = source.options.title_fallback.clone();
@@ -70,7 +77,11 @@ fn main() -> Result<()> {
     if let Some(path) = cli.input.as_deref().filter(|p| cast::looks_like_cast(p)) {
         let bytes = std::fs::read(path)?;
         let (header, events) = cast::parse(&bytes[..])?;
-        return render_cast_input(&cli, header, events, bytes);
+        // --cols/--rows default to 80x24 for captures; for a cast they
+        // only override the recording's grid when passed explicitly.
+        let cols = explicit_flag(&matches, "cols").then_some(cli.cols);
+        let rows = explicit_flag(&matches, "rows").then_some(cli.rows);
+        return render_cast_input(&cli, header, events, bytes, cols, rows);
     }
 
     let source = if !cli.command.is_empty() {
@@ -84,14 +95,25 @@ fn main() -> Result<()> {
     render_ansi_input(&cli, captured.bytes, captured.title)
 }
 
+/// Whether a flag was passed on the command line (vs defaulted).
+fn explicit_flag(matches: &clap::ArgMatches, id: &str) -> bool {
+    matches.value_source(id) == Some(clap::parser::ValueSource::CommandLine)
+}
+
 /// Render a parsed cast and write the SVG, embedding the cast file bytes.
+/// `cols`/`rows` override the recording's grid when set, and embed in the
+/// output metadata so a re-render preserves them.
 fn render_cast_input(
     cli: &Cli,
     header: cast::Header,
     events: Vec<cast::Event>,
     cast_bytes: Vec<u8>,
+    cols: Option<usize>,
+    rows: Option<usize>,
 ) -> Result<()> {
-    let opts = cli.style.to_options(&cli.anim);
+    let mut opts = cli.style.to_options(&cli.anim);
+    opts.cols = cols;
+    opts.rows = rows;
     let svg = render_svg(
         &SourceInput::Cast {
             header: &header,

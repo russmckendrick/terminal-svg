@@ -48,7 +48,8 @@ pub struct Cli {
     #[command(flatten)]
     pub style: StyleArgs,
 
-    /// Terminal width in columns
+    /// Terminal width in columns (for a cast, overrides the recording's
+    /// own width; content reflows as a real resize would)
     #[arg(
         short,
         long,
@@ -58,7 +59,8 @@ pub struct Cli {
     )]
     pub cols: usize,
 
-    /// Terminal height in rows (PTY size; output height follows content)
+    /// Terminal height in rows (PTY size; output height follows content;
+    /// for a cast, overrides the recording's own height)
     #[arg(
         short,
         long,
