@@ -109,11 +109,35 @@ struct State {
     kind: Option<&'static str>,
     name: Option<String>,
     options: RenderOptions,
-    themes: Vec<&'static str>,
+    themes: Vec<ThemeInfo>,
     output: String,
     /// Recording context for cast sources (None otherwise): the grid the
     /// UI shows as placeholders, and the counters in the status bar.
     cast: Option<CastInfo>,
+}
+
+/// A built-in theme with its colors, so the page can dress its own
+/// chrome in whatever theme the preview wears.
+#[derive(Serialize)]
+struct ThemeInfo {
+    name: &'static str,
+    bg: String,
+    fg: String,
+    palette: Vec<String>,
+}
+
+fn theme_infos() -> Vec<ThemeInfo> {
+    theme::builtin::names()
+        .filter_map(|name| {
+            let t = theme::builtin::load(name).ok()?;
+            Some(ThemeInfo {
+                name,
+                bg: t.background.hex(),
+                fg: t.foreground.hex(),
+                palette: t.palette.iter().map(|c| c.hex()).collect(),
+            })
+        })
+        .collect()
 }
 
 #[derive(Serialize)]
@@ -154,7 +178,7 @@ fn state_json(editor: &Editor) -> Result<String> {
             .as_ref()
             .map(|s| s.options.clone())
             .unwrap_or_else(|| editor.initial.clone()),
-        themes: theme::builtin::names().collect(),
+        themes: theme_infos(),
         output: editor.output.clone(),
         cast: source.as_ref().and_then(cast_info),
     };
@@ -492,7 +516,12 @@ mod tests {
         assert_eq!(state["kind"], "cast");
         assert_eq!(state["name"], "typing.cast");
         assert_eq!(state["output"], "demo.svg");
-        assert!(state["themes"].as_array().unwrap().len() >= 9);
+        // Themes carry their colors so the page can theme its own chrome.
+        let themes = state["themes"].as_array().unwrap();
+        assert!(themes.len() >= 9);
+        assert!(themes.iter().any(|t| t["name"] == "solarized-dark"));
+        assert!(themes[0]["bg"].as_str().unwrap().starts_with('#'));
+        assert_eq!(themes[0]["palette"].as_array().unwrap().len(), 16);
         // The cast block carries the recording's own grid and counters.
         assert_eq!(state["cast"]["cols"], 40);
         assert_eq!(state["cast"]["rows"], 10);
