@@ -10,14 +10,16 @@
 
 ## Releasing
 
-1. Bump `version` in `Cargo.toml` and commit — CI fails the release if it doesn't match the tag.
-2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. CI does the rest: checks on all three OSes, five release binaries + `.sha256` checksums, the GitHub release, the Homebrew tap bump, and a terminal-svg.dev redeploy.
-   - The chained site deploy runs with the tag as its ref, so the `github-pages` environment (repo Settings → Environments) must allow tag deployments: it carries a `v*` tag policy alongside `main` (added 2026-07-06 via `gh api .../deployment-branch-policies -f name='v*' -f type=tag`). If the environment is ever recreated without it, every release run ends red with "not allowed to deploy to github-pages due to environment protection rules".
-3. **The release is created with GitHub's auto-generated notes as a placeholder — always replace them** (`gh release edit vX.Y.Z --title ... --notes-file ...`). Match the house style of v0.1.0/v0.2.0:
-   - Title: `vX.Y.Z — <hook>`, not a bare version number.
+1. **Write the release notes first**: `docs/releases/vX.Y.Z.md`, committed before tagging. CI validates it exists (and fails fast if not) and creates the release from it, so the chained site deploy — which bakes release notes in at build time — publishes the real notes on the first pass, no manual redeploy or after-the-fact `gh release edit`. Format:
+   - First line is the title: `# vX.Y.Z — <hook>` (becomes the release title; never a bare version number). The rest of the file is the release body.
    - An opening paragraph selling the headline feature, plus a showcase image via a `raw.githubusercontent.com` URL **pinned to the tag** (never `main` — files move).
    - `## Highlights` with bold lead-ins; a compatibility note if output changed.
    - `## Install` (brew + "grab a binary below" with the platform list), `## Quick start`, the docs links line, the OFL/MIT line, and the `**Full Changelog**` compare link.
+   - Match the house style of v0.5.0 (see `docs/releases/` or the published releases).
+2. Bump `version` in `Cargo.toml` and commit — CI fails the release if it doesn't match the tag.
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. CI does the rest: checks on all three OSes, five release binaries + `.sha256` checksums, the GitHub release (title + body from the notes file), the Homebrew tap bump, and a terminal-svg.dev redeploy.
+   - The chained site deploy runs with the tag as its ref, so the `github-pages` environment (repo Settings → Environments) must allow tag deployments: it carries a `v*` tag policy alongside `main` (added 2026-07-06 via `gh api .../deployment-branch-policies -f name='v*' -f type=tag`). If the environment is ever recreated without it, every release run ends red with "not allowed to deploy to github-pages due to environment protection rules".
+4. Fixing notes after the fact still works (`gh release edit` or edit the file and re-run), but remember the site bakes notes at build time — rerun the "🌐 Deploy Site" workflow (`gh workflow run deploy-site.yml`) after any post-release edit.
 
 ## Non-Obvious Rules
 

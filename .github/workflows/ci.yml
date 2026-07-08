@@ -79,6 +79,24 @@ jobs:
             exit 1
           fi
 
+      # Release notes are written BEFORE tagging (docs/releases/vX.Y.Z.md,
+      # first line = release title). Failing fast here — before the five
+      # platform builds — keeps the chained site deploy honest: the site
+      # bakes release notes in at build time, so notes edited after the
+      # fact used to mean a manual redeploy.
+      - name: "📝 Validate release notes"
+        run: |
+          NOTES="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ ! -f "${NOTES}" ]; then
+            echo "Missing ${NOTES} — write the release notes first" >&2
+            echo "(first line is the release title: # ${GITHUB_REF_NAME} — <hook>)" >&2
+            exit 1
+          fi
+          if ! head -n 1 "${NOTES}" | grep -q "^# ${GITHUB_REF_NAME} "; then
+            echo "First line of ${NOTES} must be the title: # ${GITHUB_REF_NAME} — <hook>" >&2
+            exit 1
+          fi
+
   build:
     name: "📦 Build (${{ matrix.artifact }})"
     needs: [check, release-version]
@@ -154,6 +172,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: "📥 Check out repository"
+        uses: actions/checkout@v6
+
       - name: "📦 Download all artifacts"
         uses: actions/download-artifact@v8
         with:
@@ -165,15 +186,26 @@ jobs:
           find artifacts -type f -exec cp {} release/ \;
           ls -la release/
 
+      # The committed notes become the release at creation time, so the
+      # chained site deploy publishes the real notes on the first pass.
+      - name: "📝 Load release notes"
+        id: notes
+        run: |
+          NOTES="docs/releases/${GITHUB_REF_NAME}.md"
+          echo "title=$(sed -n '1s/^# *//p' "${NOTES}")" >> "${GITHUB_OUTPUT}"
+          tail -n +2 "${NOTES}" | sed '1{/^$/d;}' > "${RUNNER_TEMP}/release-body.md"
+          echo "body-path=${RUNNER_TEMP}/release-body.md" >> "${GITHUB_OUTPUT}"
+
       - name: "🚀 Create GitHub Release"
         uses: softprops/action-gh-release@v3
         with:
+          name: ${{ steps.notes.outputs.title }}
+          body_path: ${{ steps.notes.outputs.body-path }}
           files: release/*
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
           overwrite_files: true
-          generate_release_notes: true
 
   update-tap:
     name: "🍺 Update Homebrew Tap"
