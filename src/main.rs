@@ -183,17 +183,6 @@ fn run_rec(rec: &terminal_svg::cli::RecArgs) -> Result<()> {
 fn run_editor(args: &mut terminal_svg::cli::EditorArgs, matches: &clap::ArgMatches) -> Result<()> {
     use terminal_svg::editor;
 
-    // The editor's house theme is solarized-dark. The clap default
-    // ("dracula", shared with the render path) only sticks when the user
-    // actually chose it: an explicit -t wins here, an embedded/config
-    // theme overlays below.
-    let editor_matches = matches
-        .subcommand_matches("editor")
-        .expect("editor subcommand parsed");
-    if !explicit_flag(editor_matches, "theme") && args.style.theme == "dracula" {
-        args.style.theme = "solarized-dark".into();
-    }
-
     let (source, name) = match &args.input {
         Some(path) => {
             let name = path

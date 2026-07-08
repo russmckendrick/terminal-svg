@@ -165,10 +165,14 @@ terminal-svg editor --port 7391 --no-open
 The page is served by the binary itself on `127.0.0.1` (a random free
 port unless `--port` says otherwise), and every preview is rendered by
 the same pipeline the CLI uses — what you see is exactly what you get.
-The editor's own chrome wears the selected theme too — pick
-`github-light` and the whole IDE goes light. The editor defaults to
-`solarized-dark` (the CLI keeps `dracula`); `-t`, a config theme, or an
-opened SVG's embedded theme all win over the default.
+The editor's own chrome is themed independently of the SVG: the
+settings view (gear icon in the activity bar) picks any built-in theme
+for the UI — `solarized-dark` by default — or "follow preview" to have
+the chrome track the SVG's theme. Settings also cover the stage
+background, default zoom, whether the timeline opens automatically for
+casts, and how the data column shows control characters (`␛␍␊`
+pictures or `\e\r\n` escapes). They persist in the browser, and none
+of them touch the rendered SVG.
 Drop a `.cast`, ANSI dump, or terminal-svg SVG onto the page to switch
 files; **Download** saves through the browser and **Save** writes to the
 `-o` path. Style and animation flags (`-t`, `--speed`, …) seed the

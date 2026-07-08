@@ -204,6 +204,8 @@
   .check { justify-content: flex-start; gap: 8px; }
   .hidden { display: none !important; }
   fieldset.off { opacity: 0.35; pointer-events: none; }
+  .settings-note { padding: 10px 14px; color: var(--ink-dim); font-size: 11px; }
+  body.plain-stage #preview { background-image: none; }
 
   /* ---- stage: preview above the collapsible bottom panel ---- */
   #stage {
@@ -440,6 +442,7 @@
     <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
     <symbol id="i-file-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
     <symbol id="i-folder-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
   </defs>
 </svg>
 
@@ -467,6 +470,9 @@
     </button>
     <button id="act-open" class="act bottom" title="open a .cast, .ansi, or terminal-svg .svg…">
       <svg class="icon"><use href="#i-folder-open"/></svg>
+    </button>
+    <button id="act-settings" class="act" title="editor settings">
+      <svg class="icon"><use href="#i-gear"/></svg>
     </button>
     <input type="file" id="file-input" accept=".cast,.ansi,.txt,.svg,.json" hidden>
   </nav>
@@ -527,6 +533,36 @@
         <div class="row check"><input type="checkbox" id="static"><label for="static">static (final frame)</label></div>
         <div class="row"><label for="at">at s</label><input type="number" id="at" placeholder="end" min="0" step="0.5"></div>
       </fieldset>
+    </div>
+
+    <div id="settings" class="hidden">
+      <fieldset>
+        <legend>appearance</legend>
+        <div class="row"><label for="set-ui-theme">editor theme</label><select id="set-ui-theme"></select></div>
+        <div class="row"><label for="set-stage-bg">stage</label>
+          <select id="set-stage-bg">
+            <option value="dots">dotted</option>
+            <option value="plain">plain</option>
+          </select>
+        </div>
+        <div class="row"><label for="set-zoom">default zoom</label>
+          <select id="set-zoom">
+            <option value="fit">fit</option>
+            <option value="100">100%</option>
+          </select>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>timeline</legend>
+        <div class="row check"><input type="checkbox" id="set-auto-panel"><label for="set-auto-panel">open for casts</label></div>
+        <div class="row"><label for="set-escapes">data column</label>
+          <select id="set-escapes">
+            <option value="pictures">pictures ␛␍␊</option>
+            <option value="backslash">escapes \e\r\n</option>
+          </select>
+        </div>
+      </fieldset>
+      <div class="settings-note">stored in this browser</div>
     </div>
   </aside>
   <div id="sidebar-handle"></div>
@@ -711,11 +747,52 @@ function syncEnabled() {
   syncUiTheme();
 }
 
+// ---- settings ---------------------------------------------------------------
+
+/// Editor-only preferences, persisted per browser. None of these touch
+/// the rendered SVG.
+const SETTINGS_KEY = "terminal-svg-editor";
+const settings = Object.assign(
+  {
+    uiTheme: "solarized-dark", // a theme name, or "follow" = preview's theme
+    stageBg: "dots",
+    zoomDefault: "fit",
+    autoPanel: true,
+    escapes: "pictures",
+  },
+  JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}"),
+);
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function applySettings() {
+  $("set-ui-theme").value = settings.uiTheme;
+  $("set-stage-bg").value = settings.stageBg;
+  $("set-zoom").value = settings.zoomDefault;
+  $("set-auto-panel").checked = settings.autoPanel;
+  $("set-escapes").value = settings.escapes;
+  document.body.classList.toggle("plain-stage", settings.stageBg === "plain");
+  syncUiTheme();
+  if (timeline.loaded) renderRows(); // escapes display may have changed
+}
+
+$("settings").addEventListener("input", (e) => {
+  settings.uiTheme = $("set-ui-theme").value;
+  settings.stageBg = $("set-stage-bg").value;
+  settings.zoomDefault = $("set-zoom").value;
+  settings.autoPanel = $("set-auto-panel").checked;
+  settings.escapes = $("set-escapes").value;
+  saveSettings();
+  applySettings();
+});
+
 // ---- ui theme ---------------------------------------------------------------
 
-/// The chrome wears whatever theme the preview wears: every surface is
-/// derived from the selected built-in theme's bg/fg/palette. Unknown
-/// names ("auto", a custom .toml path) keep the current chrome.
+/// The chrome wears the editor theme from settings — independent of the
+/// SVG's theme unless set to "follow". Every surface is derived from the
+/// theme's bg/fg/palette. Unknown names keep the current chrome.
 const themeMap = {};
 
 function hexRgb(h) {
@@ -735,7 +812,10 @@ function luma(h) {
 }
 
 function syncUiTheme() {
-  const name = $("dual").checked ? $("theme-dark").value : $("theme").value;
+  let name = settings.uiTheme;
+  if (name === "follow") {
+    name = $("dual").checked ? $("theme-dark").value : $("theme").value;
+  }
   const t = themeMap[name];
   if (!t) return;
   const dark = luma(t.bg) < 0.5;
@@ -945,10 +1025,26 @@ $("save").addEventListener("click", async () => {
 
 // ---- shell: activity bar + resizable panels ---------------------------------
 
-$("act-style").addEventListener("click", () => {
-  const hidden = document.body.classList.toggle("no-sidebar");
-  $("act-style").classList.toggle("active", !hidden);
-});
+// The sidebar hosts two views, VS Code style: clicking an inactive icon
+// switches to it, clicking the active one collapses the sidebar.
+let sidebarView = "style";
+function setSidebarView(view) {
+  const collapsed = document.body.classList.contains("no-sidebar");
+  if (view === sidebarView && !collapsed) {
+    document.body.classList.add("no-sidebar");
+  } else {
+    document.body.classList.remove("no-sidebar");
+    sidebarView = view;
+  }
+  const open = !document.body.classList.contains("no-sidebar");
+  $("controls").classList.toggle("hidden", sidebarView !== "style");
+  $("settings").classList.toggle("hidden", sidebarView !== "settings");
+  $("act-style").classList.toggle("active", open && sidebarView === "style");
+  $("act-settings").classList.toggle("active", open && sidebarView === "settings");
+}
+
+$("act-style").addEventListener("click", () => setSidebarView("style"));
+$("act-settings").addEventListener("click", () => setSidebarView("settings"));
 
 $("act-timeline").addEventListener("click", () => {
   const shown = document.body.classList.toggle("show-panel");
@@ -963,7 +1059,7 @@ $("file-input").addEventListener("change", () => {
 });
 
 // Sidebar sections collapse on their header, VS Code style.
-for (const legend of document.querySelectorAll("#controls legend")) {
+for (const legend of document.querySelectorAll("#sidebar legend")) {
   legend.addEventListener("click", () => {
     legend.closest("fieldset").classList.toggle("collapsed");
   });
@@ -1033,9 +1129,11 @@ async function loadTimeline() {
       status(e.message, "err");
     }
   }
-  // The panel follows the source: open for casts, shut otherwise.
-  document.body.classList.toggle("show-panel", timeline.loaded);
-  $("act-timeline").classList.toggle("active", timeline.loaded);
+  // The panel follows the source: open for casts (unless the setting
+  // says not to), shut otherwise.
+  const show = timeline.loaded && settings.autoPanel;
+  document.body.classList.toggle("show-panel", show);
+  $("act-timeline").classList.toggle("active", show);
   renderTimeline();
 }
 
@@ -1108,7 +1206,14 @@ function buildRow(i) {
     cell("ev-time", e.time.toFixed(2)),
     cell("ev-delta", `+${(e.time - (i > 0 ? timeline.events[i - 1].time : 0)).toFixed(2)}`),
     cell(`ev-code code-${e.code}`, e.code),
-    cell("ev-data", e.code === "r" ? `⇲ ${e.data}` : ctrlPictures(e.data)),
+    cell(
+      "ev-data",
+      e.code === "r"
+        ? `⇲ ${e.data}`
+        : settings.escapes === "backslash"
+          ? escapeEvent(e.data)
+          : ctrlPictures(e.data),
+    ),
   );
   const acts = document.createElement("span");
   acts.className = "ev-acts";
@@ -1426,13 +1531,18 @@ $("controls").addEventListener("input", (e) => {
       .map((n) => `<option value="${n}">${n}</option>`)
       .join("");
     for (const id of ["theme", "theme-light", "theme-dark"]) $(id).innerHTML = options;
-    $("theme").value = names.includes("solarized-dark") ? "solarized-dark" : names[0];
+    $("theme").value = names.includes("dracula") ? "dracula" : names[0];
     $("theme-light").value = names.includes("github-light") ? "github-light" : names[0];
     $("theme-dark").value = names.includes("github-dark") ? "github-dark" : names[0];
+    $("set-ui-theme").innerHTML = `<option value="follow">follow preview</option>${options}`;
+    if (!themeMap[settings.uiTheme] && settings.uiTheme !== "follow") {
+      settings.uiTheme = names.includes("solarized-dark") ? "solarized-dark" : names[0];
+    }
+    if (settings.zoomDefault === "100") setZoom("manual", 1);
     setState(s);
     await loadTimeline();
     if (s.loaded) await render();
-    syncUiTheme();
+    applySettings();
   } catch (e) {
     status(e.message, "err");
   }
