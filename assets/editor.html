@@ -64,7 +64,12 @@
     border-radius: 6px;
     padding: 5px 14px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
+  .icon { width: 14px; height: 14px; flex: none; pointer-events: none; }
   button:hover { border-color: var(--ink-dim); }
   button.primary { color: #04140a; background: var(--accent); border-color: var(--accent); font-weight: 700; }
   button.primary:hover { background: #6cfa90; }
@@ -104,7 +109,8 @@
     width: 2px;
     background: var(--accent);
   }
-  .act svg { width: 20px; height: 20px; display: block; margin: 0 auto; }
+  .act { justify-content: center; }
+  .act .icon { width: 19px; height: 19px; }
 
   #sidebar {
     min-height: 0;
@@ -168,7 +174,9 @@
     border-radius: 4px;
     font-size: 11px;
     color: var(--ink-dim);
+    gap: 4px;
   }
+  .zbtn .icon { width: 12px; height: 12px; }
   .zbtn.active { color: var(--accent); border-color: var(--accent-dim); }
   #zoom-label { min-width: 5ch; text-align: right; }
   #preview {
@@ -187,6 +195,7 @@
   #preview img { max-width: 100%; height: auto; margin: auto; }
   #preview.zoomed img { max-width: none; }
   #empty { text-align: center; color: var(--ink-dim); margin: auto; }
+  .empty-icon { width: 42px; height: 42px; margin: 0 auto 14px; display: block; opacity: 0.5; }
   #empty .big { font-size: 15px; color: var(--ink); margin-bottom: 8px; }
   #empty code { color: var(--accent); }
 
@@ -207,6 +216,8 @@
     border-bottom: 1px solid var(--panel-edge);
     color: var(--ink-dim);
     font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
   }
   #panel-tabs .tab {
     color: var(--ink);
@@ -220,7 +231,9 @@
     border-radius: 4px;
     font-size: 11px;
     color: var(--ink-dim);
+    gap: 4px;
   }
+  #panel-tabs .pbtn .icon { width: 12px; height: 12px; }
   #panel-tabs .pbtn:hover:not(:disabled) { color: var(--ink); }
   #panel-tabs .rec { color: var(--ink-dim); }
   #panel-tabs input { width: 58px; padding: 1px 6px; font-size: 11px; }
@@ -260,13 +273,13 @@
   .ev-acts { display: none; gap: 2px; flex: none; }
   .ev-row:hover .ev-acts, .ev-row.sel .ev-acts { display: flex; }
   .ev-acts button {
-    padding: 0 5px;
+    padding: 0 4px;
     border: 0;
     border-radius: 3px;
-    font-size: 11px;
     color: var(--ink-dim);
-    line-height: 20px;
+    height: 20px;
   }
+  .ev-acts .icon { width: 12px; height: 12px; }
   .ev-acts button:hover { color: var(--ink); background: var(--panel-edge); border: 0; }
 
   #ev-edit {
@@ -325,32 +338,52 @@
     pointer-events: none;
   }
   body.dragging #drop-veil { display: grid; }
+  #drop-veil > span { display: flex; align-items: center; gap: 10px; }
+  .veil-icon { width: 24px; height: 24px; }
 </style>
 </head>
 <body>
+
+<!-- Icons: Lucide (lucide.dev), ISC license — inlined as a sprite so the
+     page stays a single self-contained file. -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <defs>
+    <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+    <symbol id="i-timeline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/><path d="m16 12 5 3-5 3v-6Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-zoom-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></symbol>
+    <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="8" x2="14" y1="11" y2="11"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+    <symbol id="i-file-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></symbol>
+  </defs>
+</svg>
 
 <header>
   <span class="mark">❯</span>
   <h1>terminal-svg editor</h1>
   <span id="file-name">no file</span>
   <span class="spacer"></span>
-  <button id="download" disabled>Download</button>
-  <button id="save" class="primary" disabled>Save</button>
+  <button id="download" disabled><svg class="icon"><use href="#i-download"/></svg>Download</button>
+  <button id="save" class="primary" disabled><svg class="icon"><use href="#i-save"/></svg><span id="save-label">Save</span></button>
 </header>
 
 <div id="shell">
   <nav id="activity">
     <button id="act-style" class="act active" title="style controls">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-        <path d="M4 8h10M18 8h2M4 16h2M10 16h10"/>
-        <circle cx="15.5" cy="8" r="2.2"/><circle cx="7.5" cy="16" r="2.2"/>
-      </svg>
+      <svg class="icon"><use href="#i-sliders"/></svg>
     </button>
     <button id="act-timeline" class="act" title="timeline (cast events)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-        <path d="M4 6h16M4 12h9M4 18h13"/>
-        <circle cx="18" cy="17" r="3.2"/><path d="M18 15.6v1.6l1.1 0.8"/>
-      </svg>
+      <svg class="icon"><use href="#i-timeline"/></svg>
     </button>
   </nav>
 
@@ -416,14 +449,15 @@
 
   <section id="stage">
     <div id="stage-toolbar">
-      <button id="zoom-fit" class="zbtn active" title="fit to window (⌘0)">fit</button>
+      <button id="zoom-fit" class="zbtn active" title="fit to window (⌘0)"><svg class="icon"><use href="#i-fit"/></svg>fit</button>
       <button id="zoom-100" class="zbtn" title="actual size (⌘1)">100%</button>
-      <button id="zoom-out" class="zbtn" title="zoom out (⌘−)">−</button>
-      <button id="zoom-in" class="zbtn" title="zoom in (⌘+)">+</button>
+      <button id="zoom-out" class="zbtn" title="zoom out (⌘−)"><svg class="icon"><use href="#i-zoom-out"/></svg></button>
+      <button id="zoom-in" class="zbtn" title="zoom in (⌘+)"><svg class="icon"><use href="#i-zoom-in"/></svg></button>
       <span id="zoom-label"></span>
     </div>
     <div id="preview">
       <div id="empty">
+        <svg class="icon empty-icon"><use href="#i-terminal"/></svg>
         <div class="big">drop a .cast, .ansi, or terminal-svg .svg here</div>
         <div>or launch with a file: <code>terminal-svg editor demo.cast</code></div>
       </div>
@@ -434,10 +468,10 @@
       <div id="panel-tabs">
         <span class="tab">timeline</span>
         <span id="panel-meta"></span>
-        <button id="ev-add" class="pbtn" title="insert an output event after the selection">+ event</button>
-        <button id="ev-undo" class="pbtn" title="undo (⌘Z)" disabled>undo</button>
-        <button id="ev-redo" class="pbtn" title="redo (⇧⌘Z)" disabled>redo</button>
-        <button id="ev-live" class="pbtn hidden" title="leave the scrubbed frame, play the animation">▶ live</button>
+        <button id="ev-add" class="pbtn" title="insert an output event after the selection"><svg class="icon"><use href="#i-plus"/></svg>event</button>
+        <button id="ev-undo" class="pbtn" title="undo (⌘Z)" disabled><svg class="icon"><use href="#i-undo"/></svg></button>
+        <button id="ev-redo" class="pbtn" title="redo (⇧⌘Z)" disabled><svg class="icon"><use href="#i-redo"/></svg></button>
+        <button id="ev-live" class="pbtn hidden" title="leave the scrubbed frame, play the animation"><svg class="icon"><use href="#i-play"/></svg>live</button>
         <span class="spacer"></span>
         <label class="rec" for="rec-title">recording</label>
         <input id="rec-title" type="text" placeholder="title">
@@ -481,7 +515,7 @@
   <span id="took"></span>
 </footer>
 
-<div id="drop-veil">drop to open</div>
+<div id="drop-veil"><span><svg class="icon veil-icon"><use href="#i-file-down"/></svg>drop to open</span></div>
 
 <script>
 "use strict";
@@ -723,7 +757,7 @@ function setState(s) {
   state.cast = s.cast ?? null;
   $("file-name").textContent = s.name ?? "no file";
   const outName = s.output.split("/").pop();
-  $("save").textContent = `Save → ${outName}`;
+  $("save-label").textContent = `Save → ${outName}`;
   $("save").title = s.output;
   $("grid-size").textContent = state.cast ? `${state.cast.cols}×${state.cast.rows}` : "";
   $("ev-count").textContent = state.cast ? `${state.cast.events} events` : "";
@@ -933,17 +967,17 @@ function buildRow(i) {
   );
   const acts = document.createElement("span");
   acts.className = "ev-acts";
-  const act = (label, title, fn) => {
+  const act = (icon, title, fn) => {
     const b = document.createElement("button");
-    b.textContent = label;
+    b.innerHTML = `<svg class="icon"><use href="#i-${icon}"/></svg>`;
     b.title = title;
     b.addEventListener("click", (ev) => { ev.stopPropagation(); fn(); });
     acts.append(b);
   };
-  act("↑", "swap with the row above (same timestamp only)", () => swapEvent(e, -1));
-  act("↓", "swap with the row below (same timestamp only)", () => swapEvent(e, 1));
-  act("⧉", "duplicate", () => duplicateEvent(e));
-  act("✕", "delete", () => deleteEvent(e));
+  act("up", "swap with the row above (same timestamp only)", () => swapEvent(e, -1));
+  act("down", "swap with the row below (same timestamp only)", () => swapEvent(e, 1));
+  act("copy", "duplicate", () => duplicateEvent(e));
+  act("x", "delete", () => deleteEvent(e));
   row.append(acts);
   row.addEventListener("click", () => selectEvent(timeline.selected === e ? null : e));
   return row;
