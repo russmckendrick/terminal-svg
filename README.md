@@ -122,7 +122,11 @@ evade a regex — eyeball the result.)
 `terminal-svg editor` opens a recording — or any terminal-svg SVG — in
 your browser with a live preview of every render option: themes, chrome,
 layout, timing, trims. It's the same renderer serving on 127.0.0.1, so
-the preview is exactly what `Save` writes.
+the preview is exactly what `Save` writes. The timeline panel edits the
+recording itself — fix a typo in the output, retime or delete events,
+resize the grid after the fact — and the saved SVG embeds the edited
+cast, so `extract` gets your fixes back. The preview zooms and pans,
+and columns/rows can override a recording's size non-destructively.
 
 ```sh
 terminal-svg editor demo.cast          # opens the browser

@@ -170,6 +170,24 @@ files; **Download** saves through the browser and **Save** writes to the
 `-o` path. Style and animation flags (`-t`, `--speed`, …) seed the
 controls; a config file applies as usual. `ctrl-c` stops the server.
 
+The preview zooms: **fit** / **100%** / **±** in the stage toolbar,
+`⌘0` `⌘1` `⌘+` `⌘−`, `ctrl`+wheel, and drag to pan. The sidebar's
+columns/rows are the non-destructive render override — the recording's
+own size shows as the placeholder.
+
+For a `.cast`, the **timeline** panel (bottom, toggled from the
+activity bar) edits the recording itself: click an event to scrub the
+preview to that moment and edit its time, code, or text (control
+characters use `\e \r \n \t \\ \xNN` escapes and show as `␛ ␍ ␊` in
+the table). Insert, duplicate, delete, and reorder same-timestamp
+events from the row buttons; `⌘Z`/`⇧⌘Z` undo and redo. The
+*recording* fields on the panel's right edge rewrite the cast header —
+the destructive counterpart to the sidebar override. The first edit
+rewrites the recording (times normalize, asciicast v3 comments drop);
+after that, Save and Download embed the **edited** cast, so
+`terminal-svg extract` recovers your edits. An untouched session keeps
+the original bytes exactly.
+
 ## Options
 
 ### Output and themes
