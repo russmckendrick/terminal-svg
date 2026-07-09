@@ -1,29 +1,37 @@
 @import '@fontsource-variable/jetbrains-mono';
 
 :root {
-  /* apple palette */
-  --black: #000;
-  --ink: #1d1d1f;
-  --gray: #f5f5f7;
-  --white: #fff;
+  /* terminal palette */
+  --black: #0b0f0c;
+  --ink: #121816;
+  --gray: #eef1eb;
+  --white: #f8faf5;
 
-  --text-dark: #1d1d1f;
-  --text-dark-2: #6e6e73;
-  --text-light: #f5f5f7;
-  --text-light-2: #86868b;
+  --text-dark: #152018;
+  --text-dark-2: #5f6b62;
+  --text-light: #f2f5ef;
+  --text-light-2: #96a399;
 
-  --blue: #0071e3;
-  --blue-hover: #0077ed;
-  --link-on-light: #0066cc;
-  --link-on-dark: #2997ff;
+  --blue: #f0a257;
+  --blue-hover: #ffc27d;
+  --link-on-light: #a1542b;
+  --link-on-dark: #f0a257;
+
+  --home-ink: #0b0f0c;
+  --home-paper: #f4f0e7;
+  --home-paper-dim: #ded7ca;
+  --home-muted: #a59f95;
+  --home-accent: #f0a257;
+  --home-accent-bright: #ffc27d;
+  --home-rust-dark: #a1542b;
 
   --sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue',
     Helvetica, Arial, sans-serif;
   --mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  --nav-h: 48px;
-  --radius: 18px;
+  --nav-h: 58px;
+  --radius: 12px;
 }
 
 * {
@@ -32,6 +40,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--nav-h);
 }
 
 body {
@@ -68,6 +77,29 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+:where(a, button, summary):focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 16px;
+  z-index: 100;
+  padding: 8px 12px;
+  color: #10160f;
+  background: var(--blue);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
 }
 
 /* ---- sections ---- */
@@ -153,7 +185,7 @@ a:hover {
 .btn {
   display: inline-block;
   background: var(--blue);
-  color: #fff;
+  color: #1b140e;
   font-size: 17px;
   letter-spacing: -0.022em;
   padding: 12px 24px;
@@ -179,21 +211,107 @@ a:hover {
   color: var(--link-on-dark);
 }
 
+/* ---- terminal snippets ---- */
+
+.snippet {
+  background: #1d1d1f;
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: left;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.snippet .head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #333336, #2a2a2d);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+.snippet .lights {
+  display: inline-flex;
+  gap: 7px;
+  justify-self: start;
+}
+
+.snippet .lights i {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+}
+
+.snippet .r { background: #ff5f57; }
+.snippet .y { background: #febc2e; }
+.snippet .g { background: #28c840; }
+
+.snippet .label {
+  justify-self: center;
+  max-width: 100%;
+  padding: 0 10px;
+  overflow: hidden;
+  color: #9a9a9e;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snippet .copy {
+  justify-self: end;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2997ff;
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.snippet .copy:hover { text-decoration: underline; }
+.snippet .copy.copied { color: #30d158; }
+
+.snippet pre {
+  margin: 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+}
+
+.snippet code {
+  color: #f5f5f7;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre;
+}
+
 /* ---- scroll reveal ---- */
 
-[data-reveal] {
+html.js [data-reveal] {
   opacity: 0;
   transform: translateY(26px);
   transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-[data-reveal].in {
+html.js [data-reveal].in {
   opacity: 1;
   transform: none;
 }
 
+/* The first screen must never wait for an observer callback to become useful. */
+html.js .home-hero [data-reveal] {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] {
+  html.js [data-reveal] {
     opacity: 1;
     transform: none;
     transition: none;
@@ -261,7 +379,7 @@ a:hover {
   padding: 1px 5px;
 }
 
-.prose pre {
+.prose > pre {
   background: var(--ink);
   color: var(--gray);
   border-radius: 12px;
@@ -270,7 +388,7 @@ a:hover {
   margin: 14px 0;
 }
 
-.prose pre code {
+.prose > pre code {
   background: none;
   padding: 0;
   color: inherit;

@@ -19,6 +19,7 @@ const latest = await getLatest();
       <span class="links">
         <a href={REPO_URL} rel="noopener">Source</a>
         <a href={`${REPO_URL}/issues`} rel="noopener">Issues</a>
+        <a href="/docs/">Docs</a>
         <a href="/releases/">Release Notes</a>
         {latest && <span class="ver">{latest.tag}</span>}
       </span>

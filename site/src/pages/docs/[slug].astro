@@ -1,0 +1,74 @@
+---
+import Base from '../../layouts/Base.astro';
+import { DOCS, getDoc } from '../../lib/docs';
+
+export function getStaticPaths() {
+  return DOCS.map((doc) => ({ params: { slug: doc.slug } }));
+}
+
+const slug = Astro.params.slug ?? '';
+const doc = await getDoc(slug);
+if (!doc) return Astro.redirect('/docs/');
+---
+
+<Base title={`${doc.title} — terminal-svg docs`} description={doc.deck}>
+  <div class="doc-page">
+    <header class="doc-header">
+      <div class="doc-wrap doc-header-grid">
+        <div data-reveal>
+          <p class="doc-kicker"><span class="signal"></span> {doc.label}</p>
+          <h1>{doc.title}</h1>
+          <p>{doc.deck}</p>
+        </div>
+        <nav class="doc-nav" aria-label="Documentation">
+          <span>READ NEXT</span>
+          {DOCS.filter((item) => item.slug !== doc.slug).slice(0, 3).map((item) => (
+            <a href={`/docs/${item.slug}/`}>{item.title} ↗</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+    <main class="doc-main">
+      <div class="doc-wrap doc-body-wrap">
+        <article class="doc-body prose" set:html={doc.html} />
+      </div>
+    </main>
+  </div>
+</Base>
+
+<style is:global>
+  .doc-page { background: var(--home-paper); }
+  .doc-wrap { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+  .doc-header { padding: clamp(70px, 8vw, 110px) 0 68px; color: var(--home-paper); background: var(--home-ink); }
+  .doc-header-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.5fr); gap: 80px; align-items: end; }
+  .doc-kicker, .doc-nav span { color: var(--home-muted); font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .doc-kicker .signal { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--home-accent); vertical-align: 1px; }
+  .doc-header h1 { margin-top: 24px; font-family: var(--mono); font-size: clamp(44px, 6vw, 76px); font-weight: 650; letter-spacing: -0.08em; line-height: 0.98; }
+  .doc-header h1::after { display: block; width: 90px; height: 4px; margin-top: 24px; content: ''; background: var(--home-accent); }
+  .doc-header p:not(.doc-kicker) { max-width: 55ch; margin-top: 24px; color: var(--home-muted); font-size: 18px; line-height: 1.5; }
+  .doc-nav { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 20px; border-top: 1px solid rgba(255, 194, 125, 0.3); }
+  .doc-nav a { color: var(--home-accent); font-family: var(--mono); font-size: 12px; }
+  .doc-nav a:hover { text-decoration: none; color: var(--home-accent-bright); }
+  .doc-main { padding: 64px 0 120px; }
+  .doc-body-wrap { display: block; }
+  .doc-body { max-width: none; color: var(--text-dark-2); font-size: 16px; line-height: 1.7; }
+  .doc-body h1 { display: none; }
+  .doc-body h2 { max-width: 78ch; margin: 58px 0 16px; padding-top: 18px; border-top: 1px solid #d8cec0; color: var(--text-dark); font-family: var(--mono); font-size: 27px; letter-spacing: -0.06em; }
+  .doc-body > h2:first-child { margin-top: 0; }
+  .doc-body h3 { max-width: 78ch; margin: 44px 0 12px; color: var(--text-dark); font-family: var(--mono); font-size: 18px; letter-spacing: -0.04em; }
+  .doc-body p { max-width: 78ch; margin: 14px 0; }
+  .doc-body a { color: var(--home-rust-dark); }
+  .doc-body a:hover { color: #7f3d22; }
+  .doc-body ul, .doc-body ol { max-width: 78ch; margin: 14px 0; padding-left: 24px; }
+  .doc-body li { margin: 6px 0; }
+  .doc-body table { width: 100%; margin: 22px 0; border-collapse: collapse; font-size: 14px; }
+  .doc-body th, .doc-body td { padding: 10px 12px; border-bottom: 1px solid #d8cec0; text-align: left; vertical-align: top; }
+  .doc-body th { color: var(--text-dark); font-family: var(--mono); font-size: 11px; text-transform: uppercase; }
+  .doc-body code { padding: 2px 5px; background: #e9e1d6; border-radius: 3px; color: var(--text-dark); font-family: var(--mono); font-size: 0.86em; }
+  .doc-body .snippet { width: 100%; margin: 20px 0; }
+  .doc-body .snippet code { padding: 0; background: none; color: #f5f5f7; font-family: var(--mono); font-size: 13px; line-height: 1.7; }
+  .doc-body blockquote { margin: 20px 0; padding: 8px 18px; border-left: 3px solid var(--home-accent); color: var(--text-dark); }
+  .doc-body img { display: block; max-width: 100%; height: auto; margin: 24px 0; }
+  @media (max-width: 800px) { .doc-header-grid { grid-template-columns: 1fr; gap: 42px; } }
+  @media (max-width: 560px) { .doc-wrap { width: min(100% - 32px, 1180px); } .doc-header h1 { font-size: clamp(44px, 13vw, 68px); } .doc-main { padding: 48px 0 80px; } }
+</style>

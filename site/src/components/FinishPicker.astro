@@ -36,6 +36,7 @@ const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fi
           class:list={['swatch', { on: i === 0 }]}
           data-finish={s.key}
           aria-label={s.name}
+          aria-pressed={i === 0 ? 'true' : 'false'}
           title={s.name}
         >
           <ThemeChip theme={s} />
@@ -56,7 +57,11 @@ const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fi
       if (!swatch) return;
       const key = swatch.dataset.finish;
       for (const s of shots) s.classList.toggle('on', s.dataset.finish === key);
-      for (const s of swatches) s.classList.toggle('on', s === swatch);
+      for (const s of swatches) {
+        const selected = s === swatch;
+        s.classList.toggle('on', selected);
+        s.setAttribute('aria-pressed', String(selected));
+      }
       if (label) label.textContent = swatch.getAttribute('aria-label');
     });
   }
@@ -116,6 +121,12 @@ const shots = THEME_META.map((f) => ({ ...f, name: f.label, item: find(f.key, fi
   .swatch.on {
     outline: 2px solid var(--blue);
     outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shot {
+      transition: none;
+    }
   }
 
   .name {

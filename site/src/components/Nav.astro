@@ -3,6 +3,7 @@ import { REPO_URL } from '../lib/releases';
 
 const path = Astro.url.pathname;
 const onGallery = path.startsWith('/gallery');
+const onDocs = path.startsWith('/docs');
 const onReleases = path.startsWith('/releases');
 const onHome = path === '/';
 ---
@@ -14,14 +15,14 @@ const onHome = path === '/';
       <span>terminal‑svg</span>
     </a>
     <div class="links">
-      <a href="/" class:list={{ on: onHome }}>
+      <a href="/" aria-label="Overview" aria-current={onHome ? 'page' : undefined} class:list={{ on: onHome }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 10.75 12 3.5l9 7.25"></path>
           <path d="M5.5 9.5V20a.5.5 0 0 0 .5.5h12a.5.5 0 0 0 .5-.5V9.5"></path>
         </svg>
         <span>Overview</span>
       </a>
-      <a href="/gallery/" class:list={{ on: onGallery }}>
+      <a href="/gallery/" aria-label="Gallery" aria-current={onGallery ? 'page' : undefined} class:list={{ on: onGallery }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="3" y="5" width="18" height="14" rx="2.5"></rect>
           <circle cx="8.7" cy="10" r="1.4" fill="currentColor" stroke="none"></circle>
@@ -29,20 +30,28 @@ const onHome = path === '/';
         </svg>
         <span>Gallery</span>
       </a>
-      <a href="/releases/" class:list={{ on: onReleases }}>
+      <a href="/docs/" aria-label="Docs" aria-current={onDocs ? 'page' : undefined} class:list={{ on: onDocs }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"></path>
+          <path d="M5 4.5v17"></path>
+          <path d="M9 6h7M9 10h7"></path>
+        </svg>
+        <span>Docs</span>
+      </a>
+      <a href="/releases/" aria-label="Releases" aria-current={onReleases ? 'page' : undefined} class:list={{ on: onReleases }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M11.6 3H4a1 1 0 0 0-1 1v7.6a1 1 0 0 0 .3.7l8.9 8.9a1 1 0 0 0 1.4 0l7.1-7.1a1 1 0 0 0 0-1.4L11.9 3.3a1 1 0 0 0-.3-.3z" transform="translate(0 -0.5)"></path>
           <circle cx="7.6" cy="7.1" r="1.3" fill="currentColor" stroke="none"></circle>
         </svg>
         <span>Releases</span>
       </a>
-      <a href={REPO_URL} rel="noopener">
+      <a href={REPO_URL} aria-label="GitHub" rel="noopener">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
         </svg>
         <span>GitHub</span>
       </a>
-      <a class="cta" href="/#get">
+      <a class="cta" href="/docs/install/" aria-label="Install">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 4v11"></path>
           <path d="m7 11 5 5 5-5"></path>
@@ -59,7 +68,7 @@ const onHome = path === '/';
     position: sticky;
     top: 0;
     z-index: 50;
-    background: rgba(22, 22, 23, 0.8);
+    background: rgba(11, 15, 12, 0.86);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
@@ -126,7 +135,7 @@ const onHome = path === '/';
 
   .cta {
     background: var(--blue);
-    color: #fff !important;
+    color: #1b140e !important;
     padding: 5px 14px;
     border-radius: 980px;
     font-size: 13px;
@@ -146,14 +155,25 @@ const onHome = path === '/';
       gap: 20px;
     }
 
-    /* icons carry the nav on small screens */
-    .links a:not(.cta) span {
-      display: none;
+    .links {
+      gap: 11px;
     }
 
     .links svg {
-      width: 18px;
-      height: 18px;
+      display: none;
+    }
+
+    .links a {
+      font-size: 11px;
+    }
+
+    .links a:first-child,
+    .links a:nth-child(5) {
+      display: none;
+    }
+
+    .cta {
+      padding: 6px 10px;
     }
 
     /* the mark alone carries the brand on small screens */

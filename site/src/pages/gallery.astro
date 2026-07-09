@@ -10,63 +10,85 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
 
 <Base
   title="Gallery — terminal-svg"
-  description="Every terminal-svg test fixture rendered in all nine built-in themes — Dracula, Catppuccin Mocha, Nord, Tokyo Night, GitHub dark & light, Solarized, PowerShell and Ubuntu — including the Windows and GNOME window chrome."
+  description="Explore terminal-svg output across every built-in theme, fixture, and platform-native window chrome."
 >
-  <section class="section section--gray">
-    <div class="wrap">
-      <h1 class="headline" data-reveal>Every theme.<br />Every fixture.</h1>
-      <p class="subhead narrow" data-reveal>
-        {fixtures.length} test fixtures. {themes.length} themes. {items.length} SVGs, rendered
-        straight from the repo. Zoom right in — they're vectors.
-      </p>
-
-      <div class="filters" data-reveal>
-        <div class="swatch-filter" data-filter-group="theme" role="group" aria-label="Filter by theme">
-          <button class="swatch all on" data-value="" aria-label="All themes" title="All themes">
-            <ThemeChip all />
-          </button>
-          {
-            themeMeta.map((t) => (
-              <button class="swatch" data-value={t.key} aria-label={t.label} title={t.label}>
-                <ThemeChip theme={t} />
-              </button>
-            ))
-          }
+  <div class="gallery-page">
+    <section class="gallery-hero">
+      <div class="gallery-wrap gallery-hero-grid">
+        <div data-reveal>
+          <p class="gallery-kicker"><span class="signal"></span> gallery / svg output</p>
+          <h1>Every terminal state, <em>rendered.</em></h1>
+          <p class="gallery-lead">
+            Real output from the test suite — vectors, not mockups. Pick a theme, find a fixture,
+            and zoom in until the columns give themselves away.
+          </p>
         </div>
-        <p class="theme-name" data-theme-name>All themes</p>
+        <div class="gallery-stats" data-reveal aria-label="Gallery totals">
+          <div><strong>{items.length}</strong><span>SVG outputs</span></div>
+          <div><strong>{themes.length}</strong><span>built-in themes</span></div>
+          <div><strong>{fixtures.length}</strong><span>terminal fixtures</span></div>
+        </div>
+      </div>
+    </section>
 
-        <div class="seg" data-filter-group="fixture" role="group" aria-label="Filter by fixture">
-          <button class="on" data-value="">All</button>
-          {fixtureMeta.map((f) => <button data-value={f.key}>{f.label}</button>)}
+    <section class="gallery-catalog">
+      <div class="gallery-wrap">
+        <div class="gallery-toolbar" data-reveal>
+          <div class="toolbar-title">
+            <span class="gallery-kicker gallery-kicker--dark">Browse the output</span>
+            <p data-count aria-live="polite">Showing all {items.length}</p>
+          </div>
+          <div class="filter-controls">
+            <div class="theme-filter" data-filter-group="theme" role="group" aria-label="Filter by theme">
+              <span class="filter-label">THEME</span>
+              <div class="swatch-filter">
+                <button class="swatch all on" type="button" data-value="" aria-label="All themes" aria-pressed="true" title="All themes">
+                  <ThemeChip all />
+                </button>
+                {
+                  themeMeta.map((t) => (
+                    <button class="swatch" type="button" data-value={t.key} aria-label={t.label} aria-pressed="false" title={t.label}>
+                      <ThemeChip theme={t} />
+                    </button>
+                  ))
+                }
+              </div>
+              <p class="theme-name" data-theme-name>All themes</p>
+            </div>
+            <label class="fixture-filter">
+              <span class="filter-label">FIXTURE</span>
+              <select data-filter-select="fixture" aria-label="Filter by fixture">
+                <option value="">All fixtures</option>
+                {fixtureMeta.map((f) => <option value={f.key}>{f.label}</option>)}
+              </select>
+            </label>
+          </div>
         </div>
       </div>
 
-      <p class="count" data-count aria-live="polite">Showing all {items.length}</p>
-    </div>
+      <div class="gallery-wide">
+        <GalleryGrid items={items} lightbox={true} />
+        <p class="empty" data-empty hidden>Nothing matches that combination.</p>
+      </div>
+    </section>
+  </div>
 
-    <div class="wide">
-      <GalleryGrid items={items} lightbox={true} />
-      <p class="empty" data-empty hidden>Nothing matches that combination.</p>
-    </div>
-  </section>
-
-  <!-- lightbox -->
-  <div class="lightbox" data-lightbox-root hidden>
-    <button class="lb-close" data-lb-close aria-label="Close">
+  <div class="lightbox" data-lightbox-root role="dialog" aria-modal="true" aria-labelledby="lb-caption" hidden>
+    <button class="lb-close" type="button" data-lb-close aria-label="Close">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <path d="m6 6 12 12M18 6 6 18"></path>
       </svg>
     </button>
-    <button class="lb-arrow lb-prev" data-lb-prev aria-label="Previous">
+    <button class="lb-arrow lb-prev" type="button" data-lb-prev aria-label="Previous">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M15 5l-7 7 7 7"></path>
       </svg>
     </button>
     <figure>
       <img data-lb-img src="" alt="" />
-      <figcaption data-lb-caption></figcaption>
+      <figcaption id="lb-caption" data-lb-caption></figcaption>
     </figure>
-    <button class="lb-arrow lb-next" data-lb-next aria-label="Next">
+    <button class="lb-arrow lb-next" type="button" data-lb-next aria-label="Next">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="m9 5 7 7-7 7"></path>
       </svg>
@@ -75,101 +97,218 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
 </Base>
 
 <style>
-  .filters {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 52px 0 0;
+  .gallery-page {
+    --gallery-ink: var(--home-ink);
+    --gallery-paper: var(--home-paper);
+    --gallery-muted: var(--home-muted);
+    --gallery-accent: var(--home-accent);
+    background: var(--gallery-paper);
+  }
+
+  .gallery-wrap {
+    width: min(1180px, calc(100% - 48px));
+    margin: 0 auto;
+  }
+
+  .gallery-hero {
+    padding: clamp(74px, 9vw, 124px) 0 clamp(66px, 8vw, 110px);
+    color: var(--gallery-paper);
+    background:
+      radial-gradient(circle at 80% 20%, rgba(240, 162, 87, 0.1), transparent 28rem),
+      var(--gallery-ink);
+  }
+
+  .gallery-hero-grid {
+    display: block;
+  }
+
+  .gallery-kicker,
+  .filter-label,
+  .gallery-stats span {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .gallery-kicker {
+    color: var(--gallery-muted);
+  }
+
+  .gallery-kicker--dark,
+  .filter-label {
+    color: var(--home-rust-dark);
+  }
+
+  .gallery-kicker .signal {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: var(--gallery-accent);
+    vertical-align: 1px;
+  }
+
+  .gallery-hero h1 {
+    margin-top: 26px;
+    font-family: var(--mono);
+    font-size: clamp(50px, 7.4vw, 96px);
+    font-weight: 650;
+    letter-spacing: -0.08em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .gallery-hero h1 em {
+    color: var(--gallery-accent);
+    font-style: normal;
+  }
+
+  .gallery-lead {
+    max-width: 64ch;
+    margin-top: 26px;
+    color: var(--gallery-muted);
+    font-size: clamp(17px, 1.7vw, 21px);
+    line-height: 1.55;
+  }
+
+  .gallery-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid rgba(255, 194, 125, 0.28);
+    border-bottom: 1px solid rgba(255, 194, 125, 0.28);
+    margin-top: clamp(56px, 7vw, 92px);
+  }
+
+  .gallery-stats div {
+    min-width: 0;
+    padding: 20px 16px 19px 0;
+  }
+
+  .gallery-stats div + div {
+    padding-left: 16px;
+    border-left: 1px solid rgba(255, 194, 125, 0.2);
+  }
+
+  .gallery-stats strong {
+    display: block;
+    color: var(--gallery-paper);
+    font-family: var(--mono);
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 500;
+    letter-spacing: -0.08em;
+  }
+
+  .gallery-stats span {
+    display: block;
+    margin-top: 8px;
+    color: var(--gallery-muted);
+    font-size: 9px;
+    line-height: 1.4;
+  }
+
+  .gallery-catalog {
+    padding: 0 0 120px;
+    background: var(--gallery-paper);
+  }
+
+  .gallery-toolbar {
+    position: sticky;
+    top: var(--nav-h);
+    z-index: 20;
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 32px;
+    padding: 26px 0 22px;
+    background: color-mix(in srgb, var(--gallery-paper) 94%, transparent);
+    border-bottom: 1px solid #d8cec0;
+    backdrop-filter: blur(16px);
+  }
+
+  .toolbar-title p {
+    margin-top: 12px;
+    color: var(--text-dark);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .filter-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 40px;
+    align-items: end;
+  }
+
+  .filter-label {
+    display: block;
+    margin-bottom: 14px;
   }
 
   .swatch-filter {
     display: flex;
-    justify-content: center;
     flex-wrap: wrap;
-    gap: 14px;
+    gap: 11px;
   }
 
   .swatch {
-    border: none;
-    background: none;
-    border-radius: 8px;
-    cursor: pointer;
     padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    cursor: pointer;
     line-height: 0;
     transition: transform 0.2s ease;
   }
 
   .swatch :global(svg) {
     display: block;
+    width: 40px;
+    height: auto;
   }
 
   .swatch:hover {
-    transform: scale(1.1) translateY(-1px);
+    transform: translateY(-2px) scale(1.08);
   }
 
   .swatch.on {
-    outline: 2px solid var(--blue);
+    outline: 2px solid var(--gallery-accent);
     outline-offset: 3px;
   }
 
   .theme-name {
-    margin-top: 16px;
-    font-size: 15px;
+    min-height: 1.2em;
+    margin-top: 13px;
     color: var(--text-dark-2);
+    font-family: var(--mono);
+    font-size: 12px;
   }
 
-  .seg {
-    display: inline-flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 4px;
-    background: #e8e8ed;
-    border-radius: 24px;
-    padding: 4px;
-    margin-top: 30px;
-  }
-
-  .seg button {
-    font-family: var(--sans);
-    font-size: 13px;
-    letter-spacing: -0.01em;
+  .fixture-filter select {
+    width: 100%;
+    padding: 8px 24px 10px 0;
+    border: 0;
+    border-bottom: 1px solid #bdb1a3;
+    border-radius: 0;
+    background: var(--gallery-paper);
     color: var(--text-dark);
-    background: none;
-    border: none;
-    border-radius: 980px;
-    padding: 6px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
     cursor: pointer;
-    transition: background 0.2s ease, box-shadow 0.2s ease;
-    white-space: nowrap;
   }
 
-  .seg button:hover {
-    background: rgba(255, 255, 255, 0.6);
-  }
-
-  .seg button.on {
-    background: var(--white);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-    font-weight: 600;
-  }
-
-  .count {
-    text-align: center;
-    color: var(--text-dark-2);
-    font-size: 13px;
-    margin: 34px 0 44px;
-  }
-
-  .wide {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 32px;
+  .gallery-wide {
+    width: min(1280px, calc(100% - 48px));
+    margin: 48px auto 0;
   }
 
   .empty {
-    text-align: center;
+    padding: 80px 0;
     color: var(--text-dark-2);
-    margin-top: 48px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 13px;
   }
 
   /* lightbox */
@@ -180,9 +319,9 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 15, 17, 0.88);
-    backdrop-filter: blur(22px) saturate(140%);
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    background: rgba(11, 15, 12, 0.92);
+    backdrop-filter: blur(22px) saturate(120%);
+    -webkit-backdrop-filter: blur(22px) saturate(120%);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -215,8 +354,8 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
   .lightbox figcaption {
     margin-top: 24px;
     color: rgba(255, 255, 255, 0.75);
-    font-size: 15px;
-    letter-spacing: -0.016em;
+    font-family: var(--mono);
+    font-size: 13px;
   }
 
   .lb-close,
@@ -227,66 +366,52 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    border: 1px solid rgba(255, 194, 125, 0.35);
+    border-radius: 4px;
+    background: rgba(255, 194, 125, 0.1);
+    color: var(--gallery-accent);
     cursor: pointer;
-    transition: background 0.2s ease;
   }
 
   .lb-close:hover,
   .lb-arrow:hover {
-    background: rgba(255, 255, 255, 0.24);
+    background: rgba(255, 194, 125, 0.22);
   }
 
-  .lb-close {
-    top: 22px;
-    right: 22px;
-  }
-
+  .lb-close { top: 22px; right: 22px; }
   .lb-close svg,
-  .lb-arrow svg {
-    width: 18px;
-    height: 18px;
-  }
+  .lb-arrow svg { width: 18px; height: 18px; }
+  .lb-prev { left: 22px; top: 50%; transform: translateY(-50%); }
+  .lb-next { right: 22px; top: 50%; transform: translateY(-50%); }
 
-  .lb-prev {
-    left: 22px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  .lb-next {
-    right: 22px;
-    top: 50%;
-    transform: translateY(-50%);
+  @media (max-width: 900px) {
+    .gallery-toolbar,
+    .filter-controls { grid-template-columns: 1fr; }
+    .gallery-toolbar { gap: 24px; }
   }
 
   @media (max-width: 640px) {
-    .lightbox figure {
-      max-width: calc(100vw - 32px);
-    }
+    .gallery-wrap,
+    .gallery-wide { width: min(100% - 32px, 1280px); }
+    .gallery-hero-grid { display: block; }
+    .gallery-hero h1 { font-size: clamp(46px, 13vw, 70px); }
+    .gallery-stats strong { font-size: 30px; }
+    .gallery-catalog { padding-bottom: 72px; }
+    .gallery-toolbar { top: var(--nav-h); padding-top: 20px; }
+    .gallery-wide { margin-top: 28px; }
+    .lb-prev, .lb-next { top: auto; bottom: 22px; transform: none; }
+    .lb-prev { left: calc(50% - 52px); }
+    .lb-next { right: calc(50% - 52px); }
+  }
 
-    .lb-prev,
-    .lb-next {
-      top: auto;
-      bottom: 22px;
-      transform: none;
-    }
-
-    .lb-prev {
-      left: calc(50% - 52px);
-    }
-
-    .lb-next {
-      right: calc(50% - 52px);
-    }
+  @media (prefers-reduced-motion: reduce) {
+    .lightbox,
+    .lightbox figure,
+    .swatch { transition: none; }
   }
 </style>
 
 <script>
-  // ---- filtering ----
   const state: Record<string, string> = { theme: '', fixture: '' };
   const tiles = document.querySelectorAll<HTMLElement>('.tile[data-theme][data-fixture]');
   const empty = document.querySelector<HTMLElement>('[data-empty]');
@@ -315,7 +440,11 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
   function activate(group: HTMLElement, btn: HTMLElement) {
     const key = group.dataset.filterGroup!;
     state[key] = btn.dataset.value ?? '';
-    for (const b of group.querySelectorAll('button')) b.classList.toggle('on', b === btn);
+    for (const b of group.querySelectorAll('button')) {
+      const selected = b === btn;
+      b.classList.toggle('on', selected);
+      b.setAttribute('aria-pressed', String(selected));
+    }
     if (key === 'theme' && themeName) {
       themeName.textContent = btn.getAttribute('aria-label') ?? btn.textContent ?? 'All themes';
     }
@@ -330,11 +459,23 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
     });
   }
 
-  // deep links: /gallery/?theme=nord&fixture=starship
+  for (const select of document.querySelectorAll<HTMLSelectElement>('[data-filter-select]')) {
+    select.addEventListener('change', () => {
+      state[select.dataset.filterSelect!] = select.value;
+      apply();
+    });
+  }
+
   const params = new URLSearchParams(location.search);
   for (const key of ['theme', 'fixture'] as const) {
     const value = params.get(key);
     if (!value) continue;
+    const select = document.querySelector<HTMLSelectElement>(`[data-filter-select="${key}"]`);
+    if (select) {
+      select.value = value;
+      state[key] = value;
+      continue;
+    }
     const btn = document.querySelector<HTMLElement>(
       `[data-filter-group="${key}"] button[data-value="${CSS.escape(value)}"]`
     );
@@ -342,11 +483,11 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
   }
   apply();
 
-  // ---- lightbox ----
   const root = document.querySelector<HTMLElement>('[data-lightbox-root]')!;
   const lbImg = root.querySelector<HTMLImageElement>('[data-lb-img]')!;
   const lbCaption = root.querySelector<HTMLElement>('[data-lb-caption]')!;
   let current = -1;
+  let lastFocused: HTMLElement | null = null;
 
   function visibleTriggers() {
     return [...document.querySelectorAll<HTMLElement>('.tile:not([hidden]) [data-lightbox]')];
@@ -356,23 +497,26 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
     const triggers = visibleTriggers();
     if (!triggers.length) return;
     current = (index + triggers.length) % triggers.length;
-    const t = triggers[current];
-    lbImg.src = t.dataset.url ?? '';
-    lbImg.alt = t.getAttribute('aria-label') ?? '';
-    lbCaption.textContent = t.dataset.caption ?? '';
-    // vectors scale losslessly — fill the stage, but never taller than the viewport
-    const tileImg = t.querySelector('img');
+    const trigger = triggers[current];
+    lbImg.src = trigger.dataset.url ?? '';
+    lbImg.alt = trigger.getAttribute('aria-label') ?? '';
+    lbCaption.textContent = trigger.dataset.caption ?? '';
+    const tileImg = trigger.querySelector('img');
     const ratio = tileImg ? tileImg.naturalWidth / tileImg.naturalHeight : 2;
-    const fig = lbImg.closest('figure') as HTMLElement;
+    const figure = lbImg.closest('figure') as HTMLElement;
     const maxByHeight = (window.innerHeight - 220) * ratio;
-    fig.style.width = `min(920px, calc(100vw - 140px), ${Math.round(maxByHeight)}px)`;
+    figure.style.width = `min(920px, calc(100vw - 140px), ${Math.round(maxByHeight)}px)`;
   }
 
   function open(index: number) {
+    lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     show(index);
     root.hidden = false;
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => root.classList.add('open'));
+    requestAnimationFrame(() => {
+      root.classList.add('open');
+      root.querySelector<HTMLElement>('[data-lb-close]')?.focus();
+    });
   }
 
   function close() {
@@ -381,6 +525,8 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
     setTimeout(() => {
       root.hidden = true;
       lbImg.src = '';
+      lastFocused?.focus();
+      lastFocused = null;
     }, 300);
   }
 
@@ -391,17 +537,36 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
       return;
     }
     if (!root.hidden) {
-      const el = e.target as HTMLElement;
-      if (el.closest('[data-lb-prev]')) return show(current - 1);
-      if (el.closest('[data-lb-next]')) return show(current + 1);
-      if (el.closest('[data-lb-close]') || !el.closest('figure')) close();
+      const element = e.target as HTMLElement;
+      if (element.closest('[data-lb-prev]')) return show(current - 1);
+      if (element.closest('[data-lb-next]')) return show(current + 1);
+      if (element.closest('[data-lb-close]') || !element.closest('figure')) close();
     }
   });
 
   document.addEventListener('keydown', (e) => {
     if (root.hidden) return;
     if (e.key === 'Escape') close();
-    if (e.key === 'ArrowLeft') show(current - 1);
-    if (e.key === 'ArrowRight') show(current + 1);
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      show(current - 1);
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      show(current + 1);
+    }
+    if (e.key === 'Tab') {
+      const focusable = [...root.querySelectorAll<HTMLElement>('button')];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 </script>

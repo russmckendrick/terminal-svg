@@ -7,12 +7,11 @@ import { getLatest, REPO_URL, formatDate, formatSize } from '../lib/releases';
 import demoUrl from '../../../docs/assets/demo.svg?url';
 
 const latest = await getLatest();
-const version = latest?.tag.replace(/^v/, '');
+const version = latest?.tag.replace(/^v/, '') ?? '0.6.0';
 
 const progress = find('github-light', 'progress');
 const styles = find('github-light', 'sgr-styles');
 const cjk = find('catppuccin-mocha', 'cjk-emoji');
-const anim = find('dracula', 'typing-anim');
 
 const PLATFORMS: [RegExp, string][] = [
   [/darwin-arm64/, 'macOS — Apple silicon'],
@@ -32,218 +31,184 @@ const binaries = (latest?.assets ?? [])
 ---
 
 <Base
-  title="terminal-svg — Your terminal. Rendered beautifully."
-  description="terminal-svg captures real terminal output — colors, cursor and all — as pixel-perfect, self-contained SVG. It records animated replays, too. One Rust binary, nine themes, macOS, Windows and Ubuntu window chrome."
+  title="terminal-svg — Terminal output as SVG."
+  description="Capture terminal output as a self-contained SVG with the font embedded. Run a command, pipe ANSI, or replay an asciicast recording."
 >
-  <!-- hero -->
-  <section class="section section--black hero">
-    <div class="wrap">
-      <div class="hero-lockup" data-reveal>
-        <img class="hero-mark" src="/favicon.svg" alt="" width="104" height="104" />
-        <h1 class="headline">
-          Your terminal.<br />Rendered beautifully.
-        </h1>
-      </div>
-      <p class="subhead narrow" data-reveal>
-        Pixel-perfect SVG screenshots and animated recordings of your terminal.
-        From one small Rust binary.
-      </p>
-      <div class="cta" data-reveal>
-        <a class="btn" href="#get">Install</a>
-        <a class="link-more" href="/gallery/">View the gallery</a>
-      </div>
-      <div class="hero-shot" data-reveal>
-        <img
-          class="product"
-          src={demoUrl}
-          alt="An animated terminal-svg recording of a shell session, replayed as an SVG"
-          width="700"
-          height="480"
-          loading="eager"
-          fetchpriority="high"
-        />
-        <p class="fineprint">
-          This isn't a video. It's a 44 KB SVG, recorded with <code>terminal‑svg rec</code>.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- emulation -->
-  <section class="section section--gray">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>True to every character.</h2>
-      <p class="subhead narrow" data-reveal>
-        Other tools strip escape codes and hope. terminal‑svg runs your output through a real
-        virtual terminal — the same state machine behind asciinema — so progress bars,
-        carriage returns and cursor tricks land exactly where they should.
-      </p>
-      {
-        progress && (
-          <div class="feature-shot" data-reveal>
-            <img
-              class="product"
-              src={progress.url}
-              alt="A progress bar and step output rendered faithfully in the GitHub Light theme"
-              width={progress.width}
-              height={progress.height}
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        )
-      }
-    </div>
-  </section>
-
-  <!-- fonts -->
-  <section class="section section--white">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>Your fonts fly first class.</h2>
-      <p class="subhead narrow" data-reveal>
-        Every SVG embeds a JetBrains Mono Nerd Font, subsetted to just the glyphs you used
-        and compressed as WOFF2. Send it anywhere. It renders identically — no fonts
-        installed, no fallbacks, no surprises.
-      </p>
-      {
-        styles && (
-          <div class="feature-shot" data-reveal>
-            <img
-              class="product"
-              src={styles.url}
-              alt="Bold, italic, underline and other text styles rendered in the GitHub Light theme"
-              width={styles.width}
-              height={styles.height}
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        )
-      }
-    </div>
-  </section>
-
-  <!-- recording -->
-  <section class="section section--black">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>Record. Replay.<br /><span class="gradient-text">Relive.</span></h2>
-      <p class="subhead narrow" data-reveal>
-        <code class="inlinecode">terminal‑svg rec</code> captures a live session and replays
-        it as an animated SVG. GIF‑quality demos at a fraction of the size. Asciicast v2 in
-        and out, so your old asciinema recordings play too.
-      </p>
-      {
-        anim && (
-          <div class="feature-shot" data-reveal>
-            <img
-              class="product"
-              src={anim.url}
-              alt="An animated typing session recorded and replayed by terminal-svg in the Dracula theme"
-              width={anim.width}
-              height={anim.height}
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        )
-      }
-      <div class="snippet-stack" data-reveal>
-        <CodeSnippet code={'terminal-svg rec -o demo.svg'} label="Record a session" />
-        <CodeSnippet
-          code={'terminal-svg demo.cast -t nord -o replay.svg'}
-          label="Re-theme any asciicast"
-        />
-      </div>
-    </div>
-  </section>
-
-  <!-- finishes -->
-  <section class="section section--gray">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>Nine stunning finishes.</h2>
-      <p class="subhead narrow" data-reveal>
-        Dracula to Solarized, with Catppuccin, Nord, Tokyo Night and both GitHubs in between —
-        plus PowerShell and Ubuntu in their native window chrome. Or bring your own — any TOML
-        file with sixteen colors works.
-      </p>
-      <div class="picker-wrap" data-reveal>
-        <FinishPicker />
-      </div>
-    </div>
-  </section>
-
-  <!-- i18n -->
-  <section class="section section--white">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>Speaks fluent emoji.<br />And 漢字.</h2>
-      <p class="subhead narrow" data-reveal>
-        Double-width characters are measured and placed correctly. Emoji render through
-        native color fonts. Your terminal is international — your screenshots are too.
-      </p>
-      {
-        cjk && (
-          <div class="feature-shot" data-reveal>
-            <img
-              class="product"
-              src={cjk.url}
-              alt="CJK text and emoji rendered correctly in the Catppuccin Mocha theme"
-              width={cjk.width}
-              height={cjk.height}
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        )
-      }
-    </div>
-  </section>
-
-  <!-- works your way -->
-  <section class="section section--black">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>Works the way you work.</h2>
-      <p class="subhead narrow" data-reveal>
-        Run a command. Pipe some output. Render a file. However it arrives, one SVG comes out.
-      </p>
-      <div class="snippet-stack" data-reveal>
-        <CodeSnippet code={'terminal-svg -- lsd -la'} label="Run a command in a PTY" />
-        <CodeSnippet code={'ls --color=always | terminal-svg -o ls.svg'} label="Pipe ANSI straight in" />
-        <CodeSnippet code={'terminal-svg dump.ansi -t nord -o dump.svg'} label="Render a saved dump" />
-      </div>
-      <p class="center-link" data-reveal>
-        <a class="link-more" href="/gallery/">See every fixture in every theme</a>
-      </p>
-    </div>
-  </section>
-
-  <!-- get it -->
-  <section class="section section--gray" id="get">
-    <div class="wrap center">
-      <h2 class="headline" data-reveal>Get terminal‑svg.</h2>
-      {
-        latest && (
-          <p class="subhead" data-reveal>
-            Version {version} — released {formatDate(latest.publishedAt)}.{' '}
-            <a href="/releases/">See what's new</a>
+  <div class="home">
+    <section class="home-hero">
+      <div class="home-wrap hero-layout">
+        <div class="hero-copy" data-reveal>
+          <p class="eyebrow"><span class="signal"></span> terminal rendering utility / v{version}</p>
+          <h1>Turn terminal<br />output <em>into SVG.</em></h1>
+          <p class="hero-lead">
+            Capture ANSI output, record a PTY session, or replay an asciicast as a self-contained
+            SVG with its font embedded.
           </p>
-        )
-      }
-      <div class="buy" data-reveal>
-        <div class="option">
-          <div class="meta">
-            <h3>Homebrew</h3>
-            <p>macOS and Linux. The tap updates itself with every release.</p>
-          </div>
-          <div class="how">
-            <CodeSnippet code="brew install russmckendrick/tap/terminal-svg" label="Terminal" />
+          <div class="hero-actions">
+            <a class="btn" href="/gallery/">View the gallery</a>
+            <a class="text-link" href="#workflows">How it works <span aria-hidden="true">↘</span></a>
           </div>
         </div>
-        <div class="option">
-          <div class="meta">
-            <h3>Prebuilt binaries</h3>
-            <p>With SHA256 checksums, straight from the release.</p>
+
+        <div class="hero-visual" data-reveal>
+          <div class="visual-meta">
+            <span>OUTPUT / SVG</span>
+            <span>44 KB / ANIMATED</span>
           </div>
-          <div class="how">
+          <div class="hero-frame">
+            <img
+              src={demoUrl}
+              alt="An animated terminal-svg recording of a shell session, replayed as an SVG"
+              width="700"
+              height="480"
+              loading="eager"
+              fetchpriority="high"
+            />
+          </div>
+          <p class="visual-note"><span class="signal"></span> rendered from demo.cast</p>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="home-section home-section--paper">
+      <div class="home-wrap proof-layout">
+        <div class="section-intro" data-reveal>
+          <p class="kicker">01 / terminal behaviour</p>
+          <h2>Terminal state stays intact.</h2>
+          <p>
+            Progress bars, carriage returns, cursor movement, colour modes and wide glyphs are
+            handled by a real virtual terminal before terminal-svg draws the SVG.
+          </p>
+          <a class="text-link text-link--dark" href="/gallery/">See the fixtures <span aria-hidden="true">↗</span></a>
+        </div>
+        {
+          progress && (
+            <div class="proof-shot proof-shot--large" data-reveal>
+              <span class="shot-label">PROGRESS / GITHUB LIGHT</span>
+              <img
+                src={progress.url}
+                alt="A progress bar and step output rendered faithfully in the GitHub Light theme"
+                width={progress.width}
+                height={progress.height}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          )
+        }
+      </div>
+      <div class="home-wrap proof-grid">
+        {
+          styles && (
+            <div class="proof-shot" data-reveal>
+              <span class="shot-label">FONT / SGR STYLES</span>
+              <img
+                src={styles.url}
+                alt="Bold, italic, underline and other text styles rendered in the GitHub Light theme"
+                width={styles.width}
+                height={styles.height}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          )
+        }
+        {
+          cjk && (
+            <div class="proof-shot" data-reveal>
+              <span class="shot-label">GLYPHS / CJK + EMOJI</span>
+              <img
+                src={cjk.url}
+                alt="CJK text and emoji rendered correctly in the Catppuccin Mocha theme"
+                width={cjk.width}
+                height={cjk.height}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          )
+        }
+      </div>
+    </section>
+
+    <section class="home-section home-section--ink" id="workflows">
+      <div class="home-wrap workflow-layout">
+        <div class="section-intro section-intro--light" data-reveal>
+          <p class="kicker">02 / input modes</p>
+          <h2>Three ways to capture.<br /><em>One SVG.</em></h2>
+          <p>
+            Run a command in a PTY, pipe ANSI from another process, or render an asciicast
+            recording.
+          </p>
+        </div>
+        <div class="workflow-list" data-reveal>
+          <div class="workflow-row">
+            <span class="workflow-index">01</span>
+            <div>
+              <h3>Run a command</h3>
+              <p>Capture a live PTY with the process attached.</p>
+              <code>terminal-svg -- lsd -la</code>
+            </div>
+          </div>
+          <div class="workflow-row">
+            <span class="workflow-index">02</span>
+            <div>
+              <h3>Pipe ANSI straight in</h3>
+              <p>Keep the colours your command already produced.</p>
+              <code>ls --color=always | terminal-svg -o ls.svg</code>
+            </div>
+          </div>
+          <div class="workflow-row">
+            <span class="workflow-index">03</span>
+            <div>
+              <h3>Replay a recording</h3>
+              <p>Retheme or animate any asciicast v2 session.</p>
+              <code>terminal-svg demo.cast -t nord -o replay.svg</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section home-section--paper theme-section">
+      <div class="home-wrap theme-layout">
+        <div class="section-intro" data-reveal>
+          <p class="kicker">03 / themes and chrome</p>
+          <h2>Pick a theme.<br /><em>Keep the details.</em></h2>
+          <p>
+            Choose from nine built-in themes, add platform-native window chrome, or define a
+            palette in TOML.
+          </p>
+        </div>
+        <div class="theme-picker-shell" data-reveal>
+          <FinishPicker />
+        </div>
+      </div>
+    </section>
+
+    <section class="home-install" id="install">
+      <div class="home-wrap install-layout">
+        <div class="section-intro section-intro--light" data-reveal>
+          <p class="kicker">04 / installation</p>
+          <h2>Install terminal-svg.</h2>
+          {
+            latest && (
+              <p>
+                v{version} landed {formatDate(latest.publishedAt)}.{' '}
+                <a class="text-link" href="/releases/">Read the release notes <span aria-hidden="true">↗</span></a>
+              </p>
+            )
+          }
+          <p class="install-note">MIT-licensed code. JetBrains Mono Nerd Font faces under SIL OFL. No runtime or hosted renderer.</p>
+        </div>
+        <div class="install-stack" data-reveal>
+          <div class="install-line">
+            <div><span class="install-label">HOMEBREW</span><strong>macOS</strong></div>
+            <CodeSnippet code="brew install russmckendrick/tap/terminal-svg" label="install" />
+          </div>
+          <div class="install-line install-line--downloads">
+            <div><span class="install-label">BINARIES</span><strong>Download by platform</strong></div>
             {
               binaries.length > 0 ? (
                 <ul class="downloads">
@@ -251,193 +216,402 @@ const binaries = (latest?.assets ?? [])
                     <li>
                       <a href={b.url} rel="noopener">
                         <span>{b.platform}</span>
-                        <span class="right">
-                          <span class="size">{formatSize(b.size)}</span>
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 8v7" />
-                            <path d="m9 12.5 3 3 3-3" />
-                          </svg>
-                        </span>
+                        <span class="download-meta">{formatSize(b.size)} <span aria-hidden="true">↗</span></span>
                       </a>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p class="gh-fallback">
-                  <a href={`${REPO_URL}/releases/latest`} rel="noopener">
-                    Download from GitHub ›
-                  </a>
-                </p>
+                <a class="text-link" href={`${REPO_URL}/releases/latest`} rel="noopener">Download from GitHub <span aria-hidden="true">↗</span></a>
               )
             }
           </div>
         </div>
-        <div class="option">
-          <div class="meta">
-            <h3>Build from source</h3>
-            <p>Rust 1.85 or later. Fonts are bundled in the repo.</p>
-          </div>
-          <div class="how">
-            <CodeSnippet
-              code={'git clone https://github.com/russmckendrick/terminal-svg && cd terminal-svg && cargo build --release'}
-              label="Terminal"
-            />
-          </div>
-        </div>
       </div>
-    </div>
-  </section>
-
+    </section>
+  </div>
 </Base>
 
 <style>
-  .hero {
-    padding-top: 90px;
+  .home {
+    background: var(--home-ink);
+    color: var(--home-paper);
   }
 
-  .hero-lockup {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(20px, 3vw, 34px);
+  .home-wrap {
+    width: min(1180px, calc(100% - 48px));
+    margin: 0 auto;
   }
 
-  .hero-lockup .headline {
-    text-align: left;
+  .home-hero {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(46px, 5vw, 72px) 0 64px;
+    background:
+      radial-gradient(circle at 70% 18%, rgba(240, 162, 87, 0.08), transparent 26rem),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 42%),
+      var(--home-ink);
   }
 
-  .hero-mark {
-    display: block;
-    /* track the headline's clamp so the lockup scales as one unit */
-    width: clamp(58px, 8.6vw, 104px);
-    height: auto;
-    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55));
+  .home-hero::before {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: '';
+    opacity: 0.18;
+    background-image: linear-gradient(rgba(255, 194, 125, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 194, 125, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
   }
 
-  @media (max-width: 640px) {
-    .hero-lockup {
-      flex-direction: column;
-      gap: 26px;
-    }
-
-    .hero-lockup .headline {
-      text-align: center;
-    }
+  .hero-layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: start;
+    gap: clamp(32px, 5vw, 68px);
   }
 
-  .cta {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 28px;
-    margin-top: 34px;
+  .hero-copy {
+    max-width: 520px;
   }
 
-  .hero-shot {
-    margin-top: 76px;
+  .eyebrow,
+  .kicker,
+  .visual-meta,
+  .visual-note,
+  .shot-label,
+  .install-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
-  .hero-shot .product {
-    max-width: 760px;
-    width: 100%;
+  .eyebrow,
+  .kicker,
+  .visual-meta,
+  .visual-note,
+  .shot-label,
+  .install-label {
+    color: var(--home-muted);
   }
 
-  .fineprint {
-    text-align: center;
+  .signal {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: var(--home-accent);
+    box-shadow: 0 0 0 3px rgba(240, 162, 87, 0.14);
+    vertical-align: 1px;
+  }
+
+  .hero-copy h1,
+  .section-intro h2 {
     margin-top: 26px;
-    font-size: 13px;
-    color: var(--text-light-2);
+    color: var(--home-paper);
+    font-family: var(--mono);
+    font-weight: 650;
+    letter-spacing: -0.075em;
+    line-height: 0.98;
+    text-wrap: balance;
   }
 
-  .fineprint code {
+  .hero-copy h1 {
+    font-size: clamp(42px, 5.4vw, 72px);
+  }
+
+  .hero-copy h1 em,
+  .section-intro h2 em {
+    color: var(--home-accent);
+    font-style: normal;
+  }
+
+  .hero-copy h1 em {
+    white-space: nowrap;
+  }
+
+  .hero-lead,
+  .section-intro > p:not(.kicker),
+  .install-note {
+    color: var(--home-muted);
+    font-size: clamp(17px, 1.6vw, 21px);
+    line-height: 1.55;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-lead {
+    max-width: 41ch;
+    margin-top: 24px;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 22px;
+    margin-top: 28px;
+  }
+
+  .home .btn {
+    background: var(--home-accent);
+    color: #11160f;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    padding: 13px 17px;
+    border-radius: 4px;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .home .btn:hover {
+    background: var(--home-accent-bright);
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .text-link {
+    color: var(--home-accent);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .text-link:hover {
+    color: var(--home-accent-bright);
+    text-decoration: none;
+  }
+
+  .text-link--dark {
+    color: var(--home-rust-dark);
+  }
+
+  .text-link--dark:hover {
+    color: #7f3d22;
+  }
+
+  .hero-visual {
+    min-width: 0;
+  }
+
+  .visual-meta,
+  .visual-note {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .hero-frame {
+    margin-top: 10px;
+    padding: 14px;
+    background: #17201a;
+    border: 1px solid rgba(255, 194, 125, 0.3);
+    box-shadow: 14px 14px 0 rgba(240, 162, 87, 0.1);
+  }
+
+  .hero-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .visual-note {
+    justify-content: flex-start;
+    margin-top: 14px;
+  }
+
+  .home-section,
+  .home-install {
+    padding: clamp(52px, 6vw, 84px) 0;
+  }
+
+  .home-section--paper {
+    background: var(--home-paper);
+    color: var(--home-ink);
+  }
+
+  .home-section--ink {
+    background: #101512;
+    color: var(--home-paper);
+    border-top: 1px solid rgba(255, 194, 125, 0.14);
+    border-bottom: 1px solid rgba(255, 194, 125, 0.14);
+  }
+
+  .proof-layout,
+  .workflow-layout,
+  .theme-layout,
+  .install-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    align-items: center;
+    gap: clamp(36px, 7vw, 96px);
+  }
+
+  .section-intro h2 {
+    margin-top: 22px;
+    color: var(--home-ink);
+    font-size: clamp(38px, 4.8vw, 64px);
+  }
+
+  .section-intro--light h2 {
+    color: var(--home-paper);
+  }
+
+  .section-intro--light > p:not(.kicker) {
+    color: var(--home-muted);
+  }
+
+  .section-intro > p:not(.kicker) {
+    margin-top: 26px;
+  }
+
+  .section-intro .text-link {
+    display: inline-block;
+    margin-top: 30px;
+  }
+
+  .proof-shot {
+    position: relative;
+    min-width: 0;
+    padding: 27px 25px 25px;
+    background: #ebe5da;
+    border: 1px solid #d7ccbd;
+  }
+
+  .proof-shot--large {
+    padding: 34px 32px 32px;
+  }
+
+  .proof-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: 13px;
+    filter: drop-shadow(0 18px 26px rgba(32, 52, 38, 0.16));
+  }
+
+  .shot-label {
+    color: var(--home-rust-dark);
+  }
+
+  .proof-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+  }
+
+  .workflow-layout {
+    grid-template-columns: minmax(0, 0.68fr) minmax(0, 1.32fr);
+  }
+
+  .workflow-list {
+    border-top: 1px solid rgba(255, 194, 125, 0.25);
+  }
+
+  .workflow-row {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 18px;
+    padding: 22px 0 25px;
+    border-bottom: 1px solid rgba(255, 194, 125, 0.25);
+  }
+
+  .workflow-index {
+    color: var(--home-accent);
     font-family: var(--mono);
     font-size: 12px;
+    font-weight: 700;
   }
 
-  .center {
-    text-align: center;
-  }
-
-  .feature-shot {
-    margin-top: 66px;
-  }
-
-  .feature-shot .product {
-    max-width: 720px;
-    width: 100%;
-  }
-
-  .inlinecode {
+  .workflow-row h3 {
+    color: var(--home-paper);
     font-family: var(--mono);
-    font-size: 0.82em;
-    color: inherit;
+    font-size: 18px;
+    letter-spacing: -0.04em;
   }
 
-  .snippet-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    max-width: 660px;
-    margin: 66px auto 0;
-    text-align: left;
+  .workflow-row p {
+    margin-top: 5px;
+    color: var(--home-muted);
+    font-size: 15px;
   }
 
-  .center-link {
-    margin-top: 48px;
+  .workflow-row code {
+    display: block;
+    margin-top: 16px;
+    color: var(--home-paper-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
 
-  .picker-wrap {
-    margin-top: 70px;
+  .theme-section {
+    padding-bottom: clamp(100px, 12vw, 170px);
   }
 
-  .buy {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 880px;
-    margin: 64px auto 0;
-    text-align: left;
+  .theme-picker-shell {
+    min-width: 0;
+    padding-top: 22px;
   }
 
-  .option {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 30px 34px;
+  .home-install {
+    background: var(--home-ink);
+    color: var(--home-paper);
+    border-top: 1px solid rgba(255, 194, 125, 0.22);
+  }
+
+  .install-layout {
+    grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr);
+  }
+
+  .install-note {
+    margin-top: 34px;
+    color: var(--home-muted);
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+
+  .install-stack {
+    border-top: 1px solid rgba(255, 194, 125, 0.25);
+  }
+
+  .install-line {
     display: grid;
-    grid-template-columns: 250px minmax(0, 1fr);
-    gap: 34px;
+    grid-template-columns: 170px minmax(0, 1fr);
+    gap: 24px;
     align-items: center;
+    padding: 22px 0;
+    border-bottom: 1px solid rgba(255, 194, 125, 0.25);
   }
 
-  .option h3 {
-    font-size: 21px;
-    font-weight: 600;
-    letter-spacing: -0.017em;
+  .install-line strong {
+    display: block;
+    margin-top: 7px;
+    color: var(--home-paper-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
   }
 
-  .option .meta p {
-    color: var(--text-dark-2);
-    font-size: 14px;
-    margin-top: 8px;
+  .install-line :global(.snippet) {
+    box-shadow: none;
   }
 
   .downloads {
     list-style: none;
-    padding: 0;
     margin: 0;
+    padding: 0;
   }
 
   .downloads li {
-    border-bottom: 1px solid #f0f0f5;
+    border-bottom: 1px solid rgba(255, 194, 125, 0.14);
   }
 
   .downloads li:last-child {
@@ -447,52 +621,98 @@ const binaries = (latest?.assets ?? [])
   .downloads a {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 2px;
-    font-size: 14px;
-    color: var(--text-dark);
-    border-radius: 8px;
-    transition: background 0.15s ease;
+    gap: 16px;
+    padding: 8px 0;
+    color: var(--home-paper-dim);
+    font-family: var(--mono);
+    font-size: 12px;
   }
 
   .downloads a:hover {
+    color: var(--home-accent);
     text-decoration: none;
-    background: #f5f5f7;
   }
 
-  .downloads a:hover span:first-child {
-    color: var(--link-on-light);
-  }
-
-  .downloads .right {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .downloads .size {
-    color: var(--text-dark-2);
-    font-size: 12px;
+  .download-meta {
+    color: var(--home-muted);
     font-variant-numeric: tabular-nums;
   }
 
-  .downloads svg {
-    width: 18px;
-    height: 18px;
-    color: var(--blue);
-    flex-shrink: 0;
-  }
-
-  .gh-fallback {
-    font-size: 15px;
-  }
-
   @media (max-width: 860px) {
-    .option {
-      grid-template-columns: minmax(0, 1fr);
+    .hero-layout,
+    .proof-layout,
+    .workflow-layout,
+    .theme-layout,
+    .install-layout {
+      grid-template-columns: 1fr;
+      gap: 56px;
+    }
+
+    .hero-copy,
+    .section-intro {
+      max-width: 680px;
+    }
+
+    .hero-copy h1,
+    .section-intro h2 {
+      max-width: 12ch;
+    }
+
+    .hero-visual {
+      max-width: 760px;
+    }
+
+    .theme-picker-shell {
+      padding-top: 0;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .home-wrap {
+      width: min(100% - 32px, 1180px);
+    }
+
+    .home-hero {
+      padding-top: 64px;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(43px, 13vw, 62px);
+    }
+
+    .hero-copy h1 em {
+      white-space: normal;
+    }
+
+    .hero-actions {
+      align-items: flex-start;
+      flex-direction: column;
       gap: 18px;
-      padding: 26px 24px;
+    }
+
+    .visual-meta {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .hero-frame {
+      padding: 8px;
+      box-shadow: 7px 7px 0 rgba(240, 162, 87, 0.1);
+    }
+
+    .proof-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .proof-shot,
+    .proof-shot--large {
+      padding: 18px 16px 16px;
+    }
+
+    .install-line {
+      grid-template-columns: 1fr;
+      gap: 16px;
     }
   }
 </style>

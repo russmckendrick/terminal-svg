@@ -1,5 +1,4 @@
 ---
-// One release as a clean white card: version, date, notes, downloads.
 import type { Release } from '../lib/releases';
 import { formatDate, formatSize } from '../lib/releases';
 
@@ -9,121 +8,182 @@ interface Props {
 }
 
 const { release, latest = false } = Astro.props;
+const excerpt = release.bodyHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+const shortExcerpt = excerpt.length > 280 ? `${excerpt.slice(0, 280).replace(/\s+\S*$/, '')}…` : excerpt;
 ---
 
-<article class="entry">
+<article class:list={['entry', { latest }]} data-reveal>
   <header>
-    <h3>
-      <a href={release.htmlUrl} rel="noopener">{release.name}</a>
-      {latest && <span class="badge">Latest</span>}
-    </h3>
+    <div class="entry-title">
+      <h2>
+        <a href={release.htmlUrl} rel="noopener">{release.name}</a>
+        {latest && <span class="badge">Latest</span>}
+      </h2>
+    </div>
     <time datetime={release.publishedAt}>{formatDate(release.publishedAt)}</time>
   </header>
-  {release.bodyHtml && <div class="prose" set:html={release.bodyHtml} />}
-  {
-    release.assets.length > 0 && (
-      <details>
-        <summary>Downloads ({release.assets.length})</summary>
-        <ul>
-          {release.assets.map((a) => (
-            <li>
-              <a href={a.url} rel="noopener">
-                {a.name}
-              </a>
-              <span class="size">{formatSize(a.size)}</span>
-            </li>
-          ))}
-        </ul>
-      </details>
-    )
-  }
+
+  <div class="entry-body">
+    <p class="excerpt">{shortExcerpt}</p>
+    <div class="entry-actions">
+      <a class="release-link" href={release.htmlUrl} rel="noopener">View full notes on GitHub ↗</a>
+      {
+        release.assets.length > 0 && (
+          <details class="downloads-details">
+            <summary>Downloads ({release.assets.length})</summary>
+            <ul>
+              {release.assets.map((a) => (
+                <li>
+                  <a href={a.url} rel="noopener">{a.name}</a>
+                  <span class="size">{formatSize(a.size)}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )
+      }
+    </div>
+  </div>
 </article>
 
 <style>
   .entry {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 34px 38px;
+    padding: 32px 0 34px;
+    border-bottom: 1px solid #d8cec0;
+  }
+
+  .entry.latest {
+    padding-top: 36px;
   }
 
   header {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
+    gap: 20px;
   }
 
-  h3 {
+  .entry-title {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.017em;
+    align-items: baseline;
+    min-width: 0;
+    gap: 16px;
   }
 
-  h3 a {
+  h2 {
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: clamp(20px, 2.2vw, 28px);
+    font-weight: 600;
+    letter-spacing: -0.06em;
+  }
+
+  h2 a {
     color: var(--text-dark);
   }
 
-  h3 a:hover {
+  h2 a:hover {
     color: var(--link-on-light);
     text-decoration: none;
   }
 
   .badge {
-    font-size: 12px;
-    font-weight: 500;
-    color: #fff;
+    display: inline-block;
+    margin-left: 10px;
+    padding: 3px 7px;
+    color: #1b140e;
     background: var(--blue);
-    border-radius: 980px;
-    padding: 2px 10px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    vertical-align: 4px;
   }
 
   time {
+    flex: 0 0 auto;
     color: var(--text-dark-2);
-    font-size: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .entry-body {
+    display: grid;
+    grid-template-columns: minmax(0, 0.84fr) minmax(240px, 1.16fr);
+    gap: 44px;
+    margin-top: 20px;
+    padding-left: 42px;
+  }
+
+  .excerpt {
+    max-width: 54ch;
+    color: var(--text-dark-2);
+    font-size: 16px;
+    line-height: 1.58;
+  }
+
+  .entry-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .release-link {
+    color: var(--home-rust-dark);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .release-link:hover {
+    color: #7f3d22;
+    text-decoration: none;
   }
 
   details {
-    margin-top: 22px;
-    border-top: 1px solid #e8e8ed;
-    padding-top: 16px;
+    border-top: 1px solid #d8cec0;
+    padding-top: 12px;
   }
 
   summary {
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
     color: var(--link-on-light);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
   }
 
   ul {
     list-style: none;
-    padding: 0;
     margin: 14px 0 0;
+    padding: 0;
   }
 
   li {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
     gap: 14px;
     padding: 7px 0;
-    font-size: 13px;
+    border-bottom: 1px solid #e5ddd2;
+    font-family: var(--mono);
+    font-size: 11px;
     overflow-wrap: anywhere;
-    border-bottom: 1px solid #f0f0f5;
   }
 
-  li:last-child {
-    border-bottom: none;
-  }
+  li:last-child { border-bottom: none; }
+
+  li a { color: var(--text-dark); }
+  li a:hover { color: var(--link-on-light); }
 
   .size {
-    color: var(--text-dark-2);
     flex-shrink: 0;
+    color: var(--text-dark-2);
     font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 700px) {
+    header { align-items: flex-start; flex-direction: column; gap: 10px; }
+    .entry-body { grid-template-columns: 1fr; gap: 22px; padding-left: 0; }
   }
 </style>

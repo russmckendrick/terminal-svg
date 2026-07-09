@@ -17,6 +17,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>document.documentElement.classList.add('js');</script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -30,8 +31,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="theme-color" content="#000000" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <Nav />
-    <main>
+    <main id="main-content">
       <slot />
     </main>
     <Footer />

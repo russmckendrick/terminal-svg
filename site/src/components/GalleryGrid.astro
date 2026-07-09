@@ -1,7 +1,6 @@
 ---
-// The shots ARE the layout: a wide two-column masonry, every SVG rendered
-// near its natural size, floating directly on the background with its own
-// window chrome. Minimal caption below; click opens the lightbox.
+// A two-column render catalog. The SVGs stay close to their natural proportions,
+// with the fixture and theme treated as useful metadata rather than decoration.
 import type { GalleryItem } from '../lib/gallery';
 import { themeLabel, fixtureLabel } from '../lib/gallery';
 
@@ -66,8 +65,8 @@ const { items, lightbox = false } = Astro.props;
 <style>
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(480px, 100%), 1fr));
-    gap: 64px 48px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 56px 28px;
   }
 
   .tile[hidden] {
@@ -76,6 +75,8 @@ const { items, lightbox = false } = Astro.props;
 
   .tile {
     margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid #d8cec0;
   }
 
   /* every slot shares one ratio, so rows align no matter which SVG is inside */
@@ -84,10 +85,11 @@ const { items, lightbox = false } = Astro.props;
     align-items: center;
     justify-content: center;
     width: 100%;
-    aspect-ratio: 2 / 1;
-    padding: 0;
-    background: none;
-    border: none;
+    aspect-ratio: 1.52 / 1;
+    padding: 20px;
+    background: #ebe5da;
+    border: 1px solid #d7ccbd;
+    transition: border-color 0.2s ease, background 0.2s ease;
   }
 
   button.media {
@@ -100,33 +102,39 @@ const { items, lightbox = false } = Astro.props;
     width: auto;
     height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.16));
+    filter: drop-shadow(0 18px 36px rgba(32, 24, 16, 0.16));
     transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.35s ease;
+  }
+
+  .tile:hover .media {
+    background: #f0e9de;
+    border-color: var(--blue);
   }
 
   .tile:hover .media img {
     transform: translateY(-4px) scale(1.015);
-    filter: drop-shadow(0 28px 52px rgba(0, 0, 0, 0.22));
+    filter: drop-shadow(0 28px 52px rgba(32, 24, 16, 0.22));
   }
 
   figcaption {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: baseline;
     gap: 10px;
-    padding: 18px 6px 0;
-    font-size: 14px;
+    padding: 14px 2px 0;
+    font-family: var(--mono);
+    font-size: 12px;
   }
 
   .fixture {
     font-weight: 600;
-    letter-spacing: -0.016em;
+    letter-spacing: -0.025em;
     color: var(--text-dark);
   }
 
   .theme {
     color: var(--text-dark-2);
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .anim {
@@ -145,7 +153,19 @@ const { items, lightbox = false } = Astro.props;
 
   @media (max-width: 640px) {
     .grid {
-      gap: 44px;
+      grid-template-columns: 1fr;
+      gap: 36px;
+    }
+
+    .media {
+      padding: 12px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .media,
+    .media img {
+      transition: none;
     }
   }
 </style>
