@@ -1,33 +1,110 @@
 ---
-import Base from '../layouts/Base.astro';
+import Base from "../layouts/Base.astro";
 ---
 
-<Base title="404 — terminal-svg" description="Page not found.">
-  <section class="section section--gray notfound">
-    <div class="wrap">
-      <h1 class="headline">This page took<br />a wrong turn.</h1>
-      <p class="subhead">
-        The page you're looking for doesn't exist.
-      </p>
-      <p class="links">
-        <a class="btn" href="/">Go home</a>
-        <a class="link-more" href="/gallery/">Visit the gallery</a>
-      </p>
+<Base
+  title="Page not found — terminal-svg"
+  description="The requested page could not be found."
+>
+  <section class="not-found shell">
+    <div class="error-art" aria-hidden="true">
+      <svg viewBox="0 0 520 360">
+        <path d="M28 278C108 278 92 72 248 72s134 218 246 218"></path>
+        <path d="M28 278h98M248 72h82M412 290h82"></path>
+        <circle cx="28" cy="278" r="9"></circle><circle cx="248" cy="72" r="9"
+        ></circle><circle cx="494" cy="290" r="9"></circle>
+      </svg>
+      <span>404</span>
+    </div>
+    <div>
+      <p class="section-label">Path not found</p>
+      <h1>This vector<br />leads nowhere.</h1>
+      <p>The page may have moved, or the path was never connected.</p>
+      <div class="actions">
+        <a class="button button--primary" href="/">Return Home</a><a
+          class="button button--secondary"
+          href="/docs/">Browse Docs</a
+        >
+      </div>
     </div>
   </section>
 </Base>
 
 <style>
-  .notfound {
-    min-height: 60vh;
-    text-align: center;
+  .not-found {
+    display: grid;
+    min-height: 72vh;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    align-items: center;
+    gap: clamp(50px, 8vw, 110px);
+    padding-block: 80px;
   }
 
-  .links {
+  .error-art {
+    position: relative;
+  }
+
+  .error-art svg {
+    display: block;
+    width: 100%;
+  }
+
+  .error-art path {
+    fill: none;
+    stroke: var(--blue);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 8;
+  }
+
+  .error-art circle {
+    fill: var(--lime);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+
+  .error-art span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    color: var(--blue);
+    font-size: clamp(90px, 16vw, 180px);
+    font-weight: 760;
+    letter-spacing: -0.08em;
+    transform: translate(-50%, -50%);
+  }
+
+  .not-found h1 {
+    margin-top: 20px;
+    font-size: clamp(56px, 7vw, 92px);
+    letter-spacing: -0.07em;
+    line-height: 0.9;
+  }
+
+  .not-found > div:last-child > p:not(.section-label) {
+    max-width: 480px;
+    margin-top: 24px;
+    color: var(--ink-soft);
+    font-size: 18px;
+  }
+
+  .actions {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 28px;
-    margin-top: 36px;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 760px) {
+    .not-found {
+      grid-template-columns: 1fr;
+      padding-block: 50px 80px;
+    }
+
+    .error-art {
+      order: 2;
+    }
+
+    .actions {
+      flex-direction: column;
+    }
   }
 </style>

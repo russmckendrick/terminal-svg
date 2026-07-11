@@ -1,329 +1,609 @@
 ---
-import Base from '../layouts/Base.astro';
-import GalleryGrid from '../components/GalleryGrid.astro';
-import ThemeChip from '../components/ThemeChip.astro';
-import { items, themes, fixtures, THEME_META, FIXTURE_META } from '../lib/gallery';
+import Base from "../layouts/Base.astro";
+import GalleryGrid from "../components/GalleryGrid.astro";
+import {
+  items,
+  themes,
+  fixtures,
+  THEME_META,
+  FIXTURE_META,
+} from "../lib/gallery";
 
-const themeMeta = THEME_META.filter((t) => themes.includes(t.key));
-const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
+const themeMeta = THEME_META.filter((theme) => themes.includes(theme.key));
+const fixtureMeta = FIXTURE_META.filter((fixture) =>
+  fixtures.includes(fixture.key),
+);
+const featured = fixtureMeta
+  .map((fixture, index) =>
+    items.find(
+      (item) =>
+        item.fixture === fixture.key &&
+        item.theme === themeMeta[index % themeMeta.length]?.key,
+    ),
+  )
+  .filter((item) => item !== undefined);
+const comparisons = fixtureMeta.map((fixture) => ({
+  fixture,
+  items: items.filter((item) => item.fixture === fixture.key),
+}));
 ---
 
 <Base
-  title="Gallery — terminal-svg"
-  description="Explore terminal-svg output across every built-in theme, fixture, and platform-native window chrome."
+  title="SVG Examples — terminal-svg"
+  description="Inspect real terminal-svg output, compare themes, and explore the edge cases covered by the test suite."
 >
   <div class="gallery-page">
-    <section class="gallery-hero">
-      <div class="gallery-wrap gallery-hero-grid">
-        <div data-reveal>
-          <p class="gallery-kicker"><span class="signal"></span> gallery / svg output</p>
-          <h1>Every terminal state, <em>rendered.</em></h1>
-          <p class="gallery-lead">
-            Real output from the test suite — vectors, not mockups. Pick a theme, find a fixture,
-            and zoom in until the columns give themselves away.
+    <header class="gallery-heading shell">
+      <div class="gallery-copy">
+        <p class="section-label">SVG specimen browser</p>
+        <h1>Real output.<br /><span>Infinite detail.</span></h1>
+        <p>
+          Every specimen comes directly from the test suite. Open one, zoom in,
+          and inspect the vectors that preserve terminal state across themes and
+          platforms.
+        </p>
+      </div>
+
+      <div
+        class="gallery-diagram"
+        aria-label={`${items.length} SVG outputs across ${themes.length} themes and ${fixtures.length} fixtures`}
+      >
+        <svg viewBox="0 0 520 360" aria-hidden="true">
+          <path d="M24 180C138 180 120 54 258 54s116 252 238 252"></path>
+          <path d="M24 180h472M258 54v252"></path>
+          <circle cx="24" cy="180" r="8"></circle><circle cx="258" cy="54" r="8"
+          ></circle><circle cx="496" cy="306" r="8"></circle>
+        </svg>
+        <span class="stat stat--one"><strong>{items.length}</strong> SVGs</span>
+        <span class="stat stat--two"
+          ><strong>{themes.length}</strong> themes</span
+        >
+        <span class="stat stat--three"
+          ><strong>{fixtures.length}</strong> fixtures</span
+        >
+      </div>
+    </header>
+
+    <section class="browser-section">
+      <div class="browser-toolbar">
+        <div class="shell toolbar-inner">
+          <div class="view-tabs" role="group" aria-label="Gallery view">
+            <button
+              type="button"
+              class="active"
+              data-gallery-view="showcase"
+              aria-pressed="true">Showcase</button
+            >
+            <button
+              type="button"
+              data-gallery-view="compare"
+              aria-pressed="false">Compare Themes</button
+            >
+          </div>
+          <label class="fixture-select" data-fixture-control hidden>
+            <span>Fixture</span>
+            <select name="fixture" autocomplete="off" data-fixture-select>
+              {
+                fixtureMeta.map((fixture) => (
+                  <option value={fixture.key}>{fixture.label}</option>
+                ))
+              }
+            </select>
+          </label>
+          <p data-gallery-count aria-live="polite">
+            {featured.length} curated specimens
           </p>
         </div>
-        <div class="gallery-stats" data-reveal aria-label="Gallery totals">
-          <div><strong>{items.length}</strong><span>SVG outputs</span></div>
-          <div><strong>{themes.length}</strong><span>built-in themes</span></div>
-          <div><strong>{fixtures.length}</strong><span>terminal fixtures</span></div>
-        </div>
       </div>
-    </section>
 
-    <section class="gallery-catalog">
-      <div class="gallery-wrap">
-        <div class="gallery-toolbar" data-reveal>
-          <div class="toolbar-title">
-            <span class="gallery-kicker gallery-kicker--dark">Browse the output</span>
-            <p data-count aria-live="polite">Showing all {items.length}</p>
+      <div class="shell gallery-content">
+        <div data-gallery-panel="showcase">
+          <div class="panel-heading">
+            <div>
+              <span>Curated output</span><h2>Start with the range.</h2>
+            </div><p>
+              One purposeful specimen for every terminal behaviour in the suite.
+            </p>
           </div>
-          <div class="filter-controls">
-            <div class="theme-filter" data-filter-group="theme" role="group" aria-label="Filter by theme">
-              <span class="filter-label">THEME</span>
-              <div class="swatch-filter">
-                <button class="swatch all on" type="button" data-value="" aria-label="All themes" aria-pressed="true" title="All themes">
-                  <ThemeChip all />
-                </button>
-                {
-                  themeMeta.map((t) => (
-                    <button class="swatch" type="button" data-value={t.key} aria-label={t.label} aria-pressed="false" title={t.label}>
-                      <ThemeChip theme={t} />
-                    </button>
-                  ))
-                }
+          <GalleryGrid items={featured} lightbox />
+        </div>
+
+        <div data-gallery-panel="compare" hidden>
+          <div class="panel-heading">
+            <div>
+              <span>Theme comparison</span><h2>Same state. New surface.</h2>
+            </div><p>
+              Hold the terminal output constant and compare every built-in
+              palette.
+            </p>
+          </div>
+          {
+            comparisons.map((comparison, index) => (
+              <div
+                data-fixture-panel={comparison.fixture.key}
+                hidden={index !== 0}
+              >
+                <GalleryGrid items={comparison.items} lightbox compact />
               </div>
-              <p class="theme-name" data-theme-name>All themes</p>
-            </div>
-            <label class="fixture-filter">
-              <span class="filter-label">FIXTURE</span>
-              <select data-filter-select="fixture" aria-label="Filter by fixture">
-                <option value="">All fixtures</option>
-                {fixtureMeta.map((f) => <option value={f.key}>{f.label}</option>)}
-              </select>
-            </label>
-          </div>
+            ))
+          }
         </div>
-      </div>
-
-      <div class="gallery-wide">
-        <GalleryGrid items={items} lightbox={true} />
-        <p class="empty" data-empty hidden>Nothing matches that combination.</p>
       </div>
     </section>
   </div>
 
-  <div class="lightbox" data-lightbox-root role="dialog" aria-modal="true" aria-labelledby="lb-caption" hidden>
-    <button class="lb-close" type="button" data-lb-close aria-label="Close">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <path d="m6 6 12 12M18 6 6 18"></path>
-      </svg>
-    </button>
-    <button class="lb-arrow lb-prev" type="button" data-lb-prev aria-label="Previous">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15 5l-7 7 7 7"></path>
-      </svg>
-    </button>
-    <figure>
-      <img data-lb-img src="" alt="" />
-      <figcaption id="lb-caption" data-lb-caption></figcaption>
-    </figure>
-    <button class="lb-arrow lb-next" type="button" data-lb-next aria-label="Next">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m9 5 7 7-7 7"></path>
-      </svg>
-    </button>
+  <div
+    class="lightbox"
+    data-lightbox-root
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="lightbox-title"
+    hidden
+  >
+    <button
+      class="lightbox-close"
+      type="button"
+      data-lightbox-close
+      aria-label="Close SVG inspector">×</button
+    >
+    <button
+      class="lightbox-arrow lightbox-prev"
+      type="button"
+      data-lightbox-prev
+      aria-label="Previous specimen">←</button
+    >
+    <div class="lightbox-layout">
+      <figure>
+        <div class="lightbox-artboard">
+          <img data-lightbox-image alt="" width="960" height="640" />
+        </div>
+      </figure>
+      <aside>
+        <span>SVG inspector</span>
+        <h2 id="lightbox-title" data-lightbox-title></h2>
+        <dl>
+          <div><dt>Theme</dt><dd data-lightbox-theme></dd></div>
+          <div><dt>Dimensions</dt><dd data-lightbox-dimensions></dd></div>
+          <div><dt>Format</dt><dd>SVG</dd></div>
+          <div><dt>Rendering</dt><dd>Self-contained</dd></div>
+        </dl>
+        <a
+          class="button button--primary"
+          data-lightbox-download
+          href=""
+          download>Download SVG</a
+        >
+        <p>
+          Use <kbd>←</kbd>
+          <kbd>→</kbd> to move and <kbd>Esc</kbd> to close.
+        </p>
+      </aside>
+    </div>
+    <button
+      class="lightbox-arrow lightbox-next"
+      type="button"
+      data-lightbox-next
+      aria-label="Next specimen">→</button
+    >
   </div>
 </Base>
 
+<script>
+  const panels = document.querySelectorAll<HTMLElement>("[data-gallery-panel]");
+  const viewButtons = document.querySelectorAll<HTMLButtonElement>(
+    "[data-gallery-view]",
+  );
+  const fixtureControl = document.querySelector<HTMLElement>(
+    "[data-fixture-control]",
+  );
+  const fixtureSelect = document.querySelector<HTMLSelectElement>(
+    "[data-fixture-select]",
+  );
+  const fixturePanels = document.querySelectorAll<HTMLElement>(
+    "[data-fixture-panel]",
+  );
+  const count = document.querySelector<HTMLElement>("[data-gallery-count]");
+
+  function setFixture(value: string) {
+    for (const panel of fixturePanels)
+      panel.hidden = panel.dataset.fixturePanel !== value;
+    const active = document.querySelector<HTMLElement>(
+      `[data-fixture-panel="${CSS.escape(value)}"]`,
+    );
+    const total = active?.querySelectorAll(".specimen").length ?? 0;
+    if (count) count.textContent = `${total} themes compared`;
+  }
+
+  function setView(value: string) {
+    for (const panel of panels)
+      panel.hidden = panel.dataset.galleryPanel !== value;
+    for (const button of viewButtons) {
+      const selected = button.dataset.galleryView === value;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    }
+    if (fixtureControl) fixtureControl.hidden = value !== "compare";
+    if (value === "compare") setFixture(fixtureSelect?.value ?? "");
+    else if (count)
+      count.textContent = `${document.querySelectorAll('[data-gallery-panel="showcase"] .specimen').length} curated specimens`;
+    const params = new URLSearchParams(location.search);
+    if (value === "compare") params.set("view", "compare");
+    else params.delete("view");
+    history.replaceState(
+      null,
+      "",
+      params.size ? `?${params}` : location.pathname,
+    );
+  }
+
+  for (const button of viewButtons)
+    button.addEventListener("click", () =>
+      setView(button.dataset.galleryView ?? "showcase"),
+    );
+  fixtureSelect?.addEventListener("change", () => {
+    setFixture(fixtureSelect.value);
+    const params = new URLSearchParams(location.search);
+    params.set("view", "compare");
+    params.set("fixture", fixtureSelect.value);
+    history.replaceState(null, "", `?${params}`);
+  });
+
+  const initialParams = new URLSearchParams(location.search);
+  if (initialParams.get("view") === "compare") {
+    const requestedFixture = initialParams.get("fixture");
+    if (
+      requestedFixture &&
+      fixtureSelect?.querySelector(
+        `option[value="${CSS.escape(requestedFixture)}"]`,
+      )
+    )
+      fixtureSelect.value = requestedFixture;
+    setView("compare");
+  }
+
+  const root = document.querySelector<HTMLElement>("[data-lightbox-root]");
+  const image = root?.querySelector<HTMLImageElement>("[data-lightbox-image]");
+  const title = root?.querySelector<HTMLElement>("[data-lightbox-title]");
+  const theme = root?.querySelector<HTMLElement>("[data-lightbox-theme]");
+  const dimensions = root?.querySelector<HTMLElement>(
+    "[data-lightbox-dimensions]",
+  );
+  const download = root?.querySelector<HTMLAnchorElement>(
+    "[data-lightbox-download]",
+  );
+  let current = -1;
+  let lastFocused: HTMLElement | null = null;
+
+  function triggers() {
+    return [
+      ...document.querySelectorAll<HTMLButtonElement>(
+        '[data-gallery-panel]:not([hidden]) [data-fixture-panel]:not([hidden]) [data-lightbox], [data-gallery-panel="showcase"]:not([hidden]) [data-lightbox]',
+      ),
+    ];
+  }
+
+  function show(index: number) {
+    const list = triggers();
+    if (!root || !image || !list.length) return;
+    current = (index + list.length) % list.length;
+    const trigger = list[current];
+    const url = trigger.dataset.url ?? "";
+    image.src = url;
+    image.alt = trigger.getAttribute("aria-label") ?? "";
+    if (title) title.textContent = trigger.dataset.fixtureLabel ?? "";
+    if (theme) theme.textContent = trigger.dataset.themeLabel ?? "";
+    if (dimensions) dimensions.textContent = trigger.dataset.dimensions ?? "";
+    if (download) download.href = url;
+  }
+
+  function setBackgroundHidden(hidden: boolean) {
+    for (const element of document.querySelectorAll<HTMLElement>(
+      ".gallery-page, .site-header, .site-footer",
+    )) {
+      if (hidden) {
+        element.setAttribute("inert", "");
+        element.setAttribute("aria-hidden", "true");
+      } else {
+        element.removeAttribute("inert");
+        element.removeAttribute("aria-hidden");
+      }
+    }
+  }
+
+  function open(index: number) {
+    if (!root) return;
+    lastFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    show(index);
+    root.hidden = false;
+    document.body.style.overflow = "hidden";
+    setBackgroundHidden(true);
+    requestAnimationFrame(() => {
+      root.classList.add("open");
+      root.querySelector<HTMLButtonElement>("[data-lightbox-close]")?.focus();
+    });
+  }
+
+  function close() {
+    if (!root) return;
+    root.classList.remove("open");
+    document.body.style.overflow = "";
+    const delay = matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 0
+      : 180;
+    window.setTimeout(() => {
+      root.hidden = true;
+      if (image) image.removeAttribute("src");
+      setBackgroundHidden(false);
+      lastFocused?.focus();
+      lastFocused = null;
+    }, delay);
+  }
+
+  document.addEventListener("click", (event) => {
+    const trigger = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      "[data-lightbox]",
+    );
+    if (trigger) return open(triggers().indexOf(trigger));
+    if (!root || root.hidden) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-lightbox-prev]")) return show(current - 1);
+    if (target.closest("[data-lightbox-next]")) return show(current + 1);
+    if (target.closest("[data-lightbox-close]") || target === root) close();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!root || root.hidden) return;
+    if (event.key === "Escape") close();
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      show(current - 1);
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      show(current + 1);
+    }
+    if (event.key === "Tab") {
+      const focusable = [
+        ...root.querySelectorAll<HTMLElement>("button, a[href]"),
+      ];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+  });
+</script>
+
 <style>
   .gallery-page {
-    --gallery-ink: var(--home-ink);
-    --gallery-paper: var(--home-paper);
-    --gallery-muted: var(--home-muted);
-    --gallery-accent: var(--home-accent);
-    background: var(--gallery-paper);
+    padding-bottom: 130px;
   }
 
-  .gallery-wrap {
-    width: min(1180px, calc(100% - 48px));
-    margin: 0 auto;
-  }
-
-  .gallery-hero {
-    padding: clamp(74px, 9vw, 124px) 0 clamp(66px, 8vw, 110px);
-    color: var(--gallery-paper);
-    background:
-      radial-gradient(circle at 80% 20%, rgba(240, 162, 87, 0.1), transparent 28rem),
-      var(--gallery-ink);
-  }
-
-  .gallery-hero-grid {
-    display: block;
-  }
-
-  .gallery-kicker,
-  .filter-label,
-  .gallery-stats span {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .gallery-kicker {
-    color: var(--gallery-muted);
-  }
-
-  .gallery-kicker--dark,
-  .filter-label {
-    color: var(--home-rust-dark);
-  }
-
-  .gallery-kicker .signal {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    margin-right: 7px;
-    border-radius: 50%;
-    background: var(--gallery-accent);
-    vertical-align: 1px;
-  }
-
-  .gallery-hero h1 {
-    margin-top: 26px;
-    font-family: var(--mono);
-    font-size: clamp(50px, 7.4vw, 96px);
-    font-weight: 650;
-    letter-spacing: -0.08em;
-    line-height: 0.98;
-    text-wrap: balance;
-  }
-
-  .gallery-hero h1 em {
-    color: var(--gallery-accent);
-    font-style: normal;
-  }
-
-  .gallery-lead {
-    max-width: 64ch;
-    margin-top: 26px;
-    color: var(--gallery-muted);
-    font-size: clamp(17px, 1.7vw, 21px);
-    line-height: 1.55;
-  }
-
-  .gallery-stats {
+  .gallery-heading {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid rgba(255, 194, 125, 0.28);
-    border-bottom: 1px solid rgba(255, 194, 125, 0.28);
-    margin-top: clamp(56px, 7vw, 92px);
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+    align-items: center;
+    gap: clamp(50px, 8vw, 120px);
+    padding-top: clamp(70px, 9vw, 126px);
+    padding-bottom: 86px;
   }
 
-  .gallery-stats div {
-    min-width: 0;
-    padding: 20px 16px 19px 0;
+  .gallery-copy h1 {
+    margin-top: 20px;
+    font-size: clamp(64px, 8vw, 112px);
+    font-weight: 710;
+    letter-spacing: -0.075em;
+    line-height: 0.88;
   }
 
-  .gallery-stats div + div {
-    padding-left: 16px;
-    border-left: 1px solid rgba(255, 194, 125, 0.2);
+  .gallery-copy h1 span {
+    color: var(--blue);
   }
 
-  .gallery-stats strong {
-    display: block;
-    color: var(--gallery-paper);
-    font-family: var(--mono);
-    font-size: clamp(28px, 4vw, 48px);
-    font-weight: 500;
-    letter-spacing: -0.08em;
+  .gallery-copy > p:last-child {
+    max-width: 670px;
+    margin-top: 28px;
+    color: var(--ink-soft);
+    font-size: 19px;
   }
 
-  .gallery-stats span {
-    display: block;
-    margin-top: 8px;
-    color: var(--gallery-muted);
-    font-size: 9px;
-    line-height: 1.4;
+  .gallery-diagram {
+    position: relative;
+    min-height: 360px;
   }
 
-  .gallery-catalog {
-    padding: 0 0 120px;
-    background: var(--gallery-paper);
+  .gallery-diagram svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
   }
 
-  .gallery-toolbar {
+  .gallery-diagram path {
+    fill: none;
+    stroke: var(--blue);
+    stroke-width: 1.4;
+    stroke-dasharray: 6 7;
+    opacity: 0.45;
+  }
+
+  .gallery-diagram circle {
+    fill: var(--lime);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+
+  .stat {
+    position: absolute;
+    display: flex;
+    min-width: 116px;
+    flex-direction: column;
+    padding: 12px 14px;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    font-size: 12px;
+    box-shadow: 0 14px 32px rgba(34, 43, 62, 0.08);
+  }
+
+  .stat strong {
+    color: var(--ink);
+    font-size: 30px;
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+
+  .stat--one {
+    top: 128px;
+    left: 0;
+  }
+  .stat--two {
+    top: 0;
+    left: 42%;
+  }
+  .stat--three {
+    right: 0;
+    bottom: 0;
+  }
+
+  .browser-section {
+    border-top: 1px solid var(--line);
+  }
+
+  .browser-toolbar {
     position: sticky;
     top: var(--nav-h);
-    z-index: 20;
-    display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
-    gap: 32px;
-    padding: 26px 0 22px;
-    background: color-mix(in srgb, var(--gallery-paper) 94%, transparent);
-    border-bottom: 1px solid #d8cec0;
+    z-index: 35;
+    background: color-mix(in srgb, var(--canvas) 92%, transparent);
+    border-bottom: 1px solid var(--line);
     backdrop-filter: blur(16px);
   }
 
-  .toolbar-title p {
-    margin-top: 12px;
-    color: var(--text-dark);
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-
-  .filter-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 190px;
-    gap: 40px;
-    align-items: end;
-  }
-
-  .filter-label {
-    display: block;
-    margin-bottom: 14px;
-  }
-
-  .swatch-filter {
+  .toolbar-inner {
     display: flex;
-    flex-wrap: wrap;
-    gap: 11px;
+    min-height: 70px;
+    align-items: center;
+    gap: 28px;
   }
 
-  .swatch {
-    padding: 0;
+  .view-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--canvas-strong);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+
+  .view-tabs button {
+    min-height: 36px;
+    padding: 7px 13px;
+    color: var(--ink-soft);
+    background: transparent;
     border: 0;
     border-radius: 7px;
-    background: none;
-    cursor: pointer;
-    line-height: 0;
-    transition: transform 0.2s ease;
-  }
-
-  .swatch :global(svg) {
-    display: block;
-    width: 40px;
-    height: auto;
-  }
-
-  .swatch:hover {
-    transform: translateY(-2px) scale(1.08);
-  }
-
-  .swatch.on {
-    outline: 2px solid var(--gallery-accent);
-    outline-offset: 3px;
-  }
-
-  .theme-name {
-    min-height: 1.2em;
-    margin-top: 13px;
-    color: var(--text-dark-2);
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-
-  .fixture-filter select {
-    width: 100%;
-    padding: 8px 24px 10px 0;
-    border: 0;
-    border-bottom: 1px solid #bdb1a3;
-    border-radius: 0;
-    background: var(--gallery-paper);
-    color: var(--text-dark);
-    font-family: var(--mono);
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .gallery-wide {
-    width: min(1280px, calc(100% - 48px));
-    margin: 48px auto 0;
-  }
-
-  .empty {
-    padding: 80px 0;
-    color: var(--text-dark-2);
-    text-align: center;
-    font-family: var(--mono);
     font-size: 13px;
+    font-weight: 680;
+    cursor: pointer;
   }
 
-  /* lightbox */
+  .view-tabs button.active {
+    color: var(--ink);
+    background: var(--surface);
+    box-shadow: 0 1px 4px rgba(30, 38, 54, 0.11);
+  }
+
+  .fixture-select {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .fixture-select[hidden] {
+    display: none;
+  }
+
+  .fixture-select span,
+  .toolbar-inner > p {
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-weight: 680;
+  }
+
+  .fixture-select select {
+    min-height: 40px;
+    padding: 7px 30px 7px 11px;
+    color: var(--ink);
+    background-color: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .toolbar-inner > p {
+    margin-left: auto;
+  }
+
+  .gallery-content {
+    padding-top: 72px;
+  }
+
+  [data-gallery-panel][hidden],
+  [data-fixture-panel][hidden] {
+    display: none;
+  }
+
+  .panel-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
+    align-items: end;
+    gap: 50px;
+    margin-bottom: 54px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .panel-heading span {
+    color: var(--blue-deep);
+    font-size: 13px;
+    font-weight: 720;
+  }
+
+  .panel-heading h2 {
+    margin-top: 10px;
+    font-size: clamp(38px, 5vw, 64px);
+    letter-spacing: -0.055em;
+    line-height: 1;
+  }
+
+  .panel-heading > p {
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
   .lightbox {
     position: fixed;
     inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(11, 15, 12, 0.92);
-    backdrop-filter: blur(22px) saturate(120%);
-    -webkit-backdrop-filter: blur(22px) saturate(120%);
+    z-index: 120;
+    display: grid;
+    padding: 34px 84px;
+    place-items: center;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: rgba(20, 23, 29, 0.94);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 180ms ease;
   }
 
   .lightbox.open {
@@ -334,239 +614,222 @@ const fixtureMeta = FIXTURE_META.filter((f) => fixtures.includes(f.key));
     display: none;
   }
 
+  .lightbox-layout {
+    display: grid;
+    width: min(1180px, 100%);
+    grid-template-columns: minmax(0, 1fr) 290px;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid #454b57;
+    border-radius: var(--radius-lg);
+  }
+
   .lightbox figure {
-    width: min(920px, calc(100vw - 140px));
-    text-align: center;
-    transform: scale(0.96);
-    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    min-width: 0;
+    margin: 0;
   }
 
-  .lightbox.open figure {
-    transform: none;
+  .lightbox-artboard {
+    display: grid;
+    min-height: min(70vh, 720px);
+    padding: 42px;
+    place-items: center;
+    background-color: #edf0ec;
+    background-image:
+      linear-gradient(#dce1dd 1px, transparent 1px),
+      linear-gradient(90deg, #dce1dd 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 
-  .lightbox img {
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 40px 80px rgba(0, 0, 0, 0.5));
+  .lightbox-artboard img {
+    width: auto;
+    max-width: 100%;
+    max-height: 72vh;
+    object-fit: contain;
+    filter: drop-shadow(0 26px 52px rgba(28, 34, 48, 0.2));
   }
 
-  .lightbox figcaption {
-    margin-top: 24px;
-    color: rgba(255, 255, 255, 0.75);
-    font-family: var(--mono);
-    font-size: 13px;
+  .lightbox aside {
+    padding: 34px 28px;
+    border-left: 1px solid var(--line);
   }
 
-  .lb-close,
-  .lb-arrow {
-    position: fixed;
+  .lightbox aside > span {
+    color: var(--blue-deep);
+    font-size: 12px;
+    font-weight: 720;
+  }
+
+  .lightbox aside h2 {
+    margin-top: 12px;
+    font-size: 32px;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+  }
+
+  .lightbox dl {
+    margin: 30px 0;
+  }
+
+  .lightbox dl div {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(255, 194, 125, 0.35);
+    justify-content: space-between;
+    gap: 18px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+
+  .lightbox dt {
+    color: var(--ink-faint);
+  }
+
+  .lightbox dd {
+    margin: 0;
+    color: var(--ink);
+    font-weight: 680;
+    text-align: right;
+  }
+
+  .lightbox aside .button {
+    width: 100%;
+  }
+
+  .lightbox aside > p {
+    margin-top: 22px;
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  .lightbox kbd {
+    padding: 2px 5px;
+    color: var(--ink);
+    background: var(--canvas-strong);
+    border: 1px solid var(--line-strong);
     border-radius: 4px;
-    background: rgba(255, 194, 125, 0.1);
-    color: var(--gallery-accent);
+    font-family: var(--mono);
+  }
+
+  .lightbox-close,
+  .lightbox-arrow {
+    position: fixed;
+    z-index: 3;
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    color: white;
+    background: #2a2f38;
+    border: 1px solid #4c5360;
+    border-radius: 10px;
     cursor: pointer;
   }
 
-  .lb-close:hover,
-  .lb-arrow:hover {
-    background: rgba(255, 194, 125, 0.22);
+  .lightbox-close {
+    top: 20px;
+    right: 20px;
+    font-size: 25px;
+  }
+  .lightbox-prev {
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+  }
+  .lightbox-next {
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
   }
 
-  .lb-close { top: 22px; right: 22px; }
-  .lb-close svg,
-  .lb-arrow svg { width: 18px; height: 18px; }
-  .lb-prev { left: 22px; top: 50%; transform: translateY(-50%); }
-  .lb-next { right: 22px; top: 50%; transform: translateY(-50%); }
+  @media (max-width: 820px) {
+    .gallery-heading,
+    .panel-heading {
+      grid-template-columns: 1fr;
+    }
 
-  @media (max-width: 900px) {
-    .gallery-toolbar,
-    .filter-controls { grid-template-columns: 1fr; }
-    .gallery-toolbar { gap: 24px; }
+    .gallery-diagram {
+      width: min(100%, 560px);
+    }
+
+    .lightbox {
+      padding: 70px 16px 90px;
+    }
+
+    .lightbox-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .lightbox aside {
+      border-top: 1px solid var(--line);
+      border-left: 0;
+    }
+
+    .lightbox-prev,
+    .lightbox-next {
+      top: auto;
+      bottom: 20px;
+      transform: none;
+    }
+
+    .lightbox-prev {
+      left: calc(50% - 54px);
+    }
+    .lightbox-next {
+      right: calc(50% - 54px);
+    }
   }
 
-  @media (max-width: 640px) {
-    .gallery-wrap,
-    .gallery-wide { width: min(100% - 32px, 1280px); }
-    .gallery-hero-grid { display: block; }
-    .gallery-hero h1 { font-size: clamp(46px, 13vw, 70px); }
-    .gallery-stats strong { font-size: 30px; }
-    .gallery-catalog { padding-bottom: 72px; }
-    .gallery-toolbar { top: var(--nav-h); padding-top: 20px; }
-    .gallery-wide { margin-top: 28px; }
-    .lb-prev, .lb-next { top: auto; bottom: 22px; transform: none; }
-    .lb-prev { left: calc(50% - 52px); }
-    .lb-next { right: calc(50% - 52px); }
-  }
+  @media (max-width: 620px) {
+    .gallery-page {
+      padding-bottom: 90px;
+    }
 
-  @media (prefers-reduced-motion: reduce) {
-    .lightbox,
-    .lightbox figure,
-    .swatch { transition: none; }
+    .gallery-heading {
+      padding-top: 56px;
+      padding-bottom: 58px;
+    }
+
+    .gallery-copy h1 {
+      font-size: clamp(56px, 16vw, 76px);
+    }
+
+    .gallery-diagram {
+      min-height: 280px;
+    }
+
+    .toolbar-inner {
+      min-height: 0;
+      align-items: stretch;
+      flex-direction: column;
+      gap: 10px;
+      padding-block: 10px;
+    }
+
+    .view-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .fixture-select {
+      justify-content: space-between;
+    }
+
+    .toolbar-inner > p {
+      display: none;
+    }
+
+    .gallery-content {
+      padding-top: 52px;
+    }
+
+    .panel-heading {
+      gap: 16px;
+      margin-bottom: 38px;
+    }
+
+    .lightbox-artboard {
+      min-height: 330px;
+      padding: 20px;
+    }
   }
 </style>
-
-<script>
-  const state: Record<string, string> = { theme: '', fixture: '' };
-  const tiles = document.querySelectorAll<HTMLElement>('.tile[data-theme][data-fixture]');
-  const empty = document.querySelector<HTMLElement>('[data-empty]');
-  const count = document.querySelector<HTMLElement>('[data-count]');
-  const themeName = document.querySelector<HTMLElement>('[data-theme-name]');
-  const total = tiles.length;
-
-  function apply() {
-    let visible = 0;
-    for (const tile of tiles) {
-      const show =
-        (!state.theme || tile.dataset.theme === state.theme) &&
-        (!state.fixture || tile.dataset.fixture === state.fixture);
-      tile.hidden = !show;
-      if (show) visible++;
-    }
-    if (empty) empty.hidden = visible > 0;
-    if (count) count.textContent = visible === total ? `Showing all ${total}` : `Showing ${visible} of ${total}`;
-    const params = new URLSearchParams();
-    if (state.theme) params.set('theme', state.theme);
-    if (state.fixture) params.set('fixture', state.fixture);
-    const qs = params.toString();
-    history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
-  }
-
-  function activate(group: HTMLElement, btn: HTMLElement) {
-    const key = group.dataset.filterGroup!;
-    state[key] = btn.dataset.value ?? '';
-    for (const b of group.querySelectorAll('button')) {
-      const selected = b === btn;
-      b.classList.toggle('on', selected);
-      b.setAttribute('aria-pressed', String(selected));
-    }
-    if (key === 'theme' && themeName) {
-      themeName.textContent = btn.getAttribute('aria-label') ?? btn.textContent ?? 'All themes';
-    }
-  }
-
-  for (const group of document.querySelectorAll<HTMLElement>('[data-filter-group]')) {
-    group.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLElement>('button');
-      if (!btn) return;
-      activate(group, btn);
-      apply();
-    });
-  }
-
-  for (const select of document.querySelectorAll<HTMLSelectElement>('[data-filter-select]')) {
-    select.addEventListener('change', () => {
-      state[select.dataset.filterSelect!] = select.value;
-      apply();
-    });
-  }
-
-  const params = new URLSearchParams(location.search);
-  for (const key of ['theme', 'fixture'] as const) {
-    const value = params.get(key);
-    if (!value) continue;
-    const select = document.querySelector<HTMLSelectElement>(`[data-filter-select="${key}"]`);
-    if (select) {
-      select.value = value;
-      state[key] = value;
-      continue;
-    }
-    const btn = document.querySelector<HTMLElement>(
-      `[data-filter-group="${key}"] button[data-value="${CSS.escape(value)}"]`
-    );
-    if (btn) activate(btn.closest<HTMLElement>('[data-filter-group]')!, btn);
-  }
-  apply();
-
-  const root = document.querySelector<HTMLElement>('[data-lightbox-root]')!;
-  const lbImg = root.querySelector<HTMLImageElement>('[data-lb-img]')!;
-  const lbCaption = root.querySelector<HTMLElement>('[data-lb-caption]')!;
-  let current = -1;
-  let lastFocused: HTMLElement | null = null;
-
-  function visibleTriggers() {
-    return [...document.querySelectorAll<HTMLElement>('.tile:not([hidden]) [data-lightbox]')];
-  }
-
-  function show(index: number) {
-    const triggers = visibleTriggers();
-    if (!triggers.length) return;
-    current = (index + triggers.length) % triggers.length;
-    const trigger = triggers[current];
-    lbImg.src = trigger.dataset.url ?? '';
-    lbImg.alt = trigger.getAttribute('aria-label') ?? '';
-    lbCaption.textContent = trigger.dataset.caption ?? '';
-    const tileImg = trigger.querySelector('img');
-    const ratio = tileImg ? tileImg.naturalWidth / tileImg.naturalHeight : 2;
-    const figure = lbImg.closest('figure') as HTMLElement;
-    const maxByHeight = (window.innerHeight - 220) * ratio;
-    figure.style.width = `min(920px, calc(100vw - 140px), ${Math.round(maxByHeight)}px)`;
-  }
-
-  function open(index: number) {
-    lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    show(index);
-    root.hidden = false;
-    document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => {
-      root.classList.add('open');
-      root.querySelector<HTMLElement>('[data-lb-close]')?.focus();
-    });
-  }
-
-  function close() {
-    root.classList.remove('open');
-    document.body.style.overflow = '';
-    setTimeout(() => {
-      root.hidden = true;
-      lbImg.src = '';
-      lastFocused?.focus();
-      lastFocused = null;
-    }, 300);
-  }
-
-  document.addEventListener('click', (e) => {
-    const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox]');
-    if (trigger) {
-      open(visibleTriggers().indexOf(trigger));
-      return;
-    }
-    if (!root.hidden) {
-      const element = e.target as HTMLElement;
-      if (element.closest('[data-lb-prev]')) return show(current - 1);
-      if (element.closest('[data-lb-next]')) return show(current + 1);
-      if (element.closest('[data-lb-close]') || !element.closest('figure')) close();
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (root.hidden) return;
-    if (e.key === 'Escape') close();
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      show(current - 1);
-    }
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      show(current + 1);
-    }
-    if (e.key === 'Tab') {
-      const focusable = [...root.querySelectorAll<HTMLElement>('button')];
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (!first || !last) return;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  });
-</script>

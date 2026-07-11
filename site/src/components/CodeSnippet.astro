@@ -1,18 +1,22 @@
 ---
-// Shared macOS Terminal window: traffic lights, centred title, copy control.
 interface Props {
   code: string;
   label?: string;
 }
 
-const { code, label = 'Terminal' } = Astro.props;
+const { code, label = "Shell" } = Astro.props;
 ---
 
 <div class="snippet">
   <div class="head">
-    <span class="lights" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></span>
     <span class="label">{label}</span>
-    <button class="copy" type="button" aria-label={`Copy ${label}`} aria-live="polite" data-copy={code}>Copy</button>
+    <button
+      class="copy"
+      type="button"
+      aria-label={`Copy ${label}`}
+      aria-live="polite"
+      data-copy={code}>Copy</button
+    >
   </div>
   <pre><code>{code}</code></pre>
 </div>

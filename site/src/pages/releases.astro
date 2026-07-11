@@ -1,141 +1,247 @@
 ---
-import Base from '../layouts/Base.astro';
-import ReleaseEntry from '../components/ReleaseEntry.astro';
-import { getReleases, REPO_URL } from '../lib/releases';
+import Base from "../layouts/Base.astro";
+import ReleaseEntry from "../components/ReleaseEntry.astro";
+import { getReleases, REPO_URL } from "../lib/releases";
 
 const releases = await getReleases();
 ---
 
 <Base
   title="Releases — terminal-svg"
-  description="Release notes, binaries, and the reasoning behind each terminal-svg release."
+  description="Complete terminal-svg release notes, platform downloads, and version history."
 >
-  <div class="release-page">
-    <section class="release-hero">
-      <div class="release-wrap">
-        <div data-reveal>
-          <p class="release-kicker"><span class="signal"></span> changelog</p>
-          <h1>Release notes.</h1>
-        </div>
+  <div class="release-page shell">
+    <header class="release-heading">
+      <div>
+        <p class="section-label">Version history</p>
+        <h1>Every release,<br />fully drawn.</h1>
       </div>
-    </section>
+      <p>
+        Release notes, compatibility details, and downloadable binaries—kept
+        alongside the documentation they belong to.
+      </p>
+    </header>
 
-    <section class="release-list">
-      <div class="release-wrap">
-        <div class="release-list-head" data-reveal>
-          <span class="release-kicker release-kicker--dark">Version history</span>
-          <a href="/docs/install/">Install guide ↗</a>
+    {
+      releases.length > 0 ? (
+        <div class="release-layout">
+          <aside class="version-index" aria-label="Release versions">
+            <strong>Versions</strong>
+            <nav>
+              {releases.map((release, index) => {
+                const id = release.tag
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-");
+                return (
+                  <a href={`#${id}`}>
+                    <span>{release.tag}</span>
+                    {index === 0 && <i>Latest</i>}
+                  </a>
+                );
+              })}
+            </nav>
+            <a
+              class="archive-link"
+              href={`${REPO_URL}/releases`}
+              rel="noopener"
+            >
+              GitHub archive ↗
+            </a>
+          </aside>
+          <div class="release-list">
+            {releases.map((release, index) => (
+              <ReleaseEntry release={release} latest={index === 0} />
+            ))}
+          </div>
         </div>
-        {
-          releases.length > 0 ? (
-            <div class="timeline">
-              {releases.map((release, i) => <ReleaseEntry release={release} latest={i === 0} />)}
-            </div>
-          ) : (
-            <p class="fallback" data-reveal>
-              Release data wasn't available when this page was built. See the{' '}
-              <a href={`${REPO_URL}/releases`} rel="noopener">releases on GitHub ↗</a>
-            </p>
-          )
-        }
-      </div>
-    </section>
+      ) : (
+        <div class="release-empty">
+          <svg viewBox="0 0 160 120" aria-hidden="true">
+            <>
+              <path d="M10 84C46 84 43 28 80 28s32 64 70 64" />
+              <circle cx="10" cy="84" r="6" />
+              <circle cx="80" cy="28" r="6" />
+              <circle cx="150" cy="92" r="6" />
+            </>
+          </svg>
+          <h2>Release data is temporarily unavailable.</h2>
+          <p>The site can still be built during a GitHub API interruption.</p>
+          <a
+            class="button button--primary"
+            href={`${REPO_URL}/releases`}
+            rel="noopener"
+          >
+            View Releases on GitHub
+          </a>
+        </div>
+      )
+    }
   </div>
 </Base>
 
 <style>
   .release-page {
-    background: var(--home-paper);
+    padding-bottom: 130px;
   }
 
-  .release-wrap {
-    width: min(1180px, calc(100% - 48px));
-    margin: 0 auto;
+  .release-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.6fr);
+    align-items: end;
+    gap: clamp(50px, 8vw, 120px);
+    padding: clamp(72px, 9vw, 126px) 0 82px;
+    border-bottom: 1px solid var(--line-strong);
   }
 
-  .release-hero {
-    padding: clamp(74px, 9vw, 124px) 0 clamp(54px, 6vw, 82px);
-    color: var(--home-paper);
-    background:
-      radial-gradient(circle at 75% 20%, rgba(240, 162, 87, 0.1), transparent 28rem),
-      var(--home-ink);
+  .release-heading h1 {
+    margin-top: 20px;
+    font-size: clamp(58px, 7.6vw, 104px);
+    font-weight: 710;
+    letter-spacing: -0.07em;
+    line-height: 0.9;
   }
 
-  .release-kicker,
-  .release-list-head {
-    font-family: var(--mono);
+  .release-heading > p {
+    color: var(--ink-soft);
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .release-layout {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 850px);
+    justify-content: center;
+    gap: clamp(60px, 9vw, 130px);
+    padding-top: 70px;
+  }
+
+  .version-index {
+    position: sticky;
+    top: calc(var(--nav-h) + 26px);
+    align-self: start;
+  }
+
+  .version-index > strong {
+    color: var(--ink-faint);
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
   }
 
-  .release-kicker {
-    color: var(--home-muted);
+  .version-index nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 10px;
   }
 
-  .release-kicker--dark,
-  .release-list-head a {
-    color: var(--home-rust-dark);
-  }
-
-  .release-kicker .signal {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    margin-right: 7px;
-    border-radius: 50%;
-    background: var(--home-accent);
-    vertical-align: 1px;
-  }
-
-  .release-hero h1 {
-    margin-top: 26px;
-    font-family: var(--mono);
-    font-size: clamp(48px, 6.5vw, 84px);
+  .version-index nav a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 9px;
+    color: var(--ink-soft);
+    border-radius: 7px;
+    font-size: 13px;
     font-weight: 650;
-    letter-spacing: -0.08em;
-    line-height: 0.98;
+    text-decoration: none;
   }
 
-  .release-hero h1 em {
-    color: var(--home-accent);
+  .version-index nav a:hover {
+    color: var(--blue-deep);
+    background: var(--blue-wash);
+  }
+
+  .version-index i {
+    color: var(--blue-deep);
+    font-size: 9px;
     font-style: normal;
   }
 
-  .release-list {
-    padding: 0 0 120px;
-  }
-
-  .release-list-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 25px 0 21px;
-    border-bottom: 1px solid #d8cec0;
-  }
-
-  .release-list-head a {
+  .archive-link {
+    display: inline-block;
+    margin-top: 24px;
+    color: var(--ink-soft);
     font-size: 11px;
+    font-weight: 680;
+    text-decoration: none;
   }
 
-  .timeline {
-    max-width: 920px;
-    margin: 0 auto;
-  }
-
-  .fallback {
-    padding: 70px 0;
-    color: var(--text-dark-2);
-    font-family: var(--mono);
-    font-size: 13px;
+  .release-empty {
+    max-width: 650px;
+    margin: 90px auto 0;
+    padding: 50px;
     text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+
+  .release-empty svg {
+    width: 160px;
+  }
+
+  .release-empty path {
+    fill: none;
+    stroke: var(--blue);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 6;
+  }
+
+  .release-empty circle {
+    fill: var(--lime);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+
+  .release-empty h2 {
+    margin-top: 18px;
+    font-size: 30px;
+    letter-spacing: -0.04em;
+  }
+
+  .release-empty p {
+    margin: 10px 0 24px;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 820px) {
+    .release-heading {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .release-layout {
+      display: block;
+      padding-top: 52px;
+    }
+
+    .version-index {
+      position: static;
+      margin-bottom: 54px;
+    }
+
+    .version-index nav {
+      flex-flow: row wrap;
+    }
+
+    .version-index nav a {
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
   }
 
   @media (max-width: 560px) {
-    .release-wrap { width: min(100% - 32px, 1180px); }
-    .release-hero h1 { font-size: clamp(46px, 13vw, 70px); }
-    .release-list { padding-bottom: 72px; }
-    .release-list-head { align-items: flex-start; flex-direction: column; gap: 12px; }
+    .release-page {
+      padding-bottom: 90px;
+    }
+
+    .release-heading {
+      padding-top: 56px;
+      padding-bottom: 54px;
+    }
+
+    .release-heading h1 {
+      font-size: clamp(54px, 16vw, 74px);
+    }
   }
 </style>

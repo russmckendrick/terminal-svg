@@ -1,0 +1,204 @@
+---
+import type { DocMeta } from "../lib/docs";
+
+interface Props {
+  docs: DocMeta[];
+  compact?: boolean;
+}
+
+const { docs, compact = false } = Astro.props;
+---
+
+<div class:list={["docs-search", { compact }]} data-docs-search role="search">
+  <label>
+    <span class="sr-only">Search documentation</span>
+    <svg
+      viewBox="0 0 24 24"
+      width="17"
+      height="17"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+      ><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"
+      ></path></svg
+    >
+    <input
+      type="search"
+      name="docs-search"
+      placeholder="Search documentation…"
+      autocomplete="off"
+      spellcheck="false"
+      data-docs-search-input
+    />
+  </label>
+  <div
+    class="search-results"
+    data-docs-search-results
+    aria-live="polite"
+    hidden
+  >
+    {
+      docs.map((doc) => (
+        <a
+          href={`/docs/${doc.slug}/`}
+          data-docs-search-item
+          data-search-value={`${doc.title} ${doc.deck} ${doc.label}`.toLowerCase()}
+        >
+          <>
+            <strong>{doc.title}</strong>
+            <span>{doc.deck}</span>
+          </>
+        </a>
+      ))
+    }
+    <p data-docs-search-empty hidden>No guide matches that search.</p>
+  </div>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>(
+    "[data-docs-search]",
+  )) {
+    const input = root.querySelector<HTMLInputElement>(
+      "[data-docs-search-input]",
+    );
+    const results = root.querySelector<HTMLElement>(
+      "[data-docs-search-results]",
+    );
+    const items = [
+      ...root.querySelectorAll<HTMLElement>("[data-docs-search-item]"),
+    ];
+    const empty = root.querySelector<HTMLElement>("[data-docs-search-empty]");
+    if (!input || !results) continue;
+    const field = input;
+    const resultPanel = results;
+
+    function update() {
+      const query = field.value.trim().toLowerCase();
+      resultPanel.hidden = query.length === 0;
+      let visible = 0;
+      for (const item of items) {
+        const matches = !query || item.dataset.searchValue?.includes(query);
+        item.hidden = !matches;
+        if (matches) visible += 1;
+      }
+      if (empty) empty.hidden = visible > 0;
+    }
+
+    field.addEventListener("input", update);
+    field.addEventListener("focus", update);
+    field.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        field.value = "";
+        resultPanel.hidden = true;
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!root.contains(event.target as Node)) resultPanel.hidden = true;
+    });
+  }
+</script>
+
+<style>
+  .docs-search {
+    position: relative;
+    width: min(100%, 680px);
+  }
+
+  label {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    color: var(--ink-faint);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    box-shadow: 0 12px 30px rgba(35, 44, 63, 0.07);
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    color: var(--ink);
+    background: none;
+    border: 0;
+    outline: 0;
+    font-size: 15px;
+  }
+
+  input::placeholder {
+    color: var(--ink-faint);
+  }
+
+  label:focus-within {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 16%, transparent);
+  }
+
+  .search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    z-index: 45;
+    overflow: hidden;
+    padding: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    box-shadow: 0 24px 58px rgba(30, 38, 56, 0.16);
+  }
+
+  .search-results[hidden] {
+    display: none;
+  }
+
+  .search-results a {
+    display: block;
+    padding: 11px 12px;
+    color: var(--ink);
+    border-radius: 8px;
+    text-decoration: none;
+  }
+
+  .search-results a:hover {
+    background: var(--blue-wash);
+  }
+
+  .search-results strong,
+  .search-results span {
+    display: block;
+  }
+
+  .search-results strong {
+    font-size: 14px;
+  }
+
+  .search-results span {
+    margin-top: 2px;
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .search-results p {
+    padding: 16px 12px;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .compact label {
+    min-height: 42px;
+    padding-inline: 12px;
+    box-shadow: none;
+  }
+
+  .compact input {
+    font-size: 13px;
+  }
+</style>

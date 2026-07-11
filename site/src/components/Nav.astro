@@ -1,189 +1,415 @@
 ---
-import { REPO_URL } from '../lib/releases';
+import { REPO_URL } from "../lib/releases";
+import logoMarkUrl from "../../../docs/assets/logo-mark.svg?url";
 
 const path = Astro.url.pathname;
-const onGallery = path.startsWith('/gallery');
-const onDocs = path.startsWith('/docs');
-const onReleases = path.startsWith('/releases');
-const onHome = path === '/';
+const links = [
+  { href: "/gallery/", label: "Examples", active: path.startsWith("/gallery") },
+  { href: "/docs/", label: "Docs", active: path.startsWith("/docs") },
+  {
+    href: "/releases/",
+    label: "Releases",
+    active: path.startsWith("/releases"),
+  },
+];
+const mobileLinks = [
+  { href: "/", label: "Product", active: path === "/" },
+  ...links,
+];
 ---
 
-<nav class="nav">
-  <div class="inner">
-    <a class="brand" href="/">
-      <img src="/favicon.svg" alt="" width="19" height="19" />
-      <span>terminal‑svg</span>
+<header class="site-header" data-site-header>
+  <nav class="nav shell" aria-label="Primary navigation">
+    <a class="brand" href="/" aria-label="terminal-svg home">
+      <img src={logoMarkUrl} alt="" width="30" height="30" />
+      <span>terminal</span><span class="brand-ext">-svg</span>
     </a>
-    <div class="links">
-      <a href="/" aria-label="Overview" aria-current={onHome ? 'page' : undefined} class:list={{ on: onHome }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3 10.75 12 3.5l9 7.25"></path>
-          <path d="M5.5 9.5V20a.5.5 0 0 0 .5.5h12a.5.5 0 0 0 .5-.5V9.5"></path>
+
+    <div class="desktop-links">
+      {
+        links.map((link) => (
+          <a href={link.href} aria-current={link.active ? "page" : undefined}>
+            {link.label}
+          </a>
+        ))
+      }
+    </div>
+
+    <div class="nav-actions">
+      <a
+        class="github"
+        href={REPO_URL}
+        rel="noopener"
+        aria-label="terminal-svg on GitHub"
+      >
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M12 .8a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.29-1.7-1.29-1.7-1.05-.73.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.8 2.72 1.28 3.39.98.1-.76.4-1.28.74-1.57-2.57-.3-5.28-1.3-5.28-5.72 0-1.27.45-2.3 1.18-3.12-.12-.3-.51-1.48.11-3.08 0 0 .96-.31 3.16 1.19A10.9 10.9 0 0 1 12 6.12c.98 0 1.95.13 2.87.39 2.2-1.5 3.16-1.19 3.16-1.19.63 1.6.24 2.78.12 3.08.73.82 1.17 1.85 1.17 3.12 0 4.44-2.71 5.42-5.3 5.71.42.37.79 1.08.79 2.18v3.23c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .8Z"
+          ></path>
         </svg>
-        <span>Overview</span>
       </a>
-      <a href="/gallery/" aria-label="Gallery" aria-current={onGallery ? 'page' : undefined} class:list={{ on: onGallery }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="14" rx="2.5"></rect>
-          <circle cx="8.7" cy="10" r="1.4" fill="currentColor" stroke="none"></circle>
-          <path d="m20.5 15.5-4.8-4.8L9 17.5"></path>
-        </svg>
-        <span>Gallery</span>
-      </a>
-      <a href="/docs/" aria-label="Docs" aria-current={onDocs ? 'page' : undefined} class:list={{ on: onDocs }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"></path>
-          <path d="M5 4.5v17"></path>
-          <path d="M9 6h7M9 10h7"></path>
-        </svg>
-        <span>Docs</span>
-      </a>
-      <a href="/releases/" aria-label="Releases" aria-current={onReleases ? 'page' : undefined} class:list={{ on: onReleases }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M11.6 3H4a1 1 0 0 0-1 1v7.6a1 1 0 0 0 .3.7l8.9 8.9a1 1 0 0 0 1.4 0l7.1-7.1a1 1 0 0 0 0-1.4L11.9 3.3a1 1 0 0 0-.3-.3z" transform="translate(0 -0.5)"></path>
-          <circle cx="7.6" cy="7.1" r="1.3" fill="currentColor" stroke="none"></circle>
-        </svg>
-        <span>Releases</span>
-      </a>
-      <a href={REPO_URL} aria-label="GitHub" rel="noopener">
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
-        </svg>
-        <span>GitHub</span>
-      </a>
-      <a class="cta" href="/docs/install/" aria-label="Install">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 4v11"></path>
-          <path d="m7 11 5 5 5-5"></path>
-          <path d="M5 20h14"></path>
-        </svg>
-        <span>Install</span>
-      </a>
+      <a class="install-link" href="/docs/install/">Install</a>
+      <button
+        class="menu-button"
+        type="button"
+        data-menu-button
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <span class="sr-only">Open navigation</span>
+        <span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
+    <div class="shell mobile-menu-inner">
+      <p class="mobile-menu-label">Navigate terminal-svg</p>
+      <nav class="mobile-menu-links" aria-label="Mobile navigation">
+        {
+          mobileLinks.map((link, index) => (
+            <a href={link.href} aria-current={link.active ? "page" : undefined}>
+              <span class="mobile-link-index">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <strong>{link.label}</strong>
+              <span class="mobile-link-arrow" aria-hidden="true">
+                ↗
+              </span>
+            </a>
+          ))
+        }
+      </nav>
+      <div class="mobile-menu-footer">
+        <p>Terminal output, ready to publish.</p>
+        <a href={REPO_URL} rel="noopener">
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M12 .8a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.29-1.7-1.29-1.7-1.05-.73.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.8 2.72 1.28 3.39.98.1-.76.4-1.28.74-1.57-2.57-.3-5.28-1.3-5.28-5.72 0-1.27.45-2.3 1.18-3.12-.12-.3-.51-1.48.11-3.08 0 0 .96-.31 3.16 1.19A10.9 10.9 0 0 1 12 6.12c.98 0 1.95.13 2.87.39 2.2-1.5 3.16-1.19 3.16-1.19.63 1.6.24 2.78.12 3.08.73.82 1.17 1.85 1.17 3.12 0 4.44-2.71 5.42-5.3 5.71.42.37.79 1.08.79 2.18v3.23c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .8Z"
+            ></path>
+          </svg>
+          GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </div>
     </div>
   </div>
-</nav>
+</header>
 
-<style>
-  .nav {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: rgba(11, 15, 12, 0.86);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+<script>
+  const header = document.querySelector<HTMLElement>("[data-site-header]");
+  const button = header?.querySelector<HTMLButtonElement>("[data-menu-button]");
+  const menu = header?.querySelector<HTMLElement>("[data-mobile-menu]");
+
+  function setMenu(open: boolean) {
+    if (!button || !menu) return;
+    button.setAttribute("aria-expanded", String(open));
+    button.querySelector(".sr-only")!.textContent = open
+      ? "Close navigation"
+      : "Open navigation";
+    menu.hidden = !open;
+    document.body.classList.toggle("menu-open", open);
   }
 
-  .inner {
-    max-width: 1040px;
-    margin: 0 auto;
-    padding: 0 24px;
+  button?.addEventListener("click", () =>
+    setMenu(button.getAttribute("aria-expanded") !== "true"),
+  );
+  menu?.addEventListener("click", (event) => {
+    if ((event.target as HTMLElement).closest("a")) setMenu(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Escape" &&
+      button?.getAttribute("aria-expanded") === "true"
+    ) {
+      setMenu(false);
+      button.focus();
+    }
+  });
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    background: color-mix(in srgb, var(--canvas) 88%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  .nav {
+    display: grid;
     height: var(--nav-h);
-    display: flex;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
   }
 
   .brand {
     display: inline-flex;
+    width: max-content;
     align-items: center;
-    gap: 9px;
-    color: #f5f5f7;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.022em;
+    gap: 0;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 760;
+    letter-spacing: -0.035em;
+    text-decoration: none;
+  }
+
+  .brand:hover {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .brand-ext {
+    color: var(--accent);
   }
 
   .brand img {
     display: block;
+    flex: 0 0 auto;
+    margin-right: 10px;
   }
 
-  .brand:hover {
-    text-decoration: none;
-  }
-
-  .links {
+  .desktop-links {
     display: flex;
     align-items: center;
-    gap: 26px;
+    gap: 34px;
   }
 
-  .links a {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 13px;
-    letter-spacing: -0.01em;
-    transition: color 0.2s ease;
-  }
-
-  .links a:hover {
-    color: #fff;
+  .desktop-links a {
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 620;
     text-decoration: none;
   }
 
-  .links a.on {
-    color: #fff;
-    font-weight: 600;
+  .desktop-links a:hover,
+  .desktop-links a[aria-current="page"] {
+    color: var(--ink);
   }
 
-  .links svg {
-    width: 15px;
-    height: 15px;
-    flex-shrink: 0;
+  .nav-actions {
+    display: flex;
+    justify-self: end;
+    align-items: center;
+    gap: 12px;
   }
 
-  .cta {
-    background: var(--blue);
-    color: #1b140e !important;
-    padding: 5px 14px;
-    border-radius: 980px;
-    font-size: 13px;
+  .github {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    color: var(--ink-soft);
+    border-radius: 10px;
   }
 
-  .cta:hover {
-    background: var(--blue-hover);
+  .github:hover {
+    color: var(--ink);
+    background: var(--surface);
   }
 
-  .cta svg {
-    width: 13px;
-    height: 13px;
+  .install-link {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    padding: 8px 16px;
+    color: white;
+    background: var(--ink);
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 720;
+    text-decoration: none;
   }
 
-  @media (max-width: 640px) {
-    .links {
-      gap: 20px;
+  .install-link:hover {
+    color: white;
+    background: var(--accent-deep);
+  }
+
+  .menu-button,
+  .mobile-menu {
+    display: none;
+  }
+
+  @media (max-width: 760px) {
+    .nav {
+      display: flex;
+      justify-content: space-between;
     }
 
-    .links {
-      gap: 11px;
-    }
-
-    .links svg {
+    .desktop-links,
+    .github {
       display: none;
     }
 
-    .links a {
-      font-size: 11px;
-    }
-
-    .links a:first-child,
-    .links a:nth-child(5) {
-      display: none;
-    }
-
-    .cta {
-      padding: 6px 10px;
-    }
-
-    /* the mark alone carries the brand on small screens */
     .brand span {
-      display: none;
+      font-size: 17px;
     }
 
     .brand img {
-      width: 22px;
-      height: 22px;
+      width: 28px;
+      height: 28px;
+    }
+
+    .install-link {
+      min-height: 40px;
+      padding-inline: 13px;
+    }
+
+    .menu-button {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      place-content: center;
+      gap: 6px;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .menu-button > span:not(.sr-only) {
+      display: block;
+      width: 17px;
+      height: 1.5px;
+      background: currentColor;
+      transition: transform 180ms ease;
+    }
+
+    .menu-button[aria-expanded="true"] > span:nth-of-type(2) {
+      transform: translateY(3.75px) rotate(45deg);
+    }
+
+    .menu-button[aria-expanded="true"] > span:nth-of-type(3) {
+      transform: translateY(-3.75px) rotate(-45deg);
+    }
+
+    .menu-button[aria-expanded="true"] {
+      color: var(--accent-deep);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-wash);
+    }
+
+    .mobile-menu {
+      position: fixed;
+      top: var(--nav-h);
+      right: 0;
+      left: 0;
+      z-index: 79;
+      display: block;
+      height: calc(100dvh - var(--nav-h));
+      color: var(--ink);
+      background: var(--canvas);
+      border-top: 1px solid var(--line);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .mobile-menu[hidden] {
+      display: none;
+    }
+
+    .mobile-menu-inner {
+      display: grid;
+      min-height: 100%;
+      grid-template-rows: auto 1fr auto;
+      padding-block: 28px 30px;
+    }
+
+    .mobile-menu-label {
+      padding-bottom: 17px;
+      color: var(--accent-deep);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .mobile-menu-links {
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .mobile-menu-links a {
+      display: grid;
+      min-height: 76px;
+      grid-template-columns: 34px minmax(0, 1fr) 34px;
+      align-items: center;
+      gap: 8px;
+      padding-inline: 5px;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+    }
+
+    .mobile-menu-links a[aria-current="page"] {
+      background: var(--surface);
+      box-shadow: inset 2px 0 var(--accent);
+    }
+
+    .mobile-link-index {
+      color: var(--ink-faint);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .mobile-menu-links strong {
+      font-size: 28px;
+      font-weight: 690;
+      letter-spacing: -0.045em;
+    }
+
+    .mobile-link-arrow {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      justify-self: end;
+      color: var(--accent-deep);
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+      font-size: 13px;
+    }
+
+    .mobile-menu-footer {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 28px;
+    }
+
+    .mobile-menu-footer p {
+      max-width: 170px;
+      color: var(--ink-faint);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .mobile-menu-footer a {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .mobile-menu-footer a span {
+      color: var(--accent-deep);
     }
   }
 </style>

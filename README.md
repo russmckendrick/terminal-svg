@@ -41,7 +41,7 @@ every machine that doesn't have the font). terminal-svg does neither:
 ```sh
 # Run a command in a PTY (it sees a real TTY, so colours are on)
 terminal-svg -- lsd -la
-terminal-svg --title "tests" -o tests.svg -- cargo test
+terminal-svg --title "help" -o help.svg -- terminal-svg --help
 
 # Pipe ANSI output through it
 ls --color=always | terminal-svg -o ls.svg
@@ -68,7 +68,7 @@ progress bar all replayed from real timing data, with the font embedded.*
 terminal-svg rec -o demo.svg
 
 # Record a single command instead of a shell
-terminal-svg rec -o build.svg -- cargo build
+terminal-svg rec -o help.svg -- terminal-svg --help
 
 # Tweak the replay without re-recording: rec keeps an asciicast next to
 # the SVG (demo.cast above), and .cast files render directly

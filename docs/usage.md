@@ -17,7 +17,7 @@ terminal (`TERM=xterm-256color`, `COLORTERM=truecolor`):
 
 ```sh
 terminal-svg -- lsd -la
-terminal-svg --title "tests" -o tests.svg -- cargo test
+terminal-svg --title "help" -o help.svg -- terminal-svg --help
 ```
 
 **Pipe into stdin.** With no input file and no command, stdin is read to
@@ -69,7 +69,7 @@ terminal size — `-r` sets the PTY size programs see, not the image height.
 terminal-svg rec -o demo.svg
 
 # Record one command instead
-terminal-svg rec -o build.svg -- cargo build
+terminal-svg rec -o help.svg -- terminal-svg --help
 ```
 
 Alongside the SVG it saves the raw recording as an asciicast (same path with
