@@ -1,8 +1,11 @@
 # CLI reference
 
 ```
-terminal-svg [OPTIONS] [INPUT] [-- <COMMAND>...]
+terminal-svg [OPTIONS] [INPUT] [-- <COMMAND>...] [SUBCOMMAND]
 terminal-svg rec [OPTIONS] [-- <COMMAND>...]
+terminal-svg extract <INPUT> [OPTIONS]
+terminal-svg edit <INPUT> -o <PATH> [OPTIONS]
+terminal-svg editor [INPUT] [OPTIONS]
 ```
 
 ## Input modes
