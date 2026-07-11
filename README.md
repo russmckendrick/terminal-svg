@@ -305,8 +305,7 @@ renderer-compatibility rules that keep columns aligned everywhere) is in
 
 - [Installation guide](docs/install.md) — Homebrew, release binaries for
   macOS/Linux/Windows, checksum verification, building from source
-- [CLI reference](docs/usage.md) — every flag, the `rec` subcommand, and
-  recipes
+- [CLI reference](docs/usage.md) — every flag, all subcommands, and recipes
 - [Themes](docs/themes.md) — the built-ins and the custom TOML format
 - [Architecture](docs/architecture.md) — the full pipeline walkthrough
 - [Scripts](scripts/README.md) — the development helpers in [scripts/](scripts/)

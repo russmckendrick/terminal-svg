@@ -7,7 +7,7 @@ Everything beyond the [top-level README](../README.md) lives here.
 | Doc | What's in it |
 |---|---|
 | [install.md](install.md) | Installing on macOS, Linux, and Windows — Homebrew, prebuilt release binaries, checksum verification, building from source |
-| [usage.md](usage.md) | Full CLI reference — the three input modes, the `rec` subcommand, every flag with defaults and behaviour notes, and recipes for common jobs |
+| [usage.md](usage.md) | Full CLI reference — all input modes, every subcommand (`rec`, `extract`, `edit`, `editor`), every flag with defaults and behaviour notes, and recipes for common jobs |
 | [themes.md](themes.md) | The built-in themes and the TOML format for writing your own |
 | [architecture.md](architecture.md) | How the capture → interpret → render → embed pipeline works, and the renderer-compatibility rules that keep columns aligned everywhere |
 | [scripts/README.md](../scripts/README.md) | The development helper scripts — the gallery visual sweep, the README demo generator, and the test-fixture generator |
